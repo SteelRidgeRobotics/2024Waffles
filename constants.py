@@ -38,3 +38,5 @@ class Motor:
     kTimeoutMs = 20
     kSlotIdx = 0
     kPIDLoopIdx = 0
+    kVoltCompensation = 12.6
+    kGearRatio = (150 / 7)
