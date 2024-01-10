@@ -22,7 +22,7 @@ class SwerveModule(SubsystemBase):
         self.moduleName = moduleName
 
         self.directionMotor = directionMotorController
-        self.directionMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Absolute, 0, Motor.kTimeoutMs)
+        self.directionMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
         
         self.directionMotor.config_kP(Motor.kSlotIdx, DirectionMotor.kP, Motor.kTimeoutMs)
         self.directionMotor.config_kI(Motor.kSlotIdx, DirectionMotor.kI, Motor.kTimeoutMs)
