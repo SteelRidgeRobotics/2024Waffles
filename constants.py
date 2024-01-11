@@ -7,7 +7,7 @@ class DriverController:
 class Larry:
     kWheelSize = 0.1 # meters
 
-class MotorIDs(Enum):
+class MotorIDs:
     LEFT_FRONT_DRIVE = 0
     LEFT_REAR_DRIVE = 1
     RIGHT_FRONT_DRIVE = 2
@@ -17,6 +17,18 @@ class MotorIDs(Enum):
     LEFT_REAR_DIRECTION = 5
     RIGHT_FRONT_DIRECTION = 6
     RIGHT_REAR_DIRECTION = 7
+
+class CANIDs:
+    LEFT_FRONT = 10
+    RIGHT_FRONT = 11
+    LEFT_REAR = 12
+    RIGHT_REAR = 13
+
+class COffsets:
+    kFLOffset = 350.5078125
+    kRLOffset = 179.12109375
+    kFROffset = 324.755859375
+    kRROffset = 28.828125
 
 class DirectionMotor:
     kP = 0
