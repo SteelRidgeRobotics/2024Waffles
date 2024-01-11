@@ -6,6 +6,7 @@ class DriverController:
 
 class Larry:
     kWheelSize = 0.1 # meters
+    kMaxSpeed = 3.658 # m/s
 
 class MotorIDs:
     LEFT_FRONT_DRIVE = 0

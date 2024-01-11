@@ -4,7 +4,8 @@ from ctre import *
 from ctre.sensors import CANCoder, SensorInitializationStrategy
 import math
 import navx
-from wpimath.kinematics import SwerveModuleState, SwerveDrive4Kinematics, SwerveDrive4Odometry
+from wpilib import SmartDashboard
+from wpimath.kinematics import ChassisSpeeds, SwerveModuleState, SwerveDrive4Kinematics, SwerveDrive4Odometry
 from wpimath.controller import PIDController, SimpleMotorFeedforwardMeters
 from wpimath.geometry import Translation2d, Rotation2d
 
@@ -71,6 +72,8 @@ class SwerveModule(SubsystemBase):
 """"""
 
 class Swerve(SubsystemBase):
+    anglePID = PIDController(0, 0, 0)
+
     leftFront = SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, COffsets.kFLOffset)
     leftRear = SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, COffsets.kFROffset)
     rightFront = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, COffsets.kFROffset)
@@ -85,13 +88,33 @@ class Swerve(SubsystemBase):
         super().__init__()
 
         self.odometry = SwerveDrive4Odometry(self.kinematics, self.getAngle())
+        self.targetAngle = 0
 
     def getAngle(self) -> float:
-        return self.navX.getYaw()
-
+        return self.navX.getRotation2d()
     
+    def drive(self, xSpeed: float, ySpeed: float, rotRate: float, fieldRelative: bool=True) -> None:
+        # Shoutout to team 1706, your code saved our swerve this year lmao
+        # Insert function to steady target angle here :)))
+        SmartDashboard.putNumber("xSpeed", xSpeed)
+        SmartDashboard.putNumber("ySpeed", ySpeed)
+        SmartDashboard.putNumber("rotSpeed", rotRate)
 
+        if fieldRelative:
+            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rotRate, self.getAngle()))
+        else:
+            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds(xSpeed, ySpeed, rotRate))
 
+        desatStates = self.kinematics.desaturateWheelSpeeds(states, Larry.kMaxSpeed)
 
+        self.setModuleStates(desatStates)
+
+    def setModuleStates(self, moduleStates: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
+        desatStates = self.kinematics.desaturateWheelSpeeds(moduleStates, Larry.kMaxSpeed)
+
+        self.leftFront.setDesiredState(desatStates[0])
+        self.leftRear.setDesiredState(desatStates[1])
+        self.rightFront.setDesiredState(desatStates[2])
+        self.rightRear.setDesiredState(desatStates[3])
 
         
