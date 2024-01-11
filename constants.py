@@ -7,6 +7,7 @@ class DriverController:
 class Larry:
     kWheelSize = 0.1 # meters
     kMaxSpeed = 3.658 # m/s
+    kMaxRotRate = klarryMaxRotSpeed = 10.472
 
 class MotorIDs:
     LEFT_FRONT_DRIVE = 0

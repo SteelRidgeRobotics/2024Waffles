@@ -1,11 +1,11 @@
-from commands2 import SubsystemBase
+from commands2 import Command, SubsystemBase
 from constants import *
 from ctre import *
 from ctre.sensors import CANCoder, SensorInitializationStrategy
 import math
 import navx
-from wpilib import SmartDashboard
-from wpimath.kinematics import ChassisSpeeds, SwerveModuleState, SwerveDrive4Kinematics, SwerveDrive4Odometry
+from wpilib import Field2d, SmartDashboard
+from wpimath.kinematics import ChassisSpeeds, SwerveModuleState, SwerveDrive4Kinematics, SwerveDrive4Odometry, SwerveModulePosition
 from wpimath.controller import PIDController, SimpleMotorFeedforwardMeters
 from wpimath.geometry import Translation2d, Rotation2d
 
@@ -25,6 +25,7 @@ class SwerveModule(SubsystemBase):
 
         self.directionMotor = TalonFX(directionMotorControllerID)
         self.directionMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
+        self.directionMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
         
         self.directionMotor.config_kP(Motor.kSlotIdx, DirectionMotor.kP, Motor.kTimeoutMs)
         self.directionMotor.config_kI(Motor.kSlotIdx, DirectionMotor.kI, Motor.kTimeoutMs)
@@ -39,6 +40,7 @@ class SwerveModule(SubsystemBase):
 
         self.driveMotor = TalonFX(driveMotorControllerID)
         self.driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
+        self.driveMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
 
         self.driveMotor.config_kP(Motor.kSlotIdx, DriveMotor.kP, Motor.kTimeoutMs)
         self.driveMotor.config_kI(Motor.kSlotIdx, DriveMotor.kI, Motor.kTimeoutMs)
@@ -56,39 +58,67 @@ class SwerveModule(SubsystemBase):
         self.turningEncoder.configSensorDirection(True, Motor.kTimeoutMs)
         self.turningEncoder.configMagnetOffset(offset)
 
+        self.test = 0
+
+    def getAngle(self) -> Rotation2d:
+        return Rotation2d.fromDegrees(self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048))
+
     def getState(self) -> SwerveModuleState:
         # units/100ms -> m/s
         speed = self.driveMotor.getSelectedSensorVelocity() / Motor.kGearRatio * 10 * Larry.kWheelSize * math.pi
         rotation = self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048)
+        SmartDashboard.putNumber(self.moduleName + "rotation", rotation)
         return SwerveModuleState(speed, Rotation2d.fromDegrees(rotation))
+    
+    def getPosition(self) -> SwerveModulePosition:
+        return SwerveModulePosition(
+            self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio * Larry.kWheelSize * math.pi,
+            self.getAngle()
+        )
+    
+    def simulationPeriodic(self) -> None:
+        SmartDashboard.putNumber(self.moduleName + "drivePosNoGear", self.driveMotor.getSelectedSensorVelocity())
+        SmartDashboard.putNumber(self.moduleName + "directionPos", self.directionMotor.getSelectedSensorPosition())
 
     def setDesiredState(self, desiredState: SwerveModuleState) -> None:
         currentState = self.getState()
         state = SwerveModuleState.optimize(desiredState, currentState.angle)
 
+        SmartDashboard.putNumber(self.moduleName + "state", state.angle.degrees())
+
         self.driveMotor.set(ControlMode.Current, self.driveFeedForward.calculate(currentState.speed, state.speed, 0.02) / 120)
-        self.directionMotor.set(ControlMode.Position, state * (180/math.pi) * (2048/360))
+        self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(state.speed / math.pi / Larry.kWheelSize / 10 * Motor.kGearRatio))
+
+        self.directionMotor.set(ControlMode.Position, state.angle.degrees() * (2048/360) * Motor.kGearRatio)
+        self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(state.angle.degrees() * (2048/360) * Motor.kGearRatio))
 
 """"""
 
 class Swerve(SubsystemBase):
     anglePID = PIDController(0, 0, 0)
 
-    leftFront = SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, COffsets.kFLOffset)
-    leftRear = SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, COffsets.kFROffset)
-    rightFront = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, COffsets.kFROffset)
-    rightRear = SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, COffsets.kRROffset)
-
     navX = navx.AHRS.create_spi()
 
     kinematics = SwerveDrive4Kinematics(Translation2d(1, 1), Translation2d(-1, 1),
                                         Translation2d(1, -1), Translation2d(-1, -1)) # LF, LR, RF, RR
     
-    def __init__(self) -> None:
+    field = Field2d()
+    
+    def __init__(self, leftFront: SwerveModule, leftRear: SwerveModule, rightFront: SwerveModule, rightRear: SwerveModule) -> None:
         super().__init__()
 
-        self.odometry = SwerveDrive4Odometry(self.kinematics, self.getAngle())
+        self.leftFront = leftFront
+        self.leftRear = SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, COffsets.kFROffset)
+        self.rightFront = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, COffsets.kFROffset)
+        self.rightRear = SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, COffsets.kRROffset)
+
+        self.odometry = SwerveDrive4Odometry(self.kinematics, self.getAngle(),
+                                             (self.leftFront.getPosition(), self.leftRear.getPosition(),
+                                              self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.targetAngle = 0
+
+        SmartDashboard.putData(self.field)
+        SmartDashboard.putData(self.resetOdometryCommand())
 
     def getAngle(self) -> float:
         return self.navX.getRotation2d()
@@ -106,6 +136,7 @@ class Swerve(SubsystemBase):
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds(xSpeed, ySpeed, rotRate))
 
         desatStates = self.kinematics.desaturateWheelSpeeds(states, Larry.kMaxSpeed)
+        SmartDashboard.putNumberArray("STATES", [desatStates[0].angle.degrees(), desatStates[1].angle.degrees(), desatStates[2].angle.degrees(), desatStates[3].angle.degrees()])
 
         self.setModuleStates(desatStates)
 
@@ -117,4 +148,14 @@ class Swerve(SubsystemBase):
         self.rightFront.setDesiredState(desatStates[2])
         self.rightRear.setDesiredState(desatStates[3])
 
+    def resetOdometry(self) -> None:
+        self.odometry.resetPosition(self.getAngle(), self.odometry.getPose(),
+                                    self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition())
+
+    def resetOdometryCommand(self) -> Command:
+        return self.runOnce(lambda: self.resetOdometry())
+
+    def periodic(self) -> None:
+        self.field.setRobotPose(
+            self.odometry.update(self.getAngle(), self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         
