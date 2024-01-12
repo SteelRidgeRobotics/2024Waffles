@@ -16,25 +16,18 @@ class DriveByController(CommandBase):
         self.controller = controller
 
     def initialize(self) -> None:
-        pass
+        self.swerve.initialize()
     
     def execute(self) -> None:
         translationX = self.controller.getLeftX()
-        translationY = -self.controller.getLeftY()
-        rotation = -self.controller.getLeftTriggerAxis()
+        translationY = self.controller.getLeftY()
+        rotation = -self.controller.getRightX()
 
         translationY = deadband(translationY, DriverController.deadband)
         translationX = deadband(translationX, DriverController.deadband)
         rotation = deadband(rotation, DriverController.deadband)
 
-        SmartDashboard.putNumber("translationY", translationY)
-        SmartDashboard.putNumber("translationX", translationX)
-        SmartDashboard.putNumber("rotation", rotation)
-
-        translation = Translation2d(translationY * Larry.kMaxSpeed, translationX * Larry.kMaxSpeed)
-        rotation = rotation * Larry.kMaxRotRate
-
-        self.swerve.drive(translationY * Larry.kMaxSpeed, translationX * Larry.kMaxSpeed, rotation, fieldRelative=False)
+        self.swerve.drive(translationX * Larry.kMaxSpeed, translationY * Larry.kMaxSpeed, rotation * Larry.kMaxRotRate, fieldRelative=True)
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)

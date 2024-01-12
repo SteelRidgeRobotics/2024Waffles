@@ -22,22 +22,22 @@ class MotorIDs:
 
 class CANIDs:
     LEFT_FRONT = 10
-    RIGHT_FRONT = 11
-    LEFT_REAR = 12
+    RIGHT_FRONT = 12
+    LEFT_REAR = 11
     RIGHT_REAR = 13
 
 class COffsets:
-    kFLOffset = 350.5078125
-    kRLOffset = 179.12109375
-    kFROffset = 324.755859375
-    kRROffset = 28.828125
+    kFrontLeftOffset = 350.5078125
+    kRearLeftOffset = 179.12109375
+    kFrontRightOffset = 324.755859375
+    kRearRightOffset = 28.828125
 
 class DirectionMotor:
-    kP = 0
-    kI = 0
-    kD = 0
-    kF = 0
-    kIZone = 0
+    kP = 0.6
+    kI = 0.004
+    kD = 2
+    kF = 0.05282272
+    kIZone = 150
     kCruiseVel = 21134.0
     kCruiseAccel = 21134.0 
 
@@ -52,5 +52,5 @@ class Motor:
     kTimeoutMs = 20
     kSlotIdx = 0
     kPIDLoopIdx = 0
-    kVoltCompensation = 12.6
+    kVoltCompensation = 5
     kGearRatio = (150 / 7)
