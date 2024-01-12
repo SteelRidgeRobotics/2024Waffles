@@ -80,7 +80,7 @@ class SwerveModule(SubsystemBase):
         )
     
     def periodic(self) -> None:
-        SmartDashboard.putNumber(self.moduleName + "directionAngle", self.getAngle().degrees())
+        #SmartDashboard.putNumber(self.moduleName + "directionAngle", self.getAngle().degrees())
         SmartDashboard.putNumber(self.moduleName + "drivePos", self.driveMotor.getSelectedSensorPosition())
 
     def setDesiredState(self, desiredState: SwerveModuleState) -> None:
@@ -92,8 +92,44 @@ class SwerveModule(SubsystemBase):
         #self.driveMotor.set(ControlMode.Current, self.driveFeedForward.calculate(currentState.speed, state.speed, 0.1) / 120)
         #self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(state.speed / math.pi / Larry.kWheelSize / 10 * Motor.kGearRatio))
 
-        self.directionMotor.set(TalonFXControlMode.MotionMagic, state.angle.degrees() * (2048/360) * Motor.kGearRatio)
-        self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(state.angle.degrees() * (2048/360) * Motor.kGearRatio))
+        self.changeDirection(state.angle)
+
+    def changeDirection(self, rotation: Rotation2d) -> None:
+        currentAngle = self.getAngle().degrees()
+        desiredAngle = rotation.degrees()
+
+        angleDiff = desiredAngle - currentAngle
+        targetAngleDist = math.fabs(angleDiff)
+
+        # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
+        if targetAngleDist > 180:
+            while targetAngleDist > 180:
+                targetAngleDist -= 360
+            targetAngleDist = abs(targetAngleDist)
+
+        changeInTalonUnits = targetAngleDist / (360/2048)
+
+        if angleDiff < 0:
+            while angleDiff < 0:
+                angleDiff += 360
+        elif angleDiff > 360:
+            while angleDiff > 360:
+                angleDiff -= 360
+        
+        finalPos = self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio
+        if angleDiff > 180:
+            # Move CCW
+            finalPos -= changeInTalonUnits
+        else:
+            # Move CW
+            finalPos += changeInTalonUnits
+
+        SmartDashboard.putNumber(self.moduleName + "directionPos", finalPos)
+        #SmartDashboard.putNumber(self.moduleName + "angle", currentAngle)
+
+        self.directionMotor.set(TalonFXControlMode.MotionMagic, finalPos * Motor.kGearRatio)
+        self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(finalPos * Motor.kGearRatio))
+
 
 """"""
 
@@ -141,6 +177,12 @@ class Swerve(SubsystemBase):
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds(xSpeed, ySpeed, rotRate))
 
         desatStates = self.kinematics.desaturateWheelSpeeds(states, Larry.kMaxSpeed)
+
+        SmartDashboard.putNumber("xSpeed", xSpeed)
+        SmartDashboard.putNumber("ySpeed", ySpeed)
+        SmartDashboard.putNumber("rotRate", rotRate)
+
+        SmartDashboard.putNumberArray("desatedStates", [desatStates[0].angle.degrees(), desatStates[1].angle.degrees(), desatStates[2].angle.degrees(), desatStates[3].angle.degrees()])
 
         self.setModuleStates(desatStates)
 

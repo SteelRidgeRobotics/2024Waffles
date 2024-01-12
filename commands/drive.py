@@ -19,15 +19,15 @@ class DriveByController(CommandBase):
         self.swerve.initialize()
     
     def execute(self) -> None:
-        translationX = self.controller.getLeftX()
-        translationY = self.controller.getLeftY()
-        rotation = -self.controller.getRightX()
+        translationX = -self.controller.getLeftX()
+        translationY = -self.controller.getLeftY()
+        rotation = -self.controller.getLeftTriggerAxis()
 
         translationY = deadband(translationY, DriverController.deadband)
         translationX = deadband(translationX, DriverController.deadband)
         rotation = deadband(rotation, DriverController.deadband)
 
-        self.swerve.drive(translationX * Larry.kMaxSpeed, translationY * Larry.kMaxSpeed, rotation * Larry.kMaxRotRate, fieldRelative=True)
+        self.swerve.drive(translationX * Larry.kMaxSpeed, translationY * Larry.kMaxSpeed, rotation * Larry.kMaxRotRate, fieldRelative=False)
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)
