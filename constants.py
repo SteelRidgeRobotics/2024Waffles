@@ -7,7 +7,7 @@ class DriverController:
 class Larry:
     kWheelSize = 0.1 # meters
     kMaxSpeed = 3.658 # m/s
-    kMaxRotRate = klarryMaxRotSpeed = 10.472
+    kMaxRotRate = 10.472 # rad/s
 
 class MotorIDs:
     LEFT_FRONT_DRIVE = 0
@@ -26,11 +26,11 @@ class CANIDs:
     LEFT_REAR = 11
     RIGHT_REAR = 13
 
-class COffsets:
-    kFrontLeftOffset = 350.5078125
-    kRearLeftOffset = 179.12109375
-    kFrontRightOffset = 324.755859375
-    kRearRightOffset = 28.828125
+class CANOffsets:
+    kLeftFrontOffset = 350.5078125
+    kRightFrontOffset = 324.755859375
+    kLeftRearOffset = 179.12109375
+    kRightRearOffset = 28.828125
 
 class DirectionMotor:
     kP = 0.6
