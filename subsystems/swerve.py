@@ -22,6 +22,11 @@ class SwerveModule(SubsystemBase):
 
         self.moduleName = moduleName
 
+        self.turningEncoder = CANCoder(CANCoderID)
+        self.turningEncoder.configSensorInitializationStrategy(SensorInitializationStrategy.BootToAbsolutePosition, Motor.kTimeoutMs)
+        self.turningEncoder.configSensorDirection(True, Motor.kTimeoutMs)
+        self.turningEncoder.configMagnetOffset(offset, Motor.kTimeoutMs)
+
         self.directionMotor = TalonFX(directionMotorControllerID)
         self.directionMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
         self.directionMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
@@ -49,10 +54,7 @@ class SwerveModule(SubsystemBase):
         self.driveMotor.setInverted(False)
         self.driveMotor.setNeutralMode(NeutralMode.Brake)
 
-        self.turningEncoder = CANCoder(CANCoderID)
-        self.turningEncoder.configSensorInitializationStrategy(SensorInitializationStrategy.BootToAbsolutePosition, Motor.kTimeoutMs)
-        self.turningEncoder.configSensorDirection(True, Motor.kTimeoutMs)
-        self.turningEncoder.configMagnetOffset(offset, Motor.kTimeoutMs)
+        
 
     def getAngle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048))
@@ -74,20 +76,20 @@ class SwerveModule(SubsystemBase):
     
     def getPosition(self) -> SwerveModulePosition:
         return SwerveModulePosition(
-            self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio * Larry.kWheelSize * math.pi,
+            (self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
             self.getAngle()
         )
     
     def periodic(self) -> None:
         #SmartDashboard.putNumber(self.moduleName + "directionAngle", self.getAngle().degrees())
-        SmartDashboard.putNumber(self.moduleName + "drivePos", self.driveMotor.getSelectedSensorPosition())
+        SmartDashboard.putNumber(self.moduleName + "drivePos", self.driveMotor.getSelectedSensorVelocity())
 
     def setDesiredState(self, desiredState: SwerveModuleState) -> None:
         currentState = self.getState()
         state = SwerveModuleState.optimize(desiredState, currentState.angle)
 
-        self.driveMotor.set(ControlMode.Velocity, state.speed / math.pi / Larry.kWheelSize / 10 / Motor.kGearRatio)
-        self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(state.speed / math.pi / Larry.kWheelSize / 10 * Motor.kGearRatio))
+        self.driveMotor.set(ControlMode.Velocity, state.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio)
+        self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(state.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio))
 
         self.changeDirection(state.angle)
 
@@ -187,11 +189,15 @@ class Swerve(SubsystemBase):
     def resetOdometry(self) -> None:
         self.odometry.resetPosition(self.getAngle(), self.odometry.getPose(),
                                     self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition())
+        
 
     def resetOdometryCommand(self) -> Command:
         return self.runOnce(lambda: self.resetOdometry())
 
     def periodic(self) -> None:
-        self.field.setRobotPose(
-            self.odometry.update(self.getAngle(), self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
+        self.odometry.update(self.getAngle(), self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition())
+        self.field.setRobotPose(self.odometry.getPose())
+        SmartDashboard.putNumber("Field X", self.odometry.getPose().X())
+        SmartDashboard.putNumber("Field Y", self.odometry.getPose().Y())
+        SmartDashboard.putData(self.field)
         
