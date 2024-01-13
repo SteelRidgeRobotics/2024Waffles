@@ -22,6 +22,3 @@ class EvilLarry(TimedCommandRobot):
 
     def teleopPeriodic(self) -> None:
         self.swerve.setDefaultCommand(DriveByController(self.swerve, self.driverController))
-
-if __name__ == "__main__":
-    run(EvilLarry)

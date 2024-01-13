@@ -1,7 +1,7 @@
 from commands2 import Command, SubsystemBase
 from constants import *
-from ctre import *
-from ctre.sensors import CANCoder, SensorInitializationStrategy
+from phoenix5 import *
+from phoenix5.sensors import CANCoder, SensorInitializationStrategy
 import math
 import navx
 from wpilib import Field2d, RobotBase, SmartDashboard
@@ -195,7 +195,7 @@ class Swerve(SubsystemBase):
         return self.runOnce(lambda: self.resetOdometry())
 
     def periodic(self) -> None:
-        self.odometry.update(self.getAngle(), self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition())
+        self.odometry.update(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putNumber("Field X", self.odometry.getPose().X())
         SmartDashboard.putNumber("Field Y", self.odometry.getPose().Y())
