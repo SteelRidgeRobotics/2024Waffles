@@ -237,6 +237,7 @@ class Swerve(Subsystem):
         return self.odometry.getPose()
 
     def resetOdometry(self, pose=Pose2d()) -> None:
+        self.targetAngle = 0
         self.odometry.resetPosition(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()), pose)
         
     def resetOdometryCommand(self) -> Command:
