@@ -19,8 +19,8 @@ class DriveByController(CommandBase):
         self.swerve.initialize()
     
     def execute(self) -> None:
-        translationX = self.controller.getLeftX()
-        translationY = self.controller.getLeftY()
+        translationX = -self.controller.getLeftY()
+        translationY = -self.controller.getLeftX()
         rotation = -self.controller.getRightX()
 
         translationY = deadband(translationY, DriverController.deadband)

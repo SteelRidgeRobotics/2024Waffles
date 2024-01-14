@@ -61,6 +61,8 @@ class SwerveModule(Subsystem):
         self.driveMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
         self.driveMotor.setInverted(False)
         self.driveMotor.setNeutralMode(NeutralMode.Brake)
+        
+        self.simDrivePos = 0
 
         CommandScheduler.getInstance().registerSubsystem(self)
 
@@ -83,14 +85,19 @@ class SwerveModule(Subsystem):
         return SwerveModuleState(speed, Rotation2d.fromDegrees(rotation))
     
     def getPosition(self) -> SwerveModulePosition:
-        return SwerveModulePosition(
-            (self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
-            self.getAngle()
-        )
+        if not RobotBase.isReal():
+            return SwerveModulePosition(self.simDrivePos, self.getAngle())
+        else:
+            return SwerveModulePosition(
+                (self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
+                self.getAngle()
+            )
     
     def periodic(self) -> None:
-        #SmartDashboard.putNumber(self.moduleName + "directionAngle", self.getAngle().degrees())
-        SmartDashboard.putNumber(self.moduleName + "drivePos", self.driveMotor.getSelectedSensorVelocity())
+        pass
+        
+    def simulationPeriodic(self) -> None:
+        self.simDrivePos += (self.driveMotor.getSelectedSensorVelocity() / 10) * (1 / Motor.kGearRatio) * (Larry.kWheelSize * math.pi)
 
     def setDesiredState(self, desiredState: SwerveModuleState) -> None:
         currentState = self.getState()
@@ -124,9 +131,6 @@ class SwerveModule(Subsystem):
             # Move CW
             finalPos += changeInTalonUnits
 
-        SmartDashboard.putNumber(self.moduleName + "directionPos", finalPos)
-        #SmartDashboard.putNumber(self.moduleName + "angle", currentAngle)
-
         self.directionMotor.set(TalonFXControlMode.MotionMagic, finalPos * Motor.kGearRatio)
         self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(finalPos * Motor.kGearRatio))
 
@@ -159,6 +163,7 @@ class Swerve(Subsystem):
         SmartDashboard.putData("Reset Odometry", self.resetOdometryCommand())
 
         self.chassisSpeed = ChassisSpeeds()
+        self.targetAngle = 0
 
         AutoBuilder.configureHolonomic(
             lambda: self.getPose(),
@@ -170,7 +175,7 @@ class Swerve(Subsystem):
                 PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
                 Larry.kMaxSpeed,
                 Larry.kDriveBaseRadius,
-                ReplanningConfig()
+                ReplanningConfig(enableInitialReplanning=False)
             ),
             lambda: self.shouldFlipAutoPath(),
             self
@@ -191,7 +196,7 @@ class Swerve(Subsystem):
         self.rightFront.resetSensorPostition()
         self.rightRear.resetSensorPostition()
 
-    def getAngle(self) -> float:
+    def getAngle(self) -> Rotation2d:
         return self.navX.getRotation2d()
     
     def drive(self, chassisSpeed:ChassisSpeeds, fieldRelative: bool=True) -> None:
@@ -199,7 +204,10 @@ class Swerve(Subsystem):
         # Insert function to steady target angle here :)))
 
         if fieldRelative:
-            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
+            if RobotBase.isReal():
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
+            else:
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, Rotation2d.fromDegrees(self.targetAngle)))
         else:
             states = self.kinematics.toSwerveModuleStates(chassisSpeed)
 
@@ -210,6 +218,9 @@ class Swerve(Subsystem):
         SmartDashboard.putNumberArray("desatedStates", [desatStates[0].angle.degrees(), desatStates[1].angle.degrees(), desatStates[2].angle.degrees(), desatStates[3].angle.degrees()])
 
         self.setModuleStates(desatStates)
+        
+        if not RobotBase.isReal():
+            self.targetAngle += chassisSpeed.omega / (180/math.pi)
 
     def getChassisSpeeds(self) -> ChassisSpeeds:
         return self.chassisSpeed
@@ -232,9 +243,10 @@ class Swerve(Subsystem):
         return self.runOnce(lambda: self.resetOdometry())
 
     def periodic(self) -> None:
-        self.odometry.update(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
+        if RobotBase.isReal():
+            self.odometry.update(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
+        else:
+            self.odometry.update(Rotation2d.fromDegrees(self.targetAngle), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.field.setRobotPose(self.odometry.getPose())
-        SmartDashboard.putNumber("Field X", self.odometry.getPose().X())
-        SmartDashboard.putNumber("Field Y", self.odometry.getPose().Y())
         SmartDashboard.putData(self.field)
         

@@ -31,7 +31,6 @@ class EvilLarry(TimedCommandRobot):
         return self.autoChooser.getSelected()
 
     def autonomousInit(self) -> None:
-        self.swerve.resetOdometry()
         self.getSelectedAutoCommand().schedule()
 
     def robotPeriodic(self) -> None:
