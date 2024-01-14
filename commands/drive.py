@@ -3,7 +3,7 @@ from constants import *
 from frc6343.controller.deadband import deadband
 from subsystems.swerve import Swerve
 from wpilib import SmartDashboard, XboxController
-from wpimath.geometry import Rotation2d, Translation2d
+from wpimath.kinematics import ChassisSpeeds
 
 class DriveByController(CommandBase):
 
@@ -19,15 +19,15 @@ class DriveByController(CommandBase):
         self.swerve.initialize()
     
     def execute(self) -> None:
-        translationX = -self.controller.getLeftX()
-        translationY = -self.controller.getLeftY()
-        rotation = -self.controller.getLeftTriggerAxis()
+        translationX = self.controller.getLeftX()
+        translationY = self.controller.getLeftY()
+        rotation = -self.controller.getRightX()
 
         translationY = deadband(translationY, DriverController.deadband)
         translationX = deadband(translationX, DriverController.deadband)
         rotation = deadband(rotation, DriverController.deadband)
 
-        self.swerve.drive(translationX * Larry.kMaxSpeed, translationY * Larry.kMaxSpeed, rotation * Larry.kMaxRotRate, fieldRelative=False)
+        self.swerve.drive(ChassisSpeeds(translationX * Larry.kMaxSpeed, translationY * Larry.kMaxSpeed, rotation * Larry.kMaxRotRate), fieldRelative=True)
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)

@@ -1,15 +1,23 @@
-from commands2 import Command, SubsystemBase
-from constants import *
+import math
+
+import navx
+from commands2 import Command, CommandScheduler, Subsystem
+from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
+from pathplannerlib.config import (HolonomicPathFollowerConfig, PIDConstants,
+                                   ReplanningConfig)
 from phoenix5 import *
 from phoenix5.sensors import CANCoder, SensorInitializationStrategy
-import math
-import navx
-from wpilib import Field2d, RobotBase, SmartDashboard
-from wpimath.kinematics import ChassisSpeeds, SwerveModuleState, SwerveDrive4Kinematics, SwerveDrive4Odometry, SwerveModulePosition
-from wpimath.controller import PIDController, SimpleMotorFeedforwardMeters
-from wpimath.geometry import Translation2d, Rotation2d
+from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
+from wpimath.controller import PIDController
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.kinematics import (ChassisSpeeds, SwerveDrive4Kinematics,
+                                SwerveDrive4Odometry, SwerveModulePosition,
+                                SwerveModuleState)
 
-class SwerveModule(SubsystemBase):
+from constants import *
+
+
+class SwerveModule(Subsystem):
     """
     Takes inputted SwerveModuleStates and moves the direction and drive motor to the selected positions.
 
@@ -54,7 +62,7 @@ class SwerveModule(SubsystemBase):
         self.driveMotor.setInverted(False)
         self.driveMotor.setNeutralMode(NeutralMode.Brake)
 
-        
+        CommandScheduler.getInstance().registerSubsystem(self)
 
     def getAngle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048))
@@ -125,7 +133,7 @@ class SwerveModule(SubsystemBase):
 
 """"""
 
-class Swerve(SubsystemBase):
+class Swerve(Subsystem):
     anglePID = PIDController(0, 0, 0)
 
     navX = navx.AHRS.create_spi()
@@ -150,6 +158,33 @@ class Swerve(SubsystemBase):
         SmartDashboard.putData(self.field)
         SmartDashboard.putData("Reset Odometry", self.resetOdometryCommand())
 
+        self.chassisSpeed = ChassisSpeeds()
+
+        AutoBuilder.configureHolonomic(
+            lambda: self.getPose(),
+            lambda pose: self.resetOdometry(pose),
+            lambda: self.getChassisSpeeds(),
+            lambda chassisSpeed: self.drive(chassisSpeed, fieldRelative=False),
+            HolonomicPathFollowerConfig(
+                PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
+                PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
+                Larry.kMaxSpeed,
+                Larry.kDriveBaseRadius,
+                ReplanningConfig()
+            ),
+            lambda: self.shouldFlipAutoPath(),
+            self
+        )
+
+        CommandScheduler.getInstance().registerSubsystem(self)
+
+    def shouldFlipAutoPath(self) -> bool:
+        # Flips the PathPlanner path if we're on the red alliance
+        return DriverStation.getAlliance() == DriverStation.Alliance.kRed
+    
+    def runAuto(self, auto: PathPlannerAuto) -> None:
+        self.runOnce(lambda: auto)
+
     def initialize(self) -> None:
         self.leftFront.resetSensorPostition()
         self.leftRear.resetSensorPostition()
@@ -159,24 +194,25 @@ class Swerve(SubsystemBase):
     def getAngle(self) -> float:
         return self.navX.getRotation2d()
     
-    def drive(self, xSpeed: float, ySpeed: float, rotRate: float, fieldRelative: bool=True) -> None:
+    def drive(self, chassisSpeed:ChassisSpeeds, fieldRelative: bool=True) -> None:
         # Shoutout to team 1706, your code saved our swerve this year lmao
         # Insert function to steady target angle here :)))
 
         if fieldRelative:
-            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rotRate, self.getAngle()))
+            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
         else:
-            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds(xSpeed, ySpeed, rotRate))
+            states = self.kinematics.toSwerveModuleStates(chassisSpeed)
 
         desatStates = self.kinematics.desaturateWheelSpeeds(states, Larry.kMaxSpeed)
 
-        SmartDashboard.putNumber("xSpeed", xSpeed)
-        SmartDashboard.putNumber("ySpeed", ySpeed)
-        SmartDashboard.putNumber("rotRate", rotRate)
+        self.chassisSpeed = chassisSpeed
 
         SmartDashboard.putNumberArray("desatedStates", [desatStates[0].angle.degrees(), desatStates[1].angle.degrees(), desatStates[2].angle.degrees(), desatStates[3].angle.degrees()])
 
         self.setModuleStates(desatStates)
+
+    def getChassisSpeeds(self) -> ChassisSpeeds:
+        return self.chassisSpeed
 
     def setModuleStates(self, moduleStates: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
         desatStates = self.kinematics.desaturateWheelSpeeds(moduleStates, Larry.kMaxSpeed)
@@ -186,11 +222,12 @@ class Swerve(SubsystemBase):
         self.rightFront.setDesiredState(desatStates[2])
         self.rightRear.setDesiredState(desatStates[3])
 
-    def resetOdometry(self) -> None:
-        self.odometry.resetPosition(self.getAngle(), self.odometry.getPose(),
-                                    self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition())
-        
+    def getPose(self) -> Pose2d:
+        return self.odometry.getPose()
 
+    def resetOdometry(self, pose=Pose2d()) -> None:
+        self.odometry.resetPosition(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()), pose)
+        
     def resetOdometryCommand(self) -> Command:
         return self.runOnce(lambda: self.resetOdometry())
 

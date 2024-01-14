@@ -8,6 +8,7 @@ class Larry:
     kWheelSize = 0.1 # meters
     kMaxSpeed = 3.658 # m/s
     kMaxRotRate = 10.472 # rad/s
+    kDriveBaseRadius = 0.43 # meters
 
 class MotorIDs:
     LEFT_FRONT_DRIVE = 0
