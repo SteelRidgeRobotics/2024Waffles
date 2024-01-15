@@ -163,7 +163,7 @@ class Swerve(Subsystem):
         SmartDashboard.putData("Reset Odometry", self.resetOdometryCommand())
 
         self.chassisSpeed = ChassisSpeeds()
-        self.targetAngle = 0
+        self.targetRad = 0
 
         AutoBuilder.configureHolonomic(
             lambda: self.getPose(),
@@ -207,7 +207,7 @@ class Swerve(Subsystem):
             if RobotBase.isReal():
                 states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
             else:
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, Rotation2d.fromDegrees(self.targetAngle)))
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, Rotation2d.fromDegrees(self.targetRad)))
         else:
             states = self.kinematics.toSwerveModuleStates(chassisSpeed)
 
@@ -220,7 +220,7 @@ class Swerve(Subsystem):
         self.setModuleStates(desatStates)
         
         if not RobotBase.isReal():
-            self.targetAngle += chassisSpeed.omega / (180/math.pi)
+            self.targetRad += chassisSpeed.omega / 50
 
     def getChassisSpeeds(self) -> ChassisSpeeds:
         return self.chassisSpeed
@@ -237,7 +237,7 @@ class Swerve(Subsystem):
         return self.odometry.getPose()
 
     def resetOdometry(self, pose=Pose2d()) -> None:
-        self.targetAngle = 0
+        self.targetRad = 0
         self.odometry.resetPosition(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()), pose)
         
     def resetOdometryCommand(self) -> Command:
@@ -247,7 +247,7 @@ class Swerve(Subsystem):
         if RobotBase.isReal():
             self.odometry.update(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         else:
-            self.odometry.update(Rotation2d.fromDegrees(self.targetAngle), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
+            self.odometry.update(Rotation2d(self.targetRad), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putData(self.field)
         
