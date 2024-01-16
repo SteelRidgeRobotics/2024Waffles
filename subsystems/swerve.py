@@ -47,7 +47,7 @@ class SwerveModule(Subsystem):
         self.directionMotor.configMotionAcceleration(DirectionMotor.kCruiseAccel, Motor.kTimeoutMs)
 
         #self.directionMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
-        self.directionMotor.setInverted(False)
+        self.directionMotor.setInverted(True)
         self.directionMotor.setNeutralMode(NeutralMode.Brake)
 
         self.driveMotor = TalonFX(driveMotorControllerID)
@@ -101,7 +101,7 @@ class SwerveModule(Subsystem):
         if optimize:
             desiredState = SwerveModuleState.optimize(desiredState, currentState.angle)
 
-        self.driveMotor.set(ControlMode.Velocity, desiredState.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio)
+        self.driveMotor.set(ControlMode.Velocity, desiredState.speed / (math.pi*Larry.kWheelSize) * 10 * Motor.kGearRatio)
         self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(desiredState.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio))
 
         self.changeDirection(desiredState.angle)
@@ -206,7 +206,7 @@ class Swerve(Subsystem):
 
         if fieldRelative:
             if RobotBase.isReal():
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, -self.getAngle()))
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
             else:
                 states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, Rotation2d.fromDegrees(self.targetRad)))
         else:
@@ -215,8 +215,6 @@ class Swerve(Subsystem):
         desatStates = self.kinematics.desaturateWheelSpeeds(states, Larry.kMaxSpeed)
 
         self.chassisSpeed = chassisSpeed
-
-        SmartDashboard.putNumberArray("desatedStates", [desatStates[0].angle.degrees(), desatStates[1].angle.degrees(), desatStates[2].angle.degrees(), desatStates[3].angle.degrees()])
 
         self.setModuleStates(desatStates)
         
@@ -251,5 +249,4 @@ class Swerve(Subsystem):
             self.odometry.update(Rotation2d(self.targetRad), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putData(self.field)
-        SmartDashboard.putNumber("ANGLE", self.getAngle().degrees())
         
