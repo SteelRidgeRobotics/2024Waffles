@@ -92,21 +92,19 @@ class SwerveModule(Subsystem):
                 (self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
                 self.getAngle()
             )
-    
-    def periodic(self) -> None:
-        pass
         
     def simulationPeriodic(self) -> None:
         self.simDrivePos += (self.driveMotor.getSelectedSensorVelocity() / 10) * (1 / Motor.kGearRatio) * (Larry.kWheelSize * math.pi)
 
-    def setDesiredState(self, desiredState: SwerveModuleState) -> None:
+    def setDesiredState(self, desiredState: SwerveModuleState, optimize=True) -> None:
         currentState = self.getState()
-        state = SwerveModuleState.optimize(desiredState, currentState.angle)
+        if optimize:
+            desiredState = SwerveModuleState.optimize(desiredState, currentState.angle)
 
-        self.driveMotor.set(ControlMode.Velocity, state.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio)
-        self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(state.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio))
+        self.driveMotor.set(ControlMode.Velocity, desiredState.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio)
+        self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(desiredState.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio))
 
-        self.changeDirection(state.angle)
+        self.changeDirection(desiredState.angle)
 
     def changeDirection(self, rotation: Rotation2d) -> None:
         angleDiff = rotation.degrees() - self.getAngle().degrees()
@@ -225,13 +223,13 @@ class Swerve(Subsystem):
     def getChassisSpeeds(self) -> ChassisSpeeds:
         return self.chassisSpeed
 
-    def setModuleStates(self, moduleStates: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
+    def setModuleStates(self, moduleStates: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState], optimizeAngle=True) -> None:
         desatStates = self.kinematics.desaturateWheelSpeeds(moduleStates, Larry.kMaxSpeed)
 
-        self.leftFront.setDesiredState(desatStates[0])
-        self.leftRear.setDesiredState(desatStates[1])
-        self.rightFront.setDesiredState(desatStates[2])
-        self.rightRear.setDesiredState(desatStates[3])
+        self.leftFront.setDesiredState(desatStates[0], optimize=optimizeAngle)
+        self.leftRear.setDesiredState(desatStates[1], optimize=optimizeAngle)
+        self.rightFront.setDesiredState(desatStates[2], optimize=optimizeAngle)
+        self.rightRear.setDesiredState(desatStates[3], optimize=optimizeAngle)
 
     def getPose(self) -> Pose2d:
         return self.odometry.getPose()

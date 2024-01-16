@@ -1,5 +1,6 @@
 from commands2 import *
 from constants import *
+from commands.debug import *
 from commands.drive import DriveByController
 from pathplannerlib.auto import PathPlannerAuto
 from subsystems.swerve import Swerve, SwerveModule
@@ -38,3 +39,5 @@ class EvilLarry(TimedCommandRobot):
 
     def teleopPeriodic(self) -> None:
         self.swerve.setDefaultCommand(DriveByController(self.swerve, self.driverController))
+        #self.swerve.setDefaultCommand(DebugDirectionMotors(self.swerve, self.driverController))
+        #self.swerve.setDefaultCommand(DebugDriveMotors(self.swerve, self.driverController))
