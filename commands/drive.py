@@ -1,6 +1,6 @@
 from commands2 import Command
 from constants import *
-from frc6343.controller.deadband import deadband
+from math import fabs
 from subsystems.swerve import Swerve
 from wpilib import SmartDashboard, XboxController
 from wpimath.filter import SlewRateLimiter
@@ -38,3 +38,16 @@ class DriveByController(Command):
     
     def isFinished(self) -> bool:
         return False
+    
+def deadband(value: float, band: float):
+    """
+    value is the value we want to deadband
+    the band is the abs value the value can not be less than
+    """
+    # this makes sure that joystick drifting is not an issue.
+    # It takes the small values and forces it to be zero if smaller than the 
+    # band value
+    if fabs(value) <= band:
+        return 0
+    else:
+        return value

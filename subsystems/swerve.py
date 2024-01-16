@@ -178,6 +178,8 @@ class Swerve(Subsystem):
             lambda: self.shouldFlipAutoPath(),
             self
         )
+        
+        self.navX.reset()
 
         CommandScheduler.getInstance().registerSubsystem(self)
 
@@ -193,6 +195,7 @@ class Swerve(Subsystem):
         self.leftRear.resetSensorPostition()
         self.rightFront.resetSensorPostition()
         self.rightRear.resetSensorPostition()
+        self.navX.reset()
 
     def getAngle(self) -> Rotation2d:
         return self.navX.getRotation2d()
@@ -203,7 +206,7 @@ class Swerve(Subsystem):
 
         if fieldRelative:
             if RobotBase.isReal():
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, -self.getAngle()))
             else:
                 states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, Rotation2d.fromDegrees(self.targetRad)))
         else:
@@ -248,4 +251,5 @@ class Swerve(Subsystem):
             self.odometry.update(Rotation2d(self.targetRad), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putData(self.field)
+        SmartDashboard.putNumber("ANGLE", self.getAngle().degrees())
         
