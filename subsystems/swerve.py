@@ -101,8 +101,7 @@ class SwerveModule(Subsystem):
         if optimize:
             desiredState = SwerveModuleState.optimize(desiredState, currentState.angle)
 
-        self.driveMotor.set(ControlMode.Velocity, desiredState.speed / (math.pi*Larry.kWheelSize) * 10 * Motor.kGearRatio)
-        self.driveMotor.getSimCollection().setIntegratedSensorVelocity(int(desiredState.speed / (math.pi*Larry.kWheelSize) / 10 * Motor.kGearRatio))
+        self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed)
 
         self.changeDirection(desiredState.angle)
 
