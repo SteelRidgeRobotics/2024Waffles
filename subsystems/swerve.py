@@ -45,6 +45,8 @@ class SwerveModule(Subsystem):
         self.directionMotor.config_kF(Motor.kSlotIdx, DirectionMotor.kF, Motor.kTimeoutMs)
         self.directionMotor.configMotionCruiseVelocity(DirectionMotor.kCruiseVel, Motor.kTimeoutMs)
         self.directionMotor.configMotionAcceleration(DirectionMotor.kCruiseAccel, Motor.kTimeoutMs)
+        
+        self.directionMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
 
         #self.directionMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
         self.directionMotor.setInverted(True)
@@ -69,14 +71,13 @@ class SwerveModule(Subsystem):
     def getAngle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048))
     
-    def resetSensorPostition(self) -> None:
-        
-        if RobotBase.isReal():
-            self.directionMotor.setSelectedSensorPosition(Motor.kGearRatio * (self.turningEncoder.getAbsolutePosition() * (2048 / 360)), Motor.kPIDLoopIdx, Motor.kTimeoutMs)
-            self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(Motor.kGearRatio * (self.turningEncoder.getAbsolutePosition() * (2048 / 360))))
-        else:
-            self.directionMotor.setSelectedSensorPosition(0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
-            self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(0))
+    def resetSensorPosition(self) -> None:
+        pos = -self.turningEncoder.getAbsolutePosition() * (2048 / 360)
+        self.directionMotor.setSelectedSensorPosition(Motor.kGearRatio * pos, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
+            
+    def resetPositions(self) -> None:
+        self.driveMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
+        self.directionMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
 
     def getState(self) -> SwerveModuleState:
         # units/100ms -> m/s
@@ -144,7 +145,7 @@ class Swerve(Subsystem):
     
     field = Field2d()
     
-    def __init__(self, leftFront: SwerveModule, leftRear: SwerveModule, rightFront: SwerveModule, rightRear: SwerveModule) -> None:
+    def __init__(self, leftFront: SwerveModule, leftRear: SwerveModule, rightFront: SwerveModule, rightRear: SwerveModule):
         super().__init__()
 
         self.leftFront = leftFront
@@ -248,4 +249,19 @@ class Swerve(Subsystem):
             self.odometry.update(Rotation2d(self.targetRad), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putData(self.field)
+        
+    def initialize(self) -> None:
+        self.navX.reset()
+        
+        self.leftFront.resetPositions()
+        self.leftRear.resetPositions()
+        self.rightFront.resetPositions()
+        self.rightRear.resetPositions()
+        
+        self.leftFront.resetSensorPosition()
+        self.leftRear.resetSensorPosition()
+        self.rightFront.resetSensorPosition()
+        self.rightRear.resetSensorPosition()
+        
+        
         
