@@ -25,7 +25,7 @@ class SwerveModule(Subsystem):
     The drive motor spins the wheel to move.
     """
 
-    def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float) -> None:
+    def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float, driveConstant: DriveConstants=DriveConstants()) -> None:
         super().__init__()
 
         self.moduleName = moduleName
@@ -55,14 +55,18 @@ class SwerveModule(Subsystem):
         self.driveMotor = TalonFX(driveMotorControllerID)
         self.driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
         self.driveMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
+        
+        self.arbFF = driveConstant.kArbFF
 
-        self.driveMotor.config_kP(Motor.kSlotIdx, DriveMotor.kP, Motor.kTimeoutMs)
-        self.driveMotor.config_kI(Motor.kSlotIdx, DriveMotor.kI, Motor.kTimeoutMs)
-        self.driveMotor.config_kD(Motor.kSlotIdx, DriveMotor.kD, Motor.kTimeoutMs)
+        self.driveMotor.config_kP(Motor.kSlotIdx, driveConstant.kP, Motor.kTimeoutMs)
+        self.driveMotor.config_kI(Motor.kSlotIdx, driveConstant.kI, Motor.kTimeoutMs)
+        self.driveMotor.config_kD(Motor.kSlotIdx, driveConstant.kD, Motor.kTimeoutMs)
 
         self.driveMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
         self.driveMotor.setInverted(False)
         self.driveMotor.setNeutralMode(NeutralMode.Brake)
+        
+        self.reverse = False
         
         self.simDrivePos = 0
 
@@ -101,8 +105,15 @@ class SwerveModule(Subsystem):
         currentState = self.getState()
         if optimize:
             desiredState = SwerveModuleState.optimize(desiredState, currentState.angle)
+        
+        if desiredState.speed < 0:
+            arbFF = -self.arbFF
+        else:
+            arbFF = self.arbFF
+            
+        self.driveMotor.setInverted(self.reverse)
 
-        self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed)
+        self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed, DemandType.ArbitraryFeedForward, arbFF)
 
         self.changeDirection(desiredState.angle)
 
