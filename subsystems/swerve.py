@@ -5,12 +5,12 @@ from commands2 import Command, CommandScheduler, Subsystem
 from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
 from pathplannerlib.config import (HolonomicPathFollowerConfig, PIDConstants,
                                    ReplanningConfig)
-from phoenix5 import *
-from phoenix6 import *
 from phoenix6.configs.cancoder_configs import *
 from phoenix6.configs.talon_fx_configs import *
 from phoenix6.configs.config_groups import MagnetSensorConfigs
+from phoenix6.controls import *
 from phoenix6.hardware import CANcoder, TalonFX
+from phoenix6.controls.motion_magic_voltage import MotionMagicVoltage
 from phoenix6.signals import *
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpimath.controller import PIDController
@@ -47,6 +47,8 @@ class SwerveModule(Subsystem):
         direction_config.slot0 = Slot0Configs().with_k_v(DirectionMotor.kF).with_k_p(DirectionMotor.kP).with_k_i(DirectionMotor.kI).with_k_d(DirectionMotor.kD)
         self.directionMotor.configurator.apply(direction_config)
         
+        self.motionMagic = MotionMagicVoltage(0)
+        
         self.directionMotor.set_position(0.0)
 
         self.driveMotor = TalonFX(driveMotorControllerID)
@@ -62,20 +64,20 @@ class SwerveModule(Subsystem):
         CommandScheduler.getInstance().registerSubsystem(self)
 
     def getAngle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048))
+        return Rotation2d.fromDegrees(self.directionMotor.get_rotor_position().value / Motor.kGearRatio * 360)
     
     def resetSensorPosition(self) -> None:
-        pos = -self.turningEncoder.getAbsolutePosition() * (2048 / 360)
-        self.directionMotor.setSelectedSensorPosition(Motor.kGearRatio * pos, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
+        pos = -self.turningEncoder.get_absolute_position().value / 360
+        self.directionMotor.set_position(Motor.kGearRatio * pos)
             
     def resetPositions(self) -> None:
-        self.driveMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
-        self.directionMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
+        self.driveMotor.set_position(0.0)
+        self.directionMotor.set_position(0.0)
 
     def getState(self) -> SwerveModuleState:
         # units/100ms -> m/s
-        speed = self.driveMotor.getSelectedSensorVelocity() / Motor.kGearRatio * 10 * Larry.kWheelSize * math.pi
-        rotation = self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio * (360/2048)
+        speed = self.driveMotor.get_rotor_velocity().value / Motor.kGearRatio * Larry.kWheelSize * math.pi
+        rotation = self.directionMotor.get_rotor_position().value / Motor.kGearRatio * 360
         return SwerveModuleState(speed, Rotation2d.fromDegrees(rotation))
     
     def getPosition(self) -> SwerveModulePosition:
@@ -83,12 +85,12 @@ class SwerveModule(Subsystem):
             return SwerveModulePosition(self.simDrivePos, self.getAngle())
         else:
             return SwerveModulePosition(
-                (self.driveMotor.getSelectedSensorPosition() / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
+                (self.driveMotor.get_rotor_position().value / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
                 self.getAngle()
             )
         
     def simulationPeriodic(self) -> None:
-        self.simDrivePos += (self.driveMotor.getSelectedSensorVelocity() / 10) * (1 / Motor.kGearRatio) * (Larry.kWheelSize * math.pi)
+        self.simDrivePos += self.driveMotor.get_rotor_velocity().value * (1 / Motor.kGearRatio) * (Larry.kWheelSize * math.pi)
 
     def setDesiredState(self, desiredState: SwerveModuleState, optimize=True) -> None:
         currentState = self.getState()
@@ -99,8 +101,11 @@ class SwerveModule(Subsystem):
             arbFF = -self.arbFF
         else:
             arbFF = self.arbFF
+            
+        
 
-        self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed, DemandType.ArbitraryFeedForward, arbFF)
+        #self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed, DemandType.ArbitraryFeedForward, arbFF)
+        self.driveMotor.set_control(DutyCycleOut(desiredState.speed / Larry.kMaxSpeed))
 
         self.changeDirection(desiredState.angle)
 
@@ -114,21 +119,22 @@ class SwerveModule(Subsystem):
                 targetAngleDist -= 360
             targetAngleDist = abs(targetAngleDist)
 
-        changeInTalonUnits = targetAngleDist / (360/2048)
+        changeInRots = targetAngleDist / 360
 
         if angleDiff < 0 or angleDiff >= 360:
             angleDiff %= 360
         
-        finalPos = self.directionMotor.getSelectedSensorPosition() / Motor.kGearRatio
+        finalPos = self.directionMotor.get_rotor_position().value / Motor.kGearRatio
         if angleDiff > 180:
             # Move CCW
-            finalPos -= changeInTalonUnits
+            finalPos -= changeInRots
         else:
             # Move CW
-            finalPos += changeInTalonUnits
+            finalPos += changeInRots
 
-        self.directionMotor.set(TalonFXControlMode.MotionMagic, finalPos * Motor.kGearRatio)
-        self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(finalPos * Motor.kGearRatio))
+        self.motionMagic.slot = 0
+        self.directionMotor.set_control(self.motionMagic.with_position(finalPos))
+        self.directionMotor.sim_state.add_rotor_position(changeInRots)
 
 """"""
 
