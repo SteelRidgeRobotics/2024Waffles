@@ -163,20 +163,21 @@ class Swerve(Subsystem):
 
         self.chassisSpeed = ChassisSpeeds()
         self.targetRad = 0
-
+        
+        # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
         AutoBuilder.configureHolonomic(
-            lambda: self.getPose(),
+            self.getPose,
             lambda pose: self.resetOdometry(pose),
-            lambda: self.getChassisSpeeds(),
+            self.getChassisSpeeds,
             lambda chassisSpeed: self.drive(chassisSpeed, fieldRelative=False),
             HolonomicPathFollowerConfig(
                 PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
                 PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
-                Larry.kMaxSpeed,
+                Larry.kMaxSpeed / 4,
                 Larry.kDriveBaseRadius,
                 ReplanningConfig(enableInitialReplanning=False)
             ),
-            lambda: self.shouldFlipAutoPath(),
+            self.shouldFlipAutoPath,
             self
         )
         
@@ -192,10 +193,10 @@ class Swerve(Subsystem):
         self.runOnce(lambda: auto)
 
     def initialize(self) -> None:
-        self.leftFront.resetSensorPostition()
-        self.leftRear.resetSensorPostition()
-        self.rightFront.resetSensorPostition()
-        self.rightRear.resetSensorPostition()
+        self.leftFront.resetSensorPosition()
+        self.leftRear.resetSensorPosition()
+        self.rightFront.resetSensorPosition()
+        self.rightRear.resetSensorPosition()
         self.navX.reset()
 
     def getAngle(self) -> Rotation2d:
@@ -269,6 +270,4 @@ class Swerve(Subsystem):
         self.leftRear.resetSensorPosition()
         self.rightFront.resetSensorPosition()
         self.rightRear.resetSensorPosition()
-        
-        
         
