@@ -6,7 +6,12 @@ from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
 from pathplannerlib.config import (HolonomicPathFollowerConfig, PIDConstants,
                                    ReplanningConfig)
 from phoenix5 import *
-from phoenix5.sensors import CANCoder, SensorInitializationStrategy
+from phoenix6 import *
+from phoenix6.configs.cancoder_configs import *
+from phoenix6.configs.talon_fx_configs import *
+from phoenix6.configs.config_groups import MagnetSensorConfigs
+from phoenix6.hardware import CANcoder, TalonFX
+from phoenix6.signals import *
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpimath.controller import PIDController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
@@ -30,36 +35,27 @@ class SwerveModule(Subsystem):
 
         self.moduleName = moduleName
 
-        self.turningEncoder = CANCoder(CANCoderID)
-        self.turningEncoder.configSensorInitializationStrategy(SensorInitializationStrategy.BootToAbsolutePosition, Motor.kTimeoutMs)
-        self.turningEncoder.configSensorDirection(True, Motor.kTimeoutMs)
-        self.turningEncoder.configMagnetOffset(offset, Motor.kTimeoutMs)
+        self.turningEncoder = CANcoder(CANCoderID)
+        encoder_config = CANcoderConfiguration()
+        encoder_config.magnet_sensor = MagnetSensorConfigs().with_magnet_offset(offset).with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE)
+        self.turningEncoder.configurator.apply(encoder_config)
 
         self.directionMotor = TalonFX(directionMotorControllerID)
-        self.directionMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
-        self.directionMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
+        direction_config = TalonFXConfiguration()
+        direction_config.motor_output.with_inverted(InvertedValue.COUNTER_CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.BRAKE)
+        direction_config.motion_magic.with_motion_magic_cruise_velocity(DirectionMotor.kCruiseVel).with_motion_magic_acceleration(DirectionMotor.kCruiseAccel)
+        direction_config.slot0 = Slot0Configs().with_k_v(DirectionMotor.kF).with_k_p(DirectionMotor.kP).with_k_i(DirectionMotor.kI).with_k_d(DirectionMotor.kD)
+        self.directionMotor.configurator.apply(direction_config)
         
-        self.directionMotor.config_kP(Motor.kSlotIdx, DirectionMotor.kP, Motor.kTimeoutMs)
-        self.directionMotor.config_kI(Motor.kSlotIdx, DirectionMotor.kI, Motor.kTimeoutMs)
-        self.directionMotor.config_kD(Motor.kSlotIdx, DirectionMotor.kD, Motor.kTimeoutMs)
-        self.directionMotor.config_kF(Motor.kSlotIdx, DirectionMotor.kF, Motor.kTimeoutMs)
-        self.directionMotor.configMotionCruiseVelocity(DirectionMotor.kCruiseVel, Motor.kTimeoutMs)
-        self.directionMotor.configMotionAcceleration(DirectionMotor.kCruiseAccel, Motor.kTimeoutMs)
-        
-        self.directionMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
-
-        self.directionMotor.setInverted(True)
-        self.directionMotor.setNeutralMode(NeutralMode.Brake)
+        self.directionMotor.set_position(0.0)
 
         self.driveMotor = TalonFX(driveMotorControllerID)
-        self.driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
-        self.driveMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
+        drive_config = TalonFXConfiguration()
+        drive_config.motor_output.with_inverted(InvertedValue.CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.BRAKE)
+        drive_config.slot0 = Slot0Configs().with_k_v(DriveMotor.karbFF)
+        self.driveMotor.configurator.apply(drive_config)
         
         self.arbFF = DriveMotor.karbFF
-
-        self.driveMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
-        self.driveMotor.setInverted(False)
-        self.driveMotor.setNeutralMode(NeutralMode.Brake)
         
         self.simDrivePos = 0
 
