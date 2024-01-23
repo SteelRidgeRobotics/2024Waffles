@@ -6,7 +6,7 @@ from pathplannerlib.auto import PathPlannerAuto
 from subsystems.swerve import Swerve, SwerveModule
 from wpilib import SendableChooser, SmartDashboard, XboxController
 
-class EvilLarry(TimedCommandRobot):
+class Waffles(TimedCommandRobot):
     driverController = XboxController(DriverController.port)
 
     autoChooser = SendableChooser()
