@@ -31,6 +31,9 @@ class DriveByController(Command):
         translationX = self.transYSlew.calculate(deadband(translationX, DriverController.deadband) ** 3)
         rotation = self.rotSlew.calculate(deadband(rotation, DriverController.deadband) ** 3)
 
+        if self.controller.getBButtonPressed():
+            self.swerve.hockeyStop()
+            return
         self.swerve.drive(ChassisSpeeds(translationX * Larry.kMaxSpeed, translationY * Larry.kMaxSpeed, rotation * Larry.kMaxRotRate), fieldRelative=True)
     
     def end(self, interrupted: bool) -> None:

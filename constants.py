@@ -27,20 +27,8 @@ class CANIDs:
     LEFT_REAR = 11
     RIGHT_REAR = 13
     
-class DriveConstants:
-    
-    def __init__(self, arbFF: float=0.0, F: float=0.0, P: float=0.0, I: float=0.0, IZone: float=0.0, D: float=0.0) -> None:
-        self.kArbFF = arbFF
-        self.kF = F
-        self.kP = P
-        self.kI = I
-        self.kIZone = IZone
-        self.kD = D
-        
-leftFrontDriveConstants = DriveConstants(arbFF=0.055)
-rightFrontDriveConstants = DriveConstants(arbFF=0.056)
-leftRearDriveConstants = DriveConstants(arbFF=0.054)
-rightRearDriveConstants = DriveConstants(arbFF=0.055)
+class DriveMotor:
+    karbFF = 0.054
 
 class CANOffsets:
     kLeftFrontOffset = 350.5078125

@@ -25,7 +25,7 @@ class SwerveModule(Subsystem):
     The drive motor spins the wheel to move.
     """
 
-    def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float, driveConstant: DriveConstants=DriveConstants()) -> None:
+    def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float) -> None:
         super().__init__()
 
         self.moduleName = moduleName
@@ -48,7 +48,6 @@ class SwerveModule(Subsystem):
         
         self.directionMotor.setSelectedSensorPosition(0.0, Motor.kPIDLoopIdx, Motor.kTimeoutMs)
 
-        #self.directionMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
         self.directionMotor.setInverted(True)
         self.directionMotor.setNeutralMode(NeutralMode.Brake)
 
@@ -56,17 +55,11 @@ class SwerveModule(Subsystem):
         self.driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0, Motor.kTimeoutMs)
         self.driveMotor.selectProfileSlot(Motor.kSlotIdx, Motor.kPIDLoopIdx)
         
-        self.arbFF = driveConstant.kArbFF
-
-        self.driveMotor.config_kP(Motor.kSlotIdx, driveConstant.kP, Motor.kTimeoutMs)
-        self.driveMotor.config_kI(Motor.kSlotIdx, driveConstant.kI, Motor.kTimeoutMs)
-        self.driveMotor.config_kD(Motor.kSlotIdx, driveConstant.kD, Motor.kTimeoutMs)
+        self.arbFF = DriveMotor.karbFF
 
         self.driveMotor.configVoltageCompSaturation(Motor.kVoltCompensation, Motor.kTimeoutMs)
         self.driveMotor.setInverted(False)
         self.driveMotor.setNeutralMode(NeutralMode.Brake)
-        
-        self.reverse = False
         
         self.simDrivePos = 0
 
@@ -110,8 +103,6 @@ class SwerveModule(Subsystem):
             arbFF = -self.arbFF
         else:
             arbFF = self.arbFF
-            
-        self.driveMotor.setInverted(self.reverse)
 
         self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed, DemandType.ArbitraryFeedForward, arbFF)
 
@@ -142,7 +133,6 @@ class SwerveModule(Subsystem):
 
         self.directionMotor.set(TalonFXControlMode.MotionMagic, finalPos * Motor.kGearRatio)
         self.directionMotor.getSimCollection().setIntegratedSensorRawPosition(int(finalPos * Motor.kGearRatio))
-
 
 """"""
 
@@ -231,6 +221,12 @@ class Swerve(Subsystem):
         
         if not RobotBase.isReal():
             self.targetRad += chassisSpeed.omega / 50
+            
+    def hockeyStop(self) -> None:
+        self.leftFront.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(225)))
+        self.leftRear.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(-45)))
+        self.rightFront.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(135)))
+        self.rightRear.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(45)))
 
     def getChassisSpeeds(self) -> ChassisSpeeds:
         return self.chassisSpeed
