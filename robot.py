@@ -9,18 +9,21 @@ from wpilib import SendableChooser, SmartDashboard, XboxController
 class EvilLarry(TimedCommandRobot):
     driverController = XboxController(DriverController.port)
 
-    swerve = Swerve(
-        SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, CANOffsets.kLeftFrontOffset),
-        SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, CANOffsets.kLeftRearOffset),
-        SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, CANOffsets.kRightFrontOffset),
-        SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, CANOffsets.kRightRearOffset)
-    )
-
     autoChooser = SendableChooser()
 
     def __init__(self, period = 0.02) -> None:
         super().__init__(period)
-
+        
+    def robotInit(self) -> None:
+        super().robotInit()
+        
+        self.swerve = Swerve(
+            SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, CANOffsets.kLeftFrontOffset),
+            SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, CANOffsets.kLeftRearOffset),
+            SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, CANOffsets.kRightFrontOffset),
+            SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, CANOffsets.kRightRearOffset)
+        )
+        
         self.autoChooser.setDefaultOption("Failsafe (F2M)", PathPlannerAuto("FAILSAFE"))
         self.autoChooser.addOption("B2M", PathPlannerAuto("Backward 2 Meters"))
         self.autoChooser.addOption("R2M", PathPlannerAuto("Right 2 Meters"))
