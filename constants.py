@@ -31,19 +31,19 @@ class DriveMotor:
     karbFF = 0.054
 
 class CANOffsets:
-    kLeftFrontOffset = 350.5078125
+    kLeftFrontOffset = 0
     kRightFrontOffset = 324.755859375
     kLeftRearOffset = 179.12109375
     kRightRearOffset = 28.828125
 
 class DirectionMotor:
-    kP = 0.6
-    kI = 0.004
-    kD = 2
+    kP = 14.414076246334309
+    kI = 8.007820136852395
+    kD = 0.004003910068426197
     kF = 0.05282272
     kIZone = 150
-    kCruiseVel = 21134.0
-    kCruiseAccel = 21134.0 
+    kCruiseVel = 10.3193359
+    kCruiseAccel = 10.3193359
 
 class Motor:
     kTimeoutMs = 20

@@ -35,15 +35,15 @@ class SwerveModule(Subsystem):
 
         self.moduleName = moduleName
 
-        self.turningEncoder = CANcoder(CANCoderID)
+        self.turningEncoder = CANcoder(CANCoderID, "rio")
         encoder_config = CANcoderConfiguration()
-        encoder_config.magnet_sensor = MagnetSensorConfigs().with_magnet_offset(offset).with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE)
+        encoder_config.magnet_sensor = MagnetSensorConfigs().with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE)
         self.turningEncoder.configurator.apply(encoder_config)
 
-        self.directionMotor = TalonFX(directionMotorControllerID)
+        self.directionMotor = TalonFX(directionMotorControllerID, "rio")
         direction_config = TalonFXConfiguration()
-        direction_config.motor_output.with_inverted(InvertedValue.COUNTER_CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.BRAKE)
-        direction_config.motion_magic.with_motion_magic_cruise_velocity(DirectionMotor.kCruiseVel).with_motion_magic_acceleration(DirectionMotor.kCruiseAccel)
+        direction_config.motor_output.with_inverted(InvertedValue.COUNTER_CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.COAST)
+        direction_config.motion_magic.with_motion_magic_cruise_velocity(DirectionMotor.kCruiseVel).with_motion_magic_acceleration(DirectionMotor.kCruiseAccel).with_motion_magic_jerk(1600)
         direction_config.slot0 = Slot0Configs().with_k_v(DirectionMotor.kF).with_k_p(DirectionMotor.kP).with_k_i(DirectionMotor.kI).with_k_d(DirectionMotor.kD)
         self.directionMotor.configurator.apply(direction_config)
         
@@ -51,10 +51,10 @@ class SwerveModule(Subsystem):
         
         self.directionMotor.set_position(0.0)
 
-        self.driveMotor = TalonFX(driveMotorControllerID)
+        self.driveMotor = TalonFX(driveMotorControllerID, "rio")
         drive_config = TalonFXConfiguration()
         drive_config.motor_output.with_inverted(InvertedValue.CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.BRAKE)
-        drive_config.slot0 = Slot0Configs().with_k_v(DriveMotor.karbFF)
+        drive_config.slot0 = Slot0Configs()
         self.driveMotor.configurator.apply(drive_config)
         
         self.arbFF = DriveMotor.karbFF
@@ -67,9 +67,9 @@ class SwerveModule(Subsystem):
         return Rotation2d.fromDegrees(self.directionMotor.get_rotor_position().value / Motor.kGearRatio * 360)
     
     def resetSensorPosition(self) -> None:
-        pos = -self.turningEncoder.get_absolute_position().value / 360
-        self.directionMotor.set_position(Motor.kGearRatio * pos)
-            
+        pos = -self.turningEncoder.get_absolute_position().value
+        self.directionMotor.set_position(pos * Motor.kGearRatio)
+        
     def resetPositions(self) -> None:
         self.driveMotor.set_position(0.0)
         self.directionMotor.set_position(0.0)
@@ -91,6 +91,9 @@ class SwerveModule(Subsystem):
         
     def simulationPeriodic(self) -> None:
         self.simDrivePos += self.driveMotor.get_rotor_velocity().value * (1 / Motor.kGearRatio) * (Larry.kWheelSize * math.pi)
+        
+    def periodic(self) -> None:
+        SmartDashboard.putNumber(self.moduleName + "encoderRot", self.turningEncoder.get_absolute_position().value)
 
     def setDesiredState(self, desiredState: SwerveModuleState, optimize=True) -> None:
         currentState = self.getState()
@@ -101,10 +104,9 @@ class SwerveModule(Subsystem):
             arbFF = -self.arbFF
         else:
             arbFF = self.arbFF
-            
-        
 
         #self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed, DemandType.ArbitraryFeedForward, arbFF)
+        SmartDashboard.putNumber(self.moduleName + "DutyCycleOut", desiredState.speed / Larry.kMaxSpeed)
         self.driveMotor.set_control(DutyCycleOut(desiredState.speed / Larry.kMaxSpeed))
 
         self.changeDirection(desiredState.angle)
@@ -133,7 +135,7 @@ class SwerveModule(Subsystem):
             finalPos += changeInRots
 
         self.motionMagic.slot = 0
-        self.directionMotor.set_control(self.motionMagic.with_position(finalPos))
+        self.directionMotor.set_control(self.motionMagic.with_position(finalPos * Motor.kGearRatio))
         self.directionMotor.sim_state.add_rotor_position(changeInRots)
 
 """"""
@@ -168,9 +170,9 @@ class Swerve(Subsystem):
         
         # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
         AutoBuilder.configureHolonomic(
-            self.getPose,
+            lambda: self.getPose(),
             lambda pose: self.resetOdometry(pose),
-            self.getChassisSpeeds,
+            lambda: self.getChassisSpeeds(),
             lambda chassisSpeed: self.drive(chassisSpeed, fieldRelative=False),
             HolonomicPathFollowerConfig(
                 PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
@@ -179,7 +181,7 @@ class Swerve(Subsystem):
                 Larry.kDriveBaseRadius,
                 ReplanningConfig(enableInitialReplanning=False)
             ),
-            self.shouldFlipAutoPath,
+            lambda: self.shouldFlipAutoPath(),
             self
         )
         
