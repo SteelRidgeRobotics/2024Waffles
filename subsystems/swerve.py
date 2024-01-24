@@ -40,31 +40,51 @@ class SwerveModule(Subsystem):
         encoder_config.magnet_sensor = MagnetSensorConfigs().with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE)
         self.turningEncoder.configurator.apply(encoder_config)
 
+        # Direction Motor, uses MotionMagicTorqueCurrentFOC
         self.directionMotor = TalonFX(directionMotorControllerID, "rio")
         direction_config = TalonFXConfiguration()
         direction_config.motor_output.with_inverted(InvertedValue.COUNTER_CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.COAST)
-        direction_config.motion_magic.with_motion_magic_cruise_velocity(DirectionMotor.kCruiseVel).with_motion_magic_acceleration(DirectionMotor.kCruiseAccel).with_motion_magic_jerk(1600)
-        direction_config.slot0 = Slot0Configs().with_k_v(DirectionMotor.kF).with_k_p(DirectionMotor.kP).with_k_i(DirectionMotor.kI).with_k_d(DirectionMotor.kD)
+        
+        # These are used for angle optimizing, now built in with Phoenix 6 :partying_face:
+        direction_config.closed_loop_general.continuous_wrap = True
+        direction_config.feedback.sensor_to_mechanism_ratio = Motor.kGearRatio
+        
+        direction_config.motion_magic.motion_magic_acceleration = DirectionMotor.kCruiseAccel
+        direction_config.motion_magic.motion_magic_cruise_velocity = DirectionMotor.kCruiseVel
+        direction_slot0 = Slot0Configs() # See drive motor config below for explanation for each of these!!!
+        direction_slot0.k_s = 0
+        direction_slot0.k_a = 1
+        direction_slot0.k_p = 0
+        direction_slot0.k_i = 0
+        direction_slot0.k_d = 0
+        
+        direction_config.slot0 = direction_slot0
         self.directionMotor.configurator.apply(direction_config)
-        
-        self.motionMagic = MotionMagicVoltage(0)
-        
-        self.directionMotor.set_position(0.0)
 
+        # Drive Motor, uses VelocityTorqueCurrentFOC
         self.driveMotor = TalonFX(driveMotorControllerID, "rio")
         drive_config = TalonFXConfiguration()
         drive_config.motor_output.with_inverted(InvertedValue.CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.BRAKE)
-        drive_config.slot0 = Slot0Configs()
+        
+        drive_slot0 = Slot0Configs()
+        drive_slot0.k_s = 0 # Amount of volts to overcome friction (just below the required voltage to start moving)
+        drive_slot0.k_a = 1 # Yeah uh we don't know yet-
+        
+        drive_slot0.k_v = 0 # Voltage needed to rotate the wheel at 1 rps (i think), e.g. 0.11 = 0.11V to move the wheel at 1 rps 
+        # NOTE: MAY BE UNEEDED DUE TO USING TORQUECURRENTFOC, SEE 
+        # https://v6.docs.ctr-electronics.com/en/latest/docs/api-reference/device-specific/talonfx/closed-loop-requests.html#choosing-output-type
+        
+        drive_slot0.k_p = 0
+        drive_slot0.k_i = 0
+        drive_slot0.k_d = 0
+        
+        drive_config.slot0 = drive_slot0
         self.driveMotor.configurator.apply(drive_config)
-        
-        self.arbFF = DriveMotor.karbFF
-        
-        self.simDrivePos = 0
 
         CommandScheduler.getInstance().registerSubsystem(self)
 
     def getAngle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(self.directionMotor.get_rotor_position().value / Motor.kGearRatio * 360)
+        return Rotation2d.fromDegrees(rotsToDegs(self.directionMotor.get_rotor_position().value))
     
     def resetSensorPosition(self) -> None:
         pos = -self.turningEncoder.get_absolute_position().value
@@ -75,68 +95,16 @@ class SwerveModule(Subsystem):
         self.directionMotor.set_position(0.0)
 
     def getState(self) -> SwerveModuleState:
-        # units/100ms -> m/s
-        speed = self.driveMotor.get_rotor_velocity().value / Motor.kGearRatio * Larry.kWheelSize * math.pi
-        rotation = self.directionMotor.get_rotor_position().value / Motor.kGearRatio * 360
-        return SwerveModuleState(speed, Rotation2d.fromDegrees(rotation))
+        return SwerveModuleState(rotsToMeters(self.driveMotor.get_rotor_velocity().value), self.getAngle())
     
     def getPosition(self) -> SwerveModulePosition:
-        if not RobotBase.isReal():
-            return SwerveModulePosition(self.simDrivePos, self.getAngle())
-        else:
-            return SwerveModulePosition(
-                (self.driveMotor.get_rotor_position().value / Motor.kGearRatio) * (Larry.kWheelSize*math.pi),
-                self.getAngle()
-            )
+        return SwerveModulePosition(rotsToMeters(self.driveMotor.get_rotor_position().value), self.getAngle())
+
+    def setDesiredState(self, desiredState: SwerveModuleState) -> None:
+        desiredState = SwerveModuleState.optimize(desiredState, self.getState().angle)
         
-    def simulationPeriodic(self) -> None:
-        self.simDrivePos += self.driveMotor.get_rotor_velocity().value * (1 / Motor.kGearRatio) * (Larry.kWheelSize * math.pi)
-        
-    def periodic(self) -> None:
-        SmartDashboard.putNumber(self.moduleName + "encoderRot", self.turningEncoder.get_absolute_position().value)
-
-    def setDesiredState(self, desiredState: SwerveModuleState, optimize=True) -> None:
-        currentState = self.getState()
-        if optimize:
-            desiredState = SwerveModuleState.optimize(desiredState, currentState.angle)
-        
-        if desiredState.speed < 0:
-            arbFF = -self.arbFF
-        else:
-            arbFF = self.arbFF
-
-        #self.driveMotor.set(ControlMode.PercentOutput, desiredState.speed / Larry.kMaxSpeed, DemandType.ArbitraryFeedForward, arbFF)
-        SmartDashboard.putNumber(self.moduleName + "DutyCycleOut", desiredState.speed / Larry.kMaxSpeed)
-        self.driveMotor.set_control(DutyCycleOut(desiredState.speed / Larry.kMaxSpeed))
-
-        self.changeDirection(desiredState.angle)
-
-    def changeDirection(self, rotation: Rotation2d) -> None:
-        angleDiff = rotation.degrees() - self.getAngle().degrees()
-        targetAngleDist = math.fabs(angleDiff)
-
-        # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
-        if targetAngleDist > 180:
-            while targetAngleDist > 180:
-                targetAngleDist -= 360
-            targetAngleDist = abs(targetAngleDist)
-
-        changeInRots = targetAngleDist / 360
-
-        if angleDiff < 0 or angleDiff >= 360:
-            angleDiff %= 360
-        
-        finalPos = self.directionMotor.get_rotor_position().value / Motor.kGearRatio
-        if angleDiff > 180:
-            # Move CCW
-            finalPos -= changeInRots
-        else:
-            # Move CW
-            finalPos += changeInRots
-
-        self.motionMagic.slot = 0
-        self.directionMotor.set_control(self.motionMagic.with_position(finalPos * Motor.kGearRatio))
-        self.directionMotor.sim_state.add_rotor_position(changeInRots)
+        self.driveMotor.set_control(VelocityTorqueCurrentFOC(metersToRots(desiredState.speed)))
+        self.directionMotor.set_control(MotionMagicTorqueCurrentFOC(degsToRots(desiredState.angle.degrees())))
 
 """"""
 
@@ -239,10 +207,10 @@ class Swerve(Subsystem):
     def setModuleStates(self, moduleStates: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState], optimizeAngle=True) -> None:
         desatStates = self.kinematics.desaturateWheelSpeeds(moduleStates, Larry.kMaxSpeed)
 
-        self.leftFront.setDesiredState(desatStates[0], optimize=optimizeAngle)
-        self.leftRear.setDesiredState(desatStates[1], optimize=optimizeAngle)
-        self.rightFront.setDesiredState(desatStates[2], optimize=optimizeAngle)
-        self.rightRear.setDesiredState(desatStates[3], optimize=optimizeAngle)
+        self.leftFront.setDesiredState(desatStates[0])
+        self.leftRear.setDesiredState(desatStates[1])
+        self.rightFront.setDesiredState(desatStates[2])
+        self.rightRear.setDesiredState(desatStates[3])
 
     def getPose(self) -> Pose2d:
         return self.odometry.getPose()
@@ -274,4 +242,56 @@ class Swerve(Subsystem):
         self.leftRear.resetSensorPosition()
         self.rightFront.resetSensorPosition()
         self.rightRear.resetSensorPosition()
-        
+
+"""
+CONVERSIONS
+"""
+
+def metersToRots(meters: float) -> float:
+    """Converts from the inserted amount of meters to wheel rotations. 
+    This can also be used to convert from velocity in m/s to rps, as well as acceleration in m/s^2 to rps/s
+
+    Args:
+        meters (float): Target in meters.
+
+    Returns:
+        float: Converted amount of rotations. This is multiplied by the mechanism gear ratio.
+    """
+    wheelCircum = math.pi * Larry.kWheelSize
+    return (meters / wheelCircum) * Motor.kGearRatio
+
+def rotsToMeters(rotation: float) -> float:
+    """Converts from the applied TalonFX rotations and calculates the amount of meters traveled.
+    This can also be used to convert from velocity in rps to m/s, as well as acceleration in rps/s to m/s^2
+
+    Args:
+        rotation (float): TalonFX rotations
+
+    Returns:
+        float: Meters traveled
+    """
+    baseMotorRot = rotation / Motor.kGearRatio
+    wheelCircum = math.pi * Larry.kWheelSize
+    return baseMotorRot * wheelCircum
+
+def rotsToDegs(rotation: float) -> float:
+    """Converts from the rotations of the mechanism to degs rotated.
+
+    Args:
+        rotation (float): Rotation of the specified motor.
+
+    Returns:
+        float: Degrees the wheel has rotated.
+    """
+    return rotation * 360
+
+def degsToRots(degrees: float) -> float:
+    """Converts from degrees to TalonFX rotations.
+
+    Args:
+        degrees (float): Target degrees.
+
+    Returns:
+        float: Rotations of the TalonFX.
+    """
+    return degrees / 360
