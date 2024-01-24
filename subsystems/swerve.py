@@ -32,6 +32,7 @@ class SwerveModule(Subsystem):
 
     def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float) -> None:
         super().__init__()
+        CommandScheduler.getInstance().registerSubsystem(self)
 
         self.moduleName = moduleName
 
@@ -81,8 +82,6 @@ class SwerveModule(Subsystem):
         drive_config.slot0 = drive_slot0
         self.driveMotor.configurator.apply(drive_config)
 
-        CommandScheduler.getInstance().registerSubsystem(self)
-
     def getAngle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(rotsToDegs(self.directionMotor.get_rotor_position().value))
     
@@ -118,13 +117,14 @@ class Swerve(Subsystem):
     
     field = Field2d()
     
-    def __init__(self, leftFront: SwerveModule, leftRear: SwerveModule, rightFront: SwerveModule, rightRear: SwerveModule):
+    leftFront: SwerveModule = SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, CANOffsets.kLeftFrontOffset)
+    leftRear: SwerveModule = SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, CANOffsets.kLeftRearOffset)
+    rightFront: SwerveModule = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, CANOffsets.kRightFrontOffset)
+    rightRear: SwerveModule = SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, CANOffsets.kRightRearOffset)
+    
+    def __init__(self):
         super().__init__()
-
-        self.leftFront = leftFront
-        self.leftRear = leftRear
-        self.rightFront = rightFront
-        self.rightRear = rightRear
+        CommandScheduler.getInstance().registerSubsystem(self)
 
         self.odometry = SwerveDrive4Odometry(self.kinematics, self.getAngle(),
                                              (self.leftFront.getPosition(), self.leftRear.getPosition(),
@@ -154,8 +154,6 @@ class Swerve(Subsystem):
         )
         
         self.navX.reset()
-
-        CommandScheduler.getInstance().registerSubsystem(self)
 
     def shouldFlipAutoPath(self) -> bool:
         # Flips the PathPlanner path if we're on the red alliance

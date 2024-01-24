@@ -11,18 +11,13 @@ class Waffles(TimedCommandRobot):
 
     autoChooser = SendableChooser()
     
-    swerve = Swerve(
-        SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, CANOffsets.kLeftFrontOffset),
-        SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, CANOffsets.kLeftRearOffset),
-        SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, CANOffsets.kRightFrontOffset),
-        SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, CANOffsets.kRightRearOffset)
-    )
-
     def __init__(self, period = 0.02) -> None:
         super().__init__(period)
         
     def robotInit(self) -> None:
         super().robotInit()
+        
+        self.swerve: Swerve = Swerve()
         
         self.autoChooser.setDefaultOption("Failsafe (F2M)", PathPlannerAuto("FAILSAFE"))
         self.autoChooser.addOption("B2M", PathPlannerAuto("Backward 2 Meters"))
