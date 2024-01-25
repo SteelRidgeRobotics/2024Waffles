@@ -53,9 +53,9 @@ class SwerveModule(Subsystem):
         direction_config.motion_magic.motion_magic_acceleration = DirectionMotor.kCruiseAccel
         direction_config.motion_magic.motion_magic_cruise_velocity = DirectionMotor.kCruiseVel
         direction_slot0 = Slot0Configs() # See drive motor config below for explanation for each of these!!!
-        direction_slot0.k_s = 0
-        direction_slot0.k_a = 1
-        direction_slot0.k_p = 0
+        direction_slot0.k_s = 0 # Amount of volts to overcome static friction in the steering (arbFF)
+        direction_slot0.k_v = 0 # Volt's needed to rotate the motor at 1 rps (docs say 0.12V, double check pwease)
+        direction_slot0.k_p = 0 # ok james you probably know how to do these. Just remember Phoenix 6 changed these values
         direction_slot0.k_i = 0
         direction_slot0.k_d = 0
         
@@ -69,7 +69,7 @@ class SwerveModule(Subsystem):
         
         drive_slot0 = Slot0Configs()
         drive_slot0.k_s = 0 # Amount of volts to overcome friction (just below the required voltage to start moving)
-        drive_slot0.k_a = 1 # Yeah uh we don't know yet-
+        drive_slot0.k_a = 0 # Yeah uh we don't know yet-
         
         drive_slot0.k_v = 0 # Voltage needed to rotate the wheel at 1 rps (i think), e.g. 0.11 = 0.11V to move the wheel at 1 rps 
         # NOTE: MAY BE UNEEDED DUE TO USING TORQUECURRENTFOC, SEE 
@@ -103,7 +103,8 @@ class SwerveModule(Subsystem):
         desiredState = SwerveModuleState.optimize(desiredState, self.getState().angle)
         
         self.driveMotor.set_control(VelocityTorqueCurrentFOC(metersToRots(desiredState.speed)))
-        self.directionMotor.set_control(MotionMagicTorqueCurrentFOC(degsToRots(desiredState.angle.degrees())))
+        SmartDashboard.putNumber(self.moduleName + "test", degsToRots(desiredState.angle.degrees()))
+        self.directionMotor.set_control(MotionMagicVoltage(degsToRots(desiredState.angle.degrees())))
 
 """"""
 
@@ -136,22 +137,23 @@ class Swerve(Subsystem):
         self.chassisSpeed = ChassisSpeeds()
         self.targetRad = 0
         
-        # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
-        AutoBuilder.configureHolonomic(
-            lambda: self.getPose(),
-            lambda pose: self.resetOdometry(pose),
-            lambda: self.getChassisSpeeds(),
-            lambda chassisSpeed: self.drive(chassisSpeed, fieldRelative=False),
-            HolonomicPathFollowerConfig(
-                PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
-                PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
-                Larry.kMaxSpeed / 4,
-                Larry.kDriveBaseRadius,
-                ReplanningConfig(enableInitialReplanning=False)
-            ),
-            lambda: self.shouldFlipAutoPath(),
-            self
-        )
+        if not AutoBuilder.isConfigured():
+            # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
+            AutoBuilder.configureHolonomic(
+                lambda: self.getPose(),
+                lambda pose: self.resetOdometry(pose),
+                lambda: self.getChassisSpeeds(),
+                lambda chassisSpeed: self.drive(chassisSpeed, fieldRelative=False),
+                HolonomicPathFollowerConfig(
+                    PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
+                    PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
+                    Larry.kMaxSpeed / 4,
+                    Larry.kDriveBaseRadius,
+                    ReplanningConfig(enableInitialReplanning=False)
+                ),
+                lambda: self.shouldFlipAutoPath(),
+                self
+            )
         
         self.navX.reset()
 
