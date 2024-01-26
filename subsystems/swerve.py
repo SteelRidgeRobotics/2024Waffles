@@ -55,7 +55,7 @@ class SwerveModule(Subsystem):
         direction_config.motion_magic.motion_magic_jerk = 1600
         direction_slot0 = Slot0Configs() # See drive motor config below for explanation for each of these!!!
         direction_slot0.k_s = 0.23 # Amount of volts to overcome static friction in the steering (arbFF)
-        direction_slot0.k_v = 3.44 # Volt's needed to rotate the motor at 1 rps (docs say 0.12V, double check pwease)
+        direction_slot0.k_v = 0.12 # Volt's needed to rotate the motor at 1 rps (docs say 0.12V, double check pwease)
         direction_slot0.k_p = 8 # ok james you probably know how to do these. Just remember Phoenix 6 changed these values
         direction_slot0.k_i = 0
         direction_slot0.k_d = 0
