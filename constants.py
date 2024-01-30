@@ -37,13 +37,21 @@ class CANOffsets:
     kRightRearOffset = 28.828125
 
 class DirectionMotor:
-    kP = 1.2011730205278592
-    kI = 8.007820136852395
-    kD = 0.004003910068426197
-    kF = 0.05282272
-    kIZone = 150
-    kCruiseVel = 60
-    kCruiseAccel = 120
+    k_p = 0.8
+    #k_p = 0.120117
+    # k_i = 0.800782
+    k_i = 0
+    k_d = 0.0004
+    k_v = 0.2
+    #k_v = 0.105748
+    kCruiseVel = 103.193
+    kCruiseAccel = 103.193
+    kJerk = 1600
+
+    k_s_LeftFront = 0.25
+    k_s_LeftRear = 0.25
+    k_s_RightFront = 0.25
+    k_s_RightRear = 0.25
 
 class Motor:
     kTimeoutMs = 20

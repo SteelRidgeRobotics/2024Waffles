@@ -30,7 +30,7 @@ class SwerveModule(Subsystem):
     The drive motor spins the wheel to move.
     """
 
-    def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float) -> None:
+    def __init__(self, moduleName: str, directionMotorControllerID: int, driveMotorControllerID: int, CANCoderID: int, offset: float, k_s: float = 0) -> None:
         super().__init__()
         CommandScheduler.getInstance().registerSubsystem(self)
 
@@ -44,21 +44,22 @@ class SwerveModule(Subsystem):
         # Direction Motor, uses MotionMagicTorqueCurrentFOC
         self.directionMotor = TalonFX(directionMotorControllerID, "rio")
         direction_config = TalonFXConfiguration()
-        direction_config.motor_output.with_inverted(InvertedValue.COUNTER_CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.COAST)
-        
+        direction_config.motor_output.with_inverted(InvertedValue.CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.COAST)
+
         # These are used for angle optimizing, now built in with Phoenix 6 :partying_face:
-        direction_config.closed_loop_general.continuous_wrap = True
-        direction_config.feedback.sensor_to_mechanism_ratio = Motor.kGearRatio
+        #direction_config.closed_loop_general.continuous_wrap = True TODO: GET THIS SHIZZ WORKING DURING OFFSEASON
+        #direction_config.feedback.sensor_to_mechanism_ratio = 10
         
-        direction_config.motion_magic.motion_magic_acceleration = DirectionMotor.kCruiseAccel / 10
-        direction_config.motion_magic.motion_magic_cruise_velocity = DirectionMotor.kCruiseVel / 10
+        direction_config.motion_magic.motion_magic_acceleration = 160
+        direction_config.motion_magic.motion_magic_cruise_velocity = 60
         direction_config.motion_magic.motion_magic_jerk = 1600
-        direction_slot0 = Slot0Configs() # See drive motor config below for explanation for each of these!!!
-        direction_slot0.k_s = 0.23 # Amount of volts to overcome static friction in the steering (arbFF)
-        direction_slot0.k_v = 0.12 # Volt's needed to rotate the motor at 1 rps (docs say 0.12V, double check pwease)
-        direction_slot0.k_p = 8 # ok james you probably know how to do these. Just remember Phoenix 6 changed these values
+        direction_slot0 = Slot0Configs()
+
+        direction_slot0.k_s = 0.25
+        direction_slot0.k_v = 0.1
+        direction_slot0.k_p = 0.78
         direction_slot0.k_i = 0
-        direction_slot0.k_d = 0
+        direction_slot0.k_d = 0.0004
         
         direction_config.slot0 = direction_slot0
         self.directionMotor.configurator.apply(direction_config)
@@ -66,25 +67,25 @@ class SwerveModule(Subsystem):
         # Drive Motor, uses VelocityTorqueCurrentFOC
         self.driveMotor = TalonFX(driveMotorControllerID, "rio")
         drive_config = TalonFXConfiguration()
-        drive_config.motor_output.with_inverted(InvertedValue.CLOCKWISE_POSITIVE).with_neutral_mode(NeutralModeValue.BRAKE)
+        drive_config.motor_output.with_neutral_mode(NeutralModeValue.BRAKE)
         
         drive_slot0 = Slot0Configs()
-        drive_slot0.k_s = 0.23 # Amount of volts to overcome friction (just below the required voltage to start moving)
-        drive_slot0.k_a = 0 # Yeah uh we don't know yet-
-        
-        drive_slot0.k_v = 0.12 # Voltage needed to rotate the wheel at 1 rps (i think), e.g. 0.11 = 0.11V to move the wheel at 1 rps 
-        # NOTE: MAY BE UNEEDED DUE TO USING TORQUECURRENTFOC, SEE 
-        # https://v6.docs.ctr-electronics.com/en/latest/docs/api-reference/device-specific/talonfx/closed-loop-requests.html#choosing-output-type
-        
+        drive_slot0.k_s = 0.24
+        drive_slot0.k_a = 0
+        drive_slot0.k_v = 0.12
         drive_slot0.k_p = 0
         drive_slot0.k_i = 0
         drive_slot0.k_d = 0
+
+        drive_config.motion_magic.with_motion_magic_cruise_velocity(100).with_motion_magic_acceleration(200)
         
         drive_config.slot0 = drive_slot0
         self.driveMotor.configurator.apply(drive_config)
 
+        self.request = MotionMagicVoltage(0)
+
     def getAngle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(rotsToDegs(self.directionMotor.get_rotor_position().value))
+        return Rotation2d.fromDegrees(rotsToDegs(self.directionMotor.get_rotor_position().value / Motor.kGearRatio))
     
     def resetSensorPosition(self) -> None:
         pos = -self.turningEncoder.get_absolute_position().value
@@ -101,12 +102,38 @@ class SwerveModule(Subsystem):
         return SwerveModulePosition(rotsToMeters(self.driveMotor.get_rotor_position().value), self.getAngle())
 
     def setDesiredState(self, desiredState: SwerveModuleState) -> None:
-        #desiredState = SwerveModuleState.optimize(desiredState, self.getAngle())
+        desiredState = SwerveModuleState.optimize(desiredState, self.getAngle())
         
         self.driveMotor.set_control(VelocityTorqueCurrentFOC(metersToRots(desiredState.speed)))
-        SmartDashboard.putNumber(self.moduleName + "test", degsToRots(desiredState.angle.degrees()))
-        SmartDashboard.putNumber(self.moduleName + "test2", desiredState.angle.degrees())
-        self.directionMotor.set_control(MotionMagicVoltage(degsToRots(desiredState.angle.degrees())))
+        SmartDashboard.putNumber(self.moduleName + "angle", self.getAngle().degrees())
+        #SmartDashboard.putNumber(self.moduleName + "test2", desiredState.angle.degrees())
+        self.changeDirection(desiredState.angle)
+        #self.directionMotor.set_control(MotionMagicVoltage(degsToRots(desiredState.angle.degrees() + 180) * Motor.kGearRatio))
+
+    def changeDirection(self, rotation: Rotation2d) -> None:
+        angleDiff = rotation.degrees() - (self.getAngle().degrees())
+        targetAngleDist = math.fabs(angleDiff)
+
+        # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
+        if targetAngleDist > 180:
+            while targetAngleDist > 180:
+                targetAngleDist -= 360
+            targetAngleDist = abs(targetAngleDist)
+
+        changeInRots = targetAngleDist / 360
+
+        if angleDiff < 0 or angleDiff >= 360:
+            angleDiff %= 360
+        
+        finalPos = self.directionMotor.get_rotor_position().value / Motor.kGearRatio
+        if angleDiff > 180:
+            # Move CCW
+            finalPos -= changeInRots
+        else:
+            # Move CW
+            finalPos += changeInRots
+
+        self.directionMotor.set_control(MotionMagicVoltage(finalPos * Motor.kGearRatio))
 
 class Swerve(Subsystem):
     navX = navx.AHRS.create_spi()
@@ -116,10 +143,10 @@ class Swerve(Subsystem):
     
     field = Field2d()
     
-    leftFront: SwerveModule = SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, CANOffsets.kLeftFrontOffset)
-    leftRear: SwerveModule = SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, CANOffsets.kLeftRearOffset)
-    rightFront: SwerveModule = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, CANOffsets.kRightFrontOffset)
-    rightRear: SwerveModule = SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, CANOffsets.kRightRearOffset)
+    leftFront: SwerveModule = SwerveModule("LF", MotorIDs.LEFT_FRONT_DIRECTION, MotorIDs.LEFT_FRONT_DRIVE, CANIDs.LEFT_FRONT, CANOffsets.kLeftFrontOffset, DirectionMotor.k_s_LeftFront)
+    leftRear: SwerveModule = SwerveModule("LR", MotorIDs.LEFT_REAR_DIRECTION, MotorIDs.LEFT_REAR_DRIVE, CANIDs.LEFT_REAR, CANOffsets.kLeftRearOffset, DirectionMotor.k_s_LeftRear)
+    rightFront: SwerveModule = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DIRECTION, MotorIDs.RIGHT_FRONT_DRIVE, CANIDs.RIGHT_FRONT, CANOffsets.kRightFrontOffset, DirectionMotor.k_s_RightFront)
+    rightRear: SwerveModule = SwerveModule("RR", MotorIDs.RIGHT_REAR_DIRECTION, MotorIDs.RIGHT_REAR_DRIVE, CANIDs.RIGHT_REAR, CANOffsets.kRightRearOffset, DirectionMotor.k_s_RightRear)
     
     def __init__(self):
         super().__init__()
@@ -161,13 +188,6 @@ class Swerve(Subsystem):
     
     def runAuto(self, auto: PathPlannerAuto) -> None:
         self.runOnce(lambda: auto)
-
-    def initialize(self) -> None:
-        self.leftFront.resetSensorPosition()
-        self.leftRear.resetSensorPosition()
-        self.rightFront.resetSensorPosition()
-        self.rightRear.resetSensorPosition()
-        self.navX.reset()
 
     def getAngle(self) -> Rotation2d:
         return self.navX.getRotation2d()
