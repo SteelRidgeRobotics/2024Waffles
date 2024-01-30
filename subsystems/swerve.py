@@ -33,198 +33,198 @@ class SwerveModule(Subsystem):
         super().__init__()
         CommandScheduler.getInstance().registerSubsystem(self)
 
-        self.moduleName = module_name
+        self.module_name = module_name
 
-        self.turningEncoder = CANcoder(CANcoder_id, "rio")
+        self.turning_encoder = CANcoder(CANcoder_id, "rio")
         encoder_config = CANcoderConfiguration()
         encoder_config.magnet_sensor = MagnetSensorConfigs().with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE)
-        self.turningEncoder.configurator.apply(encoder_config)
+        self.turning_encoder.configurator.apply(encoder_config)
         
-        self.driveMotor = TalonFX(drive_motor_constants.motorID, "rio")
-        drive_motor_constants.applyConfiguration(self.driveMotor)
+        self.drive_motor = TalonFX(drive_motor_constants.motor_id, "rio")
+        drive_motor_constants.apply_configuration(self.drive_motor)
 
-        self.directionMotor = TalonFX(direction_motor_constants.motorID, "rio")
-        direction_motor_constants.applyConfiguration(self.directionMotor)
+        self.direction_motor = TalonFX(direction_motor_constants.motor_id, "rio")
+        direction_motor_constants.apply_configuration(self.direction_motor)
 
-    def getAngle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(rotsToDegs(self.directionMotor.get_rotor_position().value / kDirectionGearRatio))
+    def get_angle(self) -> Rotation2d:
+        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
     
-    def resetSensorPosition(self) -> None:
-        pos = -self.turningEncoder.get_absolute_position().value
-        self.directionMotor.set_position(pos * kDirectionGearRatio)
+    def reset_sensor_position(self) -> None:
+        pos = -self.turning_encoder.get_absolute_position().value
+        self.direction_motor.set_position(pos * k_direction_gear_ratio)
         
-    def resetPositions(self) -> None:
-        self.driveMotor.set_position(0.0)
-        self.directionMotor.set_position(0.0)
+    def reset_positions(self) -> None:
+        self.drive_motor.set_position(0.0)
+        self.direction_motor.set_position(0.0)
 
-    def getState(self) -> SwerveModuleState:
-        return SwerveModuleState(rotsToMeters(self.driveMotor.get_rotor_velocity().value, kDirectionGearRatio), self.getAngle())
+    def get_state(self) -> SwerveModuleState:
+        return SwerveModuleState(rots_to_meters(self.drive_motor.get_rotor_velocity().value, k_direction_gear_ratio), self.get_angle())
     
-    def getPosition(self) -> SwerveModulePosition:
-        return SwerveModulePosition(rotsToMeters(self.driveMotor.get_rotor_position().value, kDirectionGearRatio), self.getAngle())
+    def get_position(self) -> SwerveModulePosition:
+        return SwerveModulePosition(rots_to_meters(self.drive_motor.get_rotor_position().value, k_direction_gear_ratio), self.get_angle())
 
-    def setDesiredState(self, desiredState: SwerveModuleState) -> None:
-        desiredState = SwerveModuleState.optimize(desiredState, self.getAngle())
+    def set_desired_state(self, desiredState: SwerveModuleState) -> None:
+        desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
         
-        self.driveMotor.set_control(VelocityTorqueCurrentFOC(metersToRots(desiredState.speed, kDriveGearRatio)))
-        self.changeDirection(desiredState.angle)
+        self.drive_motor.set_control(VelocityTorqueCurrentFOC(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
+        self.change_direction(desiredState.angle)
 
-    def changeDirection(self, rotation: Rotation2d) -> None:
-        angleDiff = rotation.degrees() - (self.getAngle().degrees())
-        targetAngleDist = math.fabs(angleDiff)
+    def change_direction(self, rotation: Rotation2d) -> None:
+        angle_diff = rotation.degrees() - (self.get_angle().degrees())
+        target_angle_dist = math.fabs(angle_diff)
 
         # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
-        if targetAngleDist > 180:
-            while targetAngleDist > 180:
-                targetAngleDist -= 360
-            targetAngleDist = abs(targetAngleDist)
+        if target_angle_dist > 180:
+            while target_angle_dist > 180:
+                target_angle_dist -= 360
+            target_angle_dist = abs(target_angle_dist)
 
-        changeInRots = targetAngleDist / 360
+        change_in_rots = target_angle_dist / 360
 
-        if angleDiff < 0 or angleDiff >= 360:
-            angleDiff %= 360
+        if angle_diff < 0 or angle_diff >= 360:
+            angle_diff %= 360
         
-        finalPos = self.directionMotor.get_rotor_position().value / kDirectionGearRatio
-        if angleDiff > 180:
+        final_pos = self.direction_motor.get_rotor_position().value / k_direction_gear_ratio
+        if angle_diff > 180:
             # Move CCW
-            finalPos -= changeInRots
+            final_pos -= change_in_rots
         else:
             # Move CW
-            finalPos += changeInRots
+            final_pos += change_in_rots
 
-        self.directionMotor.set_control(MotionMagicVoltage(finalPos * kDirectionGearRatio))
+        self.direction_motor.set_control(MotionMagicVoltage(final_pos * k_direction_gear_ratio))
 
 class Swerve(Subsystem):
-    navX = navx.AHRS.create_spi()
+    navx = navx.AHRS.create_spi()
 
     kinematics = SwerveDrive4Kinematics(Translation2d(1, 1), Translation2d(-1, 1),
                                         Translation2d(1, -1), Translation2d(-1, -1)) # LF, LR, RF, RR
     
     field = Field2d()
     
-    leftFront: SwerveModule = SwerveModule("LF", DriveMotorConstants(MotorIDs.LEFT_FRONT_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_FRONT_DIRECTION, k_s=0.25), CANIDs.LEFT_FRONT)
-    leftRear: SwerveModule = SwerveModule("LR", DriveMotorConstants(MotorIDs.LEFT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_REAR_DIRECTION, k_s=0.25), CANIDs.LEFT_REAR)
-    rightFront: SwerveModule = SwerveModule("RF", DriveMotorConstants(MotorIDs.RIGHT_FRONT_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.RIGHT_FRONT_DIRECTION, k_s=0.25), CANIDs.RIGHT_FRONT)
-    rightRear: SwerveModule = SwerveModule("RR", DriveMotorConstants(MotorIDs.RIGHT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.RIGHT_REAR_DIRECTION, k_s=0.25), CANIDs.RIGHT_REAR)
+    left_front: SwerveModule = SwerveModule("LF", DriveMotorConstants(MotorIDs.LEFT_FRONT_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_FRONT_DIRECTION, k_s=0.25), CANIDs.LEFT_FRONT)
+    left_rear: SwerveModule = SwerveModule("LR", DriveMotorConstants(MotorIDs.LEFT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_REAR_DIRECTION, k_s=0.25), CANIDs.LEFT_REAR)
+    right_front: SwerveModule = SwerveModule("RF", DriveMotorConstants(MotorIDs.RIGHT_FRONT_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.RIGHT_FRONT_DIRECTION, k_s=0.25), CANIDs.RIGHT_FRONT)
+    right_rear: SwerveModule = SwerveModule("RR", DriveMotorConstants(MotorIDs.RIGHT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.RIGHT_REAR_DIRECTION, k_s=0.25), CANIDs.RIGHT_REAR)
     
     def __init__(self):
         super().__init__()
         CommandScheduler.getInstance().registerSubsystem(self)
 
-        self.odometry = SwerveDrive4Odometry(self.kinematics, self.getAngle(),
-                                             (self.leftFront.getPosition(), self.leftRear.getPosition(),
-                                              self.rightFront.getPosition(), self.rightRear.getPosition()))
+        self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(),
+                                             (self.left_front.get_position(), self.left_rear.get_position(),
+                                              self.right_front.get_position(), self.right_rear.get_position()))
 
         SmartDashboard.putData(self.field)
-        SmartDashboard.putData("Reset Odometry", self.resetOdometryCommand())
+        SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
 
-        self.chassisSpeed = ChassisSpeeds()
-        self.targetRad = 0
+        self.chassis_speed = ChassisSpeeds()
+        self.target_rad = 0
         
         if not AutoBuilder.isConfigured():
             # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
             AutoBuilder.configureHolonomic(
-                lambda: self.getPose(),
-                lambda pose: self.resetOdometry(pose),
-                lambda: self.getChassisSpeeds(),
-                lambda chassisSpeed: self.drive(chassisSpeed, fieldRelative=False),
+                lambda: self.get_pose(),
+                lambda pose: self.reset_odometry(pose),
+                lambda: self.get_chassis_speeds(),
+                lambda chassisSpeed: self.drive(chassisSpeed, field_relative=False),
                 HolonomicPathFollowerConfig(
                     PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
                     PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
-                    Larry.kMaxSpeed / 4,
-                    Larry.kDriveBaseRadius,
+                    Waffles.k_max_speed / 4,
+                    Waffles.k_drive_base_radius,
                     ReplanningConfig(enableInitialReplanning=False)
                 ),
-                lambda: self.shouldFlipAutoPath(),
+                lambda: self.should_flip_auto_path(),
                 self
             )
         
-        self.navX.reset()
+        self.navx.reset()
 
-    def shouldFlipAutoPath(self) -> bool:
+    def should_flip_auto_path(self) -> bool:
         # Flips the PathPlanner path if we're on the red alliance
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
-    def runAuto(self, auto: PathPlannerAuto) -> None:
+    def run_auto(self, auto: PathPlannerAuto) -> None:
         self.runOnce(lambda: auto)
 
-    def getAngle(self) -> Rotation2d:
-        return self.navX.getRotation2d()
+    def get_angle(self) -> Rotation2d:
+        return self.navx.getRotation2d()
     
-    def drive(self, chassisSpeed:ChassisSpeeds, fieldRelative: bool=True) -> None:
+    def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> None:
         # Shoutout to team 1706, your code saved our swerve this year lmao
         # Insert function to steady target angle here :)))
 
-        if fieldRelative:
+        if field_relative:
             if RobotBase.isReal():
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, self.getAngle()))
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
             else:
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeed, Rotation2d.fromDegrees(self.targetRad)))
+                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, Rotation2d.fromDegrees(self.target_rad)))
         else:
-            states = self.kinematics.toSwerveModuleStates(chassisSpeed)
+            states = self.kinematics.toSwerveModuleStates(chassis_speed)
 
-        desatStates = self.kinematics.desaturateWheelSpeeds(states, Larry.kMaxSpeed)
+        desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_speed)
 
-        self.chassisSpeed = chassisSpeed
+        self.chassis_speed = chassis_speed
 
-        self.setModuleStates(desatStates)
+        self.set_module_states(desat_states)
         
         if not RobotBase.isReal():
-            self.targetRad += chassisSpeed.omega / 50
+            self.target_rad += chassis_speed.omega / 50
             
-    def hockeyStop(self) -> None:
-        self.leftFront.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(225)))
-        self.leftRear.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(-45)))
-        self.rightFront.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(135)))
-        self.rightRear.setDesiredState(SwerveModuleState(0, Rotation2d.fromDegrees(45)))
+    def hockey_stop(self) -> None:
+        self.left_front.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(225)))
+        self.left_rear.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(-45)))
+        self.right_front.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(135)))
+        self.right_rear.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(45)))
 
-    def getChassisSpeeds(self) -> ChassisSpeeds:
-        return self.chassisSpeed
+    def get_chassis_speeds(self) -> ChassisSpeeds:
+        return self.chassis_speed
 
-    def setModuleStates(self, moduleStates: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState], optimizeAngle=True) -> None:
-        desatStates = self.kinematics.desaturateWheelSpeeds(moduleStates, Larry.kMaxSpeed)
+    def set_module_states(self, module_states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
+        desatStates = self.kinematics.desaturateWheelSpeeds(module_states, Waffles.k_max_speed)
 
-        self.leftFront.setDesiredState(desatStates[0])
-        self.leftRear.setDesiredState(desatStates[1])
-        self.rightFront.setDesiredState(desatStates[2])
-        self.rightRear.setDesiredState(desatStates[3])
+        self.left_front.set_desired_state(desatStates[0])
+        self.left_rear.set_desired_state(desatStates[1])
+        self.right_front.set_desired_state(desatStates[2])
+        self.right_rear.set_desired_state(desatStates[3])
 
-    def getPose(self) -> Pose2d:
+    def get_pose(self) -> Pose2d:
         return self.odometry.getPose()
 
-    def resetOdometry(self, pose=Pose2d()) -> None:
-        self.targetRad = 0
-        self.odometry.resetPosition(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()), pose)
+    def reset_odometry(self, pose=Pose2d()) -> None:
+        self.target_rad = 0
+        self.odometry.resetPosition(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), pose)
         
-    def resetOdometryCommand(self) -> Command:
-        return self.runOnce(lambda: self.resetOdometry())
+    def reset_odometry_command(self) -> Command:
+        return self.runOnce(lambda: self.reset_odometry())
 
     def periodic(self) -> None:
         if RobotBase.isReal():
-            self.odometry.update(self.getAngle(), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
+            self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
         else:
-            self.odometry.update(Rotation2d(self.targetRad), (self.leftFront.getPosition(), self.leftRear.getPosition(), self.rightFront.getPosition(), self.rightRear.getPosition()))
+            self.odometry.update(Rotation2d(self.target_rad), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putData(self.field)
         
     def initialize(self) -> None:
-        self.navX.reset()
+        self.navx.reset()
         
-        self.leftFront.resetPositions()
-        self.leftRear.resetPositions()
-        self.rightFront.resetPositions()
-        self.rightRear.resetPositions()
+        self.left_front.reset_positions()
+        self.left_rear.reset_positions()
+        self.right_front.reset_positions()
+        self.right_rear.reset_positions()
         
-        self.leftFront.resetSensorPosition()
-        self.leftRear.resetSensorPosition()
-        self.rightFront.resetSensorPosition()
-        self.rightRear.resetSensorPosition()
+        self.left_front.reset_sensor_position()
+        self.left_rear.reset_sensor_position()
+        self.right_front.reset_sensor_position()
+        self.right_rear.reset_sensor_position()
 
 """
 CONVERSIONS
 """
 
-def metersToRots(meters: float, ratio: float) -> float:
+def meters_to_rots(meters: float, ratio: float) -> float:
     """Converts from the inserted amount of meters to wheel rotations. 
     This can also be used to convert from velocity in m/s to rps, as well as acceleration in m/s^2 to rps/s
 
@@ -234,10 +234,10 @@ def metersToRots(meters: float, ratio: float) -> float:
     Returns:
         float: Converted amount of rotations. This is multiplied by the mechanism gear ratio.
     """
-    wheelCircum = math.pi * Larry.kWheelSize
+    wheelCircum = math.pi * Waffles.k_wheel_size
     return (meters / wheelCircum) * ratio
 
-def rotsToMeters(rotation: float, ratio: float) -> float:
+def rots_to_meters(rotation: float, ratio: float) -> float:
     """Converts from the applied TalonFX rotations and calculates the amount of meters traveled.
     This can also be used to convert from velocity in rps to m/s, as well as acceleration in rps/s to m/s^2
 
@@ -248,10 +248,10 @@ def rotsToMeters(rotation: float, ratio: float) -> float:
         float: Meters traveled
     """
     baseMotorRot = rotation / ratio
-    wheelCircum = math.pi * Larry.kWheelSize
+    wheelCircum = math.pi * Waffles.k_wheel_size
     return baseMotorRot * wheelCircum
 
-def rotsToDegs(rotation: float) -> float:
+def rots_to_degs(rotation: float) -> float:
     """Converts from the rotations of the mechanism to degs rotated.
 
     Args:
@@ -262,7 +262,7 @@ def rotsToDegs(rotation: float) -> float:
     """
     return rotation * 360
 
-def degsToRots(degrees: float) -> float:
+def degs_to_rots(degrees: float) -> float:
     """Converts from degrees to TalonFX rotations.
 
     Args:

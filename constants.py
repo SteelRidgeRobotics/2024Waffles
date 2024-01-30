@@ -6,11 +6,11 @@ class DriverController:
     port = 0
     deadband = 0.15
 
-class Larry:
-    kWheelSize = 0.1 # meters
-    kMaxSpeed = 3.658 # m/s
-    kMaxRotRate = 10.472 # rad/s
-    kDriveBaseRadius = 0.43 # meters
+class Waffles:
+    k_wheel_size = 0.1 # meters
+    k_max_speed = 3.658 # m/s
+    k_max_rot_rate = 10.472 # rad/s
+    k_drive_base_radius = 0.43 # meters
     
 class DriveMotorConstants:
     """Constants for a TalonFX drive motor for a swerve module."""
@@ -18,7 +18,7 @@ class DriveMotorConstants:
     def __init__(self, motor_id: int, 
                  k_s: float, k_v: float=0.12, k_a: float=0, k_p: float=0, k_i: float=0, k_d: float=0) -> None:
         
-        self.motorID = motor_id
+        self.motor_id = motor_id
         
         self.k_s = k_s
         self.k_v = k_v
@@ -29,7 +29,7 @@ class DriveMotorConstants:
         
         self.neutral_mode = NeutralModeValue.BRAKE
         
-    def applyConfiguration(self, motor: TalonFX) -> TalonFX:
+    def apply_configuration(self, motor: TalonFX) -> TalonFX:
         """Applies the DriveMotorConstants into the TalonFX.
 
         Args:
@@ -50,7 +50,7 @@ class DirectionMotorConstants:
                  k_s: float, cruise_velocity: int=60, cruise_acceleration: int=160, cruise_jerk: int=1600, 
                  k_v: float=0.1, k_a: float=0, k_p: float=0.78, k_i: float=0, k_d: float=0.0004) -> None:
         
-        self.motorID = motor_id
+        self.motor_id = motor_id
         
         self.k_s = k_s
         self.k_v = k_v
@@ -66,7 +66,7 @@ class DirectionMotorConstants:
         self.neutral_mode = NeutralModeValue.COAST
         self.invert = InvertedValue.CLOCKWISE_POSITIVE
         
-    def applyConfiguration(self, motor: TalonFX) -> TalonFX:
+    def apply_configuration(self, motor: TalonFX) -> TalonFX:
         """Applies the DriveMotorConstants into the TalonFX.
 
         Args:
@@ -99,5 +99,5 @@ class CANIDs:
     LEFT_REAR = 11
     RIGHT_REAR = 13
 
-kDirectionGearRatio = 150 / 7
-kDriveGearRatio = 27 / 4
+k_direction_gear_ratio = 150 / 7
+k_drive_gear_ratio = 27 / 4

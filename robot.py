@@ -3,13 +3,13 @@ from constants import *
 from commands.debug import *
 from commands.drive import DriveByController
 from pathplannerlib.auto import PathPlannerAuto
-from subsystems.swerve import Swerve, SwerveModule
+from subsystems.swerve import Swerve
 from wpilib import SendableChooser, SmartDashboard, XboxController
 
 class Waffles(TimedCommandRobot):
-    driverController = XboxController(DriverController.port)
+    driver_controller = XboxController(DriverController.port)
 
-    autoChooser = SendableChooser()
+    auto_chooser = SendableChooser()
     
     def __init__(self, period = 0.02) -> None:
         super().__init__(period)
@@ -19,15 +19,15 @@ class Waffles(TimedCommandRobot):
         
         self.swerve: Swerve = Swerve()
         
-        self.autoChooser.setDefaultOption("Failsafe (F2M)", PathPlannerAuto("FAILSAFE"))
-        self.autoChooser.addOption("B2M", PathPlannerAuto("Backward 2 Meters"))
-        self.autoChooser.addOption("R2M", PathPlannerAuto("Right 2 Meters"))
-        self.autoChooser.addOption("L2M", PathPlannerAuto("Left 2 Meters"))
+        self.auto_chooser.setDefaultOption("Failsafe (F2M)", PathPlannerAuto("FAILSAFE"))
+        self.auto_chooser.addOption("B2M", PathPlannerAuto("Backward 2 Meters"))
+        self.auto_chooser.addOption("R2M", PathPlannerAuto("Right 2 Meters"))
+        self.auto_chooser.addOption("L2M", PathPlannerAuto("Left 2 Meters"))
         
-        SmartDashboard.putData("Auto Route", self.autoChooser)
+        SmartDashboard.putData("Auto Route", self.auto_chooser)
 
     def getSelectedAutoCommand(self) -> PathPlannerAuto:
-        return self.autoChooser.getSelected()
+        return self.auto_chooser.getSelected()
 
     def autonomousInit(self) -> None:
         self.getSelectedAutoCommand().schedule()
@@ -36,6 +36,6 @@ class Waffles(TimedCommandRobot):
         CommandScheduler.getInstance().run()
 
     def teleopPeriodic(self) -> None:
-        self.swerve.setDefaultCommand(DriveByController(self.swerve, self.driverController))
+        self.swerve.setDefaultCommand(DriveByController(self.swerve, self.driver_controller))
         #self.swerve.setDefaultCommand(DebugDirectionMotors(self.swerve, self.driverController))
         #self.swerve.setDefaultCommand(DebugDriveMotors(self.swerve, self.driverController))

@@ -1,5 +1,5 @@
 from commands2 import Command
-from constants import Larry
+from constants import Waffles
 from subsystems.swerve import Swerve
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState
@@ -34,7 +34,7 @@ class DebugDirectionMotors(Command):
         
         state = SwerveModuleState(speed=0, angle=Rotation2d.fromDegrees(self.currentAngle))
         
-        self.swerve.setModuleStates((state, state, state, state), optimizeAngle=False)
+        self.swerve.set_module_states((state, state, state, state), optimizeAngle=False)
     
     def end(self, interrupted: bool):
         return super().end(interrupted)
@@ -60,18 +60,18 @@ class DebugDriveMotors(Command):
         
         if not self.isAPressed and self.controller.getAButtonPressed():
             self.isAPressed = True
-            self.speed = Larry.kMaxSpeed
+            self.speed = Waffles.k_max_speed
         else:
             self.isAPressed = False
             
         if not self.isBPressed and self.controller.getBButtonPressed():
             self.isBPressed = True
-            self.speed = -Larry.kMaxSpeed
+            self.speed = -Waffles.k_max_speed
         else:
             self.isBPressed = False
             
         state = SwerveModuleState(speed=self.speed, angle=Rotation2d())
-        self.swerve.setModuleStates((state, state, state, state), optimizeAngle=False)
+        self.swerve.set_module_states((state, state, state, state), optimizeAngle=False)
     
     def end(self, interrupted: bool):
         return super().end(interrupted)
