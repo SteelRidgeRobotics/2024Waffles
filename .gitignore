@@ -163,3 +163,4 @@ simgui-window.json
 simgui.json
 networktables.json
 ctre_sim/
+tests/ctre_sim/
