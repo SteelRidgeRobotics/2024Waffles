@@ -16,7 +16,7 @@ class DriveMotorConstants:
     """Constants for a TalonFX drive motor for a swerve module."""
     
     def __init__(self, motor_id: int, 
-                 k_s: float, k_v: float=0.12, k_a: float=0, k_p: float=3, k_i: float=0, k_d: float=0, inverted: InvertedValue=InvertedValue.COUNTER_CLOCKWISE_POSITIVE) -> None:
+                 k_s: float=0.24, k_v: float=0.12, k_a: float=0, k_p: float=3, k_i: float=0, k_d: float=0, inverted: InvertedValue=InvertedValue.COUNTER_CLOCKWISE_POSITIVE) -> None:
         
         self.motor_id = motor_id
         
@@ -43,13 +43,14 @@ class DriveMotorConstants:
         config = TalonFXConfiguration()
         config.slot0.with_k_s(self.k_s).with_k_v(self.k_v).with_k_a(self.k_a).with_k_p(self.k_p).with_k_i(self.k_i).with_k_d(self.k_d)
         config.motor_output.with_neutral_mode(self.neutral_mode).with_inverted(self.inverted)
+        config.feedback.sensor_to_mechanism_ratio = k_drive_gear_ratio
         motor.configurator.apply(config)
         return motor
         
 class DirectionMotorConstants:
     
     def __init__(self, motor_id: int, 
-                 k_s: float, cruise_velocity: int=60, cruise_acceleration: int=160, cruise_jerk: int=1600, 
+                 k_s: float=0.25, cruise_velocity: int=60, cruise_acceleration: int=160, cruise_jerk: int=1600, 
                  k_v: float=0.1, k_a: float=0, k_p: float=0.78, k_i: float=0, k_d: float=0.0004) -> None:
         
         self.motor_id = motor_id
@@ -81,6 +82,8 @@ class DirectionMotorConstants:
         config.slot0.with_k_s(self.k_s).with_k_v(self.k_v).with_k_a(self.k_a).with_k_p(self.k_p).with_k_i(self.k_i).with_k_d(self.k_d)
         config.motor_output.with_neutral_mode(self.neutral_mode).with_inverted(self.invert)
         config.motion_magic.with_motion_magic_cruise_velocity(self.cruise_velocity).with_motion_magic_acceleration(self.cruise_acceleration).with_motion_magic_jerk(self.cruise_jerk)
+        config.closed_loop_general.continuous_wrap = True
+        config.feedback.sensor_to_mechanism_ratio = k_direction_gear_ratio
         motor.configurator.apply(config)
         return motor
         
