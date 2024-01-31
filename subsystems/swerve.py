@@ -31,7 +31,6 @@ class SwerveModule(Subsystem):
 
     def __init__(self, module_name: str, drive_motor_constants: DriveMotorConstants, direction_motor_constants: DirectionMotorConstants, CANcoder_id: int, CAN_offset: float) -> None:
         super().__init__()
-        CommandScheduler.getInstance().registerSubsystem(self)
 
         self.module_name = module_name
 
@@ -72,6 +71,7 @@ class SwerveModule(Subsystem):
         
         self.drive_motor.set_control(VelocityTorqueCurrentFOC(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.direction_motor.set_control(MotionMagicVoltage(degs_to_rots(desiredState.angle.degrees())))
+        #print(degs_to_rots(desiredState.angle.degrees()))
         self.change_direction(desiredState.angle)
 
    
@@ -115,7 +115,6 @@ class Swerve(Subsystem):
     
     def __init__(self):
         super().__init__()
-        CommandScheduler.getInstance().registerSubsystem(self)
 
         self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(),
                                              (self.left_front.get_position(), self.left_rear.get_position(),
