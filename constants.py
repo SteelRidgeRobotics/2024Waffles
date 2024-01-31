@@ -16,7 +16,7 @@ class DriveMotorConstants:
     """Constants for a TalonFX drive motor for a swerve module."""
     
     def __init__(self, motor_id: int, 
-                 k_s: float, k_v: float=0.12, k_a: float=0, k_p: float=0, k_i: float=0, k_d: float=0) -> None:
+                 k_s: float, k_v: float=0.12, k_a: float=0, k_p: float=3, k_i: float=0, k_d: float=0, inverted: InvertedValue=InvertedValue.COUNTER_CLOCKWISE_POSITIVE) -> None:
         
         self.motor_id = motor_id
         
@@ -26,6 +26,8 @@ class DriveMotorConstants:
         self.k_p = k_p
         self.k_i = k_i
         self.k_d = k_d
+        
+        self.inverted = inverted
         
         self.neutral_mode = NeutralModeValue.BRAKE
         
@@ -40,7 +42,7 @@ class DriveMotorConstants:
         """
         config = TalonFXConfiguration()
         config.slot0.with_k_s(self.k_s).with_k_v(self.k_v).with_k_a(self.k_a).with_k_p(self.k_p).with_k_i(self.k_i).with_k_d(self.k_d)
-        config.motor_output.with_neutral_mode(self.neutral_mode)
+        config.motor_output.with_neutral_mode(self.neutral_mode).with_inverted(self.inverted)
         motor.configurator.apply(config)
         return motor
         

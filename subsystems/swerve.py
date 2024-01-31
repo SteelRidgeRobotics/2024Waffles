@@ -29,7 +29,7 @@ class SwerveModule(Subsystem):
     The drive motor spins the wheel to move.
     """
 
-    def __init__(self, module_name: str, drive_motor_constants: DriveMotorConstants, direction_motor_constants: DirectionMotorConstants, CANcoder_id: int) -> None:
+    def __init__(self, module_name: str, drive_motor_constants: DriveMotorConstants, direction_motor_constants: DirectionMotorConstants, CANcoder_id: int, CAN_offset: float) -> None:
         super().__init__()
         CommandScheduler.getInstance().registerSubsystem(self)
 
@@ -37,7 +37,7 @@ class SwerveModule(Subsystem):
 
         self.turning_encoder = CANcoder(CANcoder_id, "rio")
         encoder_config = CANcoderConfiguration()
-        encoder_config.magnet_sensor = MagnetSensorConfigs().with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE)
+        encoder_config.magnet_sensor = MagnetSensorConfigs().with_sensor_direction(SensorDirectionValue.CLOCKWISE_POSITIVE).with_magnet_offset(CAN_offset).with_absolute_sensor_range(AbsoluteSensorRangeValue.UNSIGNED_0_TO1)
         self.turning_encoder.configurator.apply(encoder_config)
         
         self.drive_motor = TalonFX(drive_motor_constants.motor_id, "rio")
@@ -45,6 +45,10 @@ class SwerveModule(Subsystem):
 
         self.direction_motor = TalonFX(direction_motor_constants.motor_id, "rio")
         direction_motor_constants.apply_configuration(self.direction_motor)
+        #new_config = TalonFXConfiguration()
+        #new_config.feedback.sensor_to_mechanism_ratio = 12.8
+        #new_config.closed_loop_general.continuous_wrap = True
+        #self.direction_motor.configurator.apply(new_config)
 
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
@@ -67,8 +71,10 @@ class SwerveModule(Subsystem):
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
         
         self.drive_motor.set_control(VelocityTorqueCurrentFOC(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
+        self.direction_motor.set_control(MotionMagicVoltage(degs_to_rots(desiredState.angle.degrees())))
         self.change_direction(desiredState.angle)
 
+   
     def change_direction(self, rotation: Rotation2d) -> None:
         angle_diff = rotation.degrees() - (self.get_angle().degrees())
         target_angle_dist = math.fabs(angle_diff)
@@ -102,10 +108,10 @@ class Swerve(Subsystem):
     
     field = Field2d()
     
-    left_front: SwerveModule = SwerveModule("LF", DriveMotorConstants(MotorIDs.LEFT_FRONT_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_FRONT_DIRECTION, k_s=0.25), CANIDs.LEFT_FRONT)
-    left_rear: SwerveModule = SwerveModule("LR", DriveMotorConstants(MotorIDs.LEFT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_REAR_DIRECTION, k_s=0.25), CANIDs.LEFT_REAR)
-    right_front: SwerveModule = SwerveModule("RF", DriveMotorConstants(MotorIDs.RIGHT_FRONT_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.RIGHT_FRONT_DIRECTION, k_s=0.25), CANIDs.RIGHT_FRONT)
-    right_rear: SwerveModule = SwerveModule("RR", DriveMotorConstants(MotorIDs.RIGHT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.RIGHT_REAR_DIRECTION, k_s=0.25), CANIDs.RIGHT_REAR)
+    left_front: SwerveModule = SwerveModule("LF", DriveMotorConstants(MotorIDs.LEFT_FRONT_DRIVE, k_s=0.23, inverted=InvertedValue.CLOCKWISE_POSITIVE), DirectionMotorConstants(MotorIDs.LEFT_FRONT_DIRECTION, k_s=0.25), CANIDs.LEFT_FRONT, -0.973388671875)
+    left_rear: SwerveModule = SwerveModule("LR", DriveMotorConstants(MotorIDs.LEFT_REAR_DRIVE, k_s=0.24), DirectionMotorConstants(MotorIDs.LEFT_REAR_DIRECTION, k_s=0.25), CANIDs.LEFT_REAR, -0.9990234375)
+    right_front: SwerveModule = SwerveModule("RF", DriveMotorConstants(MotorIDs.RIGHT_FRONT_DRIVE, k_s=0.24, inverted=InvertedValue.CLOCKWISE_POSITIVE), DirectionMotorConstants(MotorIDs.RIGHT_FRONT_DIRECTION, k_s=0.25), CANIDs.RIGHT_FRONT, 0.10009765625)
+    right_rear: SwerveModule = SwerveModule("RR", DriveMotorConstants(MotorIDs.RIGHT_REAR_DRIVE, k_s=0.25, inverted=InvertedValue.CLOCKWISE_POSITIVE), DirectionMotorConstants(MotorIDs.RIGHT_REAR_DIRECTION, k_s=0.25), CANIDs.RIGHT_REAR, -0.08056640625)
     
     def __init__(self):
         super().__init__()
