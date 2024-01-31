@@ -1,7 +1,7 @@
 import math
 
 import navx
-from commands2 import Command, CommandScheduler, Subsystem
+from commands2 import Command, Subsystem
 from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
 from pathplannerlib.config import (HolonomicPathFollowerConfig, PIDConstants,
                                    ReplanningConfig)
@@ -12,7 +12,7 @@ from phoenix6.controls import *
 from phoenix6.hardware import CANcoder, TalonFX
 from phoenix6.controls.motion_magic_voltage import MotionMagicVoltage
 from phoenix6.signals import *
-from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
+from wpilib import DriverStation, Field2d, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (ChassisSpeeds, SwerveDrive4Kinematics,
                                 SwerveDrive4Odometry, SwerveModulePosition,
@@ -83,15 +83,12 @@ class Swerve(Subsystem):
     def __init__(self):
         super().__init__()
 
-        self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(),
-                                             (self.left_front.get_position(), self.left_rear.get_position(),
-                                              self.right_front.get_position(), self.right_rear.get_position()))
+        self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(), (self.left_front, self.left_rear, self.right_front, self.right_rear))
 
         SmartDashboard.putData(self.field)
         SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
 
         self.chassis_speed = ChassisSpeeds()
-        self.target_rad = 0
         
         if not AutoBuilder.isConfigured():
             # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
@@ -124,25 +121,16 @@ class Swerve(Subsystem):
         return self.navx.getRotation2d()
     
     def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> None:
-        # Shoutout to team 1706, your code saved our swerve this year lmao
-        # Insert function to steady target angle here :)))
-
         if field_relative:
-            if RobotBase.isReal():
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
-            else:
-                states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, Rotation2d.fromDegrees(self.target_rad)))
+            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
         else:
-            states = self.kinematics.toSwerveModuleStates(chassis_speed)
+            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speed, self.get_angle()))
 
         desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_speed)
 
-        self.chassis_speed = chassis_speed
+        self.chassis_speed = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speed, self.get_angle())
 
         self.set_module_states(desat_states)
-        
-        if not RobotBase.isReal():
-            self.target_rad += chassis_speed.omega / 50
             
     def hockey_stop(self) -> None:
         self.left_front.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(225)))
@@ -165,19 +153,14 @@ class Swerve(Subsystem):
         return self.odometry.getPose()
 
     def reset_odometry(self, pose=Pose2d()) -> None:
-        self.target_rad = 0
         self.odometry.resetPosition(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), pose)
         
     def reset_odometry_command(self) -> Command:
         return self.runOnce(lambda: self.reset_odometry())
 
     def periodic(self) -> None:
-        if RobotBase.isReal():
-            self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
-        else:
-            self.odometry.update(Rotation2d(self.target_rad), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
+        self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
         self.field.setRobotPose(self.odometry.getPose())
-        SmartDashboard.putNumber("test", self.left_front.get_position().distance)
         SmartDashboard.putData(self.field)
         
     def initialize(self) -> None:
