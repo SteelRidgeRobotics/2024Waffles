@@ -83,7 +83,7 @@ class Swerve(Subsystem):
     def __init__(self):
         super().__init__()
 
-        self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(), (self.left_front, self.left_rear, self.right_front, self.right_rear))
+        self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
 
         SmartDashboard.putData(self.field)
         SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
