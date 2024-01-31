@@ -128,7 +128,7 @@ class Swerve(Subsystem):
 
         desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_speed)
 
-        self.chassis_speed = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speed, self.get_angle())
+        self.chassis_speed = ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle())
 
         self.set_module_states(desat_states)
             
