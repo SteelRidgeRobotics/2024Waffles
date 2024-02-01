@@ -7,9 +7,9 @@ from wpimath.filter import SlewRateLimiter
 from wpimath.kinematics import ChassisSpeeds
 
 class DriveByController(Command):
-    trans_x_slew = SlewRateLimiter(15)
-    trans_y_slew = SlewRateLimiter(15)
-    rot_slew = SlewRateLimiter(15)
+    trans_x_slew = SlewRateLimiter(30)
+    trans_y_slew = SlewRateLimiter(30)
+    rot_slew = SlewRateLimiter(30)
 
     def __init__(self, swerve: Swerve, controller: XboxController) -> None:
         super().__init__()

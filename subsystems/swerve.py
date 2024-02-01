@@ -46,17 +46,17 @@ class SwerveModule(Subsystem):
         direction_motor_constants.apply_configuration(self.direction_motor)
 
     def get_angle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_position().value))
+        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
         pos = -self.turning_encoder.get_absolute_position().value
-        self.direction_motor.set_position(pos)
+        self.direction_motor.set_position(pos * k_direction_gear_ratio)
 
     def get_state(self) -> SwerveModuleState:
-        return SwerveModuleState(rots_to_meters(self.drive_motor.get_velocity().value), self.get_angle())
+        return SwerveModuleState(rots_to_meters(self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
     
     def get_position(self) -> SwerveModulePosition:
-        return SwerveModulePosition(rots_to_meters(self.drive_motor.get_position().value), self.get_angle())
+        return SwerveModulePosition(rots_to_meters(self.drive_motor.get_rotor_position().value, k_drive_gear_ratio), self.get_angle())
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
@@ -64,8 +64,34 @@ class SwerveModule(Subsystem):
         self.drive_motor.set_control(VelocityTorqueCurrentFOC(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
         
-        self.direction_motor.set_control(MotionMagicVoltage(degs_to_rots(desiredState.angle.degrees())))
-        self.direction_motor.sim_state.set_raw_rotor_position(degs_to_rots(desiredState.angle.degrees()))
+        #self.direction_motor.set_control(MotionMagicVoltage(degs_to_rots(desiredState.angle.degrees())))
+        #self.direction_motor.sim_state.set_raw_rotor_position(degs_to_rots(desiredState.angle.degrees()))
+        self.change_direction(desiredState.angle)
+    
+    def change_direction(self, rotation: Rotation2d) -> None:
+        angle_diff = rotation.degrees() - (self.get_angle().degrees())
+        target_angle_dist = math.fabs(angle_diff)
+
+        # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
+        if target_angle_dist > 180:
+            while target_angle_dist > 180:
+                target_angle_dist -= 360
+            target_angle_dist = abs(target_angle_dist)
+
+        change_in_rots = target_angle_dist / 360
+
+        if angle_diff < 0 or angle_diff >= 360:
+            angle_diff %= 360
+        
+        final_pos = self.direction_motor.get_rotor_position().value / k_direction_gear_ratio
+        if angle_diff > 180:
+            # Move CCW
+            final_pos -= change_in_rots
+        else:
+            # Move CW
+            final_pos += change_in_rots
+
+        self.direction_motor.set_control(MotionMagicVoltage(final_pos * k_direction_gear_ratio))
 
 class Swerve(Subsystem):
     navx = navx.AHRS.create_spi()
@@ -78,7 +104,7 @@ class Swerve(Subsystem):
     left_front: SwerveModule = SwerveModule("LF", DriveMotorConstants(MotorIDs.LEFT_FRONT_DRIVE), DirectionMotorConstants(MotorIDs.LEFT_FRONT_DIRECTION), CANIDs.LEFT_FRONT, -0.473388671875)
     left_rear: SwerveModule = SwerveModule("LR", DriveMotorConstants(MotorIDs.LEFT_REAR_DRIVE), DirectionMotorConstants(MotorIDs.LEFT_REAR_DIRECTION), CANIDs.LEFT_REAR, -0.9990234375)
     right_front: SwerveModule = SwerveModule("RF", DriveMotorConstants(MotorIDs.RIGHT_FRONT_DRIVE), DirectionMotorConstants(MotorIDs.RIGHT_FRONT_DIRECTION), CANIDs.RIGHT_FRONT, -0.39990234375)
-    right_rear: SwerveModule = SwerveModule("RR", DriveMotorConstants(MotorIDs.RIGHT_REAR_DRIVE), DirectionMotorConstants(MotorIDs.RIGHT_REAR_DIRECTION), CANIDs.RIGHT_REAR, -0.08056640625)
+    right_rear: SwerveModule = SwerveModule("RR", DriveMotorConstants(MotorIDs.RIGHT_REAR_DRIVE), DirectionMotorConstants(MotorIDs.RIGHT_REAR_DIRECTION), CANIDs.RIGHT_REAR, 0.41943359375)
     
     def __init__(self):
         super().__init__()
