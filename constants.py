@@ -50,7 +50,7 @@ class DriveMotorConstants:
 class DirectionMotorConstants:
     
     def __init__(self, motor_id: int, 
-                 k_s: float=0.26, cruise_velocity: int=240, cruise_acceleration: int=600, cruise_jerk: int=3500, 
+                 k_s: float=0.26, cruise_velocity: int=240, cruise_acceleration: int=600, cruise_jerk: int=6500, 
                  k_v: float=0.1186, k_a: float=0, k_p: float=7, k_i: float=0, k_d: float=0) -> None:
         
         self.motor_id = motor_id
@@ -66,7 +66,7 @@ class DirectionMotorConstants:
         self.cruise_acceleration = cruise_acceleration
         self.cruise_jerk = cruise_jerk
         
-        self.peak_volt = 12
+        self.peak_volt = 16
         
         self.neutral_mode = NeutralModeValue.BRAKE
         self.invert = InvertedValue.CLOCKWISE_POSITIVE
