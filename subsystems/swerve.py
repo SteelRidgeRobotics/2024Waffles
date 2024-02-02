@@ -61,7 +61,9 @@ class SwerveModule(Subsystem):
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
         
-        self.drive_motor.set_control(VelocityTorqueCurrentFOC(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
+        SmartDashboard.putNumber(self.module_name + "desiredSpeed (m/s)", desiredState.speed)
+        
+        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
         
         #self.direction_motor.set_control(MotionMagicVoltage(degs_to_rots(desiredState.angle.degrees())))

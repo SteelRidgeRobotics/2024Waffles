@@ -27,9 +27,9 @@ class DriveByController(Command):
         translation_y = self.controller.getLeftX()
         rotation = self.controller.getRightX()
 
-        translation_y = -self.trans_x_slew.calculate(deadband(translation_y, DriverController.deadband) ** 3)
-        translation_x = -self.trans_y_slew.calculate(deadband(translation_x, DriverController.deadband) ** 3)
-        rotation = -self.rot_slew.calculate(deadband(rotation, DriverController.deadband) ** 3)
+        translation_y = -deadband(translation_y, DriverController.deadband) ** 3
+        translation_x = -deadband(translation_x, DriverController.deadband) ** 3
+        rotation = -deadband(rotation, DriverController.deadband) ** 3
 
         if self.controller.getBButtonPressed():
             self.swerve.hockey_stop()

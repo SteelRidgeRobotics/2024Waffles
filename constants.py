@@ -16,7 +16,7 @@ class DriveMotorConstants:
     """Constants for a TalonFX drive motor for a swerve module."""
     
     def __init__(self, motor_id: int, 
-                 k_s: float=0.24, k_v: float=0.12, k_a: float=0, k_p: float=3, k_i: float=0, k_d: float=0, inverted: InvertedValue=InvertedValue.COUNTER_CLOCKWISE_POSITIVE) -> None:
+                 k_s: float=0.4, k_v: float=0.12, k_a: float=0, k_p: float=0.815, k_i: float=0, k_d: float=0, inverted: InvertedValue=InvertedValue.COUNTER_CLOCKWISE_POSITIVE) -> None:
         
         self.motor_id = motor_id
         
@@ -50,8 +50,8 @@ class DriveMotorConstants:
 class DirectionMotorConstants:
     
     def __init__(self, motor_id: int, 
-                 k_s: float=0.23, cruise_velocity: int=60, cruise_acceleration: int=160, cruise_jerk: int=1600, 
-                 k_v: float=0.107, k_a: float=0, k_p: float=0.78, k_i: float=0, k_d: float=0.0004) -> None:
+                 k_s: float=0.26, cruise_velocity: int=240, cruise_acceleration: int=600, cruise_jerk: int=3500, 
+                 k_v: float=0.1186, k_a: float=0, k_p: float=7, k_i: float=0, k_d: float=0) -> None:
         
         self.motor_id = motor_id
         
