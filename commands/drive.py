@@ -2,7 +2,7 @@ from commands2 import Command
 from constants import *
 from math import fabs
 from subsystems.swerve import Swerve
-from wpilib import SmartDashboard, XboxController
+from wpilib import XboxController
 from wpimath.filter import SlewRateLimiter
 from wpimath.kinematics import ChassisSpeeds
 
@@ -26,15 +26,21 @@ class DriveByController(Command):
         translation_x = self.controller.getLeftY()
         translation_y = self.controller.getLeftX()
         rotation = self.controller.getRightX()
+        
+        # Bumper Slowdown
+        slowdown_mult = 1
+        if self.controller.getLeftBumper():
+            slowdown_mult += 0.5
+        if self.controller.getRightBumper():
+            slowdown_mult += 0.5
 
         translation_y = -deadband(translation_y, DriverController.deadband) ** 3
         translation_x = -deadband(translation_x, DriverController.deadband) ** 3
         rotation = -deadband(rotation, DriverController.deadband) ** 3
 
-        if self.controller.getBButtonPressed():
-            self.swerve.hockey_stop()
-            return
-        self.swerve.drive(ChassisSpeeds(translation_x * Waffles.k_max_speed, translation_y * Waffles.k_max_speed, rotation * Waffles.k_max_rot_rate), field_relative=True)
+        self.swerve.drive(ChassisSpeeds(translation_x * Waffles.k_max_speed / slowdown_mult, 
+                                        translation_y * Waffles.k_max_speed / slowdown_mult, 
+                                        rotation * Waffles.k_max_rot_rate / slowdown_mult), field_relative=True)
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)

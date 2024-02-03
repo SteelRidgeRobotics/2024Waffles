@@ -50,7 +50,7 @@ class SwerveModule(Subsystem):
     
     def reset_sensor_position(self) -> None:
         pos = -self.turning_encoder.get_absolute_position().value
-        self.direction_motor.set_position(pos * k_direction_gear_ratio)
+        self.direction_motor.set_control(MotionMagicVoltage(pos * k_direction_gear_ratio))
 
     def get_state(self) -> SwerveModuleState:
         return SwerveModuleState(rots_to_meters(self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
@@ -61,13 +61,9 @@ class SwerveModule(Subsystem):
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
         
-        SmartDashboard.putNumber(self.module_name + "desiredSpeed (m/s)", desiredState.speed)
-        
         self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
         
-        #self.direction_motor.set_control(MotionMagicVoltage(degs_to_rots(desiredState.angle.degrees())))
-        #self.direction_motor.sim_state.set_raw_rotor_position(degs_to_rots(desiredState.angle.degrees()))
         self.change_direction(desiredState.angle)
     
     def change_direction(self, rotation: Rotation2d) -> None:
@@ -159,12 +155,6 @@ class Swerve(Subsystem):
         self.chassis_speed = ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle())
 
         self.set_module_states(desat_states)
-            
-    def hockey_stop(self) -> None:
-        self.left_front.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(225)))
-        self.left_rear.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(-45)))
-        self.right_front.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(135)))
-        self.right_rear.set_desired_state(SwerveModuleState(0, Rotation2d.fromDegrees(45)))
 
     def get_chassis_speeds(self) -> ChassisSpeeds:
         return self.chassis_speed
