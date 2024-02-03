@@ -12,6 +12,7 @@ from phoenix6.controls import *
 from phoenix6.hardware import CANcoder, TalonFX
 from phoenix6.controls.motion_magic_voltage import MotionMagicVoltage
 from phoenix6.signals import *
+from typing import Self
 from wpilib import DriverStation, Field2d, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (ChassisSpeeds, SwerveDrive4Kinematics,
@@ -139,13 +140,15 @@ class Swerve(Subsystem):
         # Flips the PathPlanner path if we're on the red alliance
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
-    def run_auto(self, auto: PathPlannerAuto) -> None:
+    def run_auto(self, auto: PathPlannerAuto) -> Self:
         self.runOnce(lambda: auto)
+        
+        return self
 
     def get_angle(self) -> Rotation2d:
         return self.navx.getRotation2d()
     
-    def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> None:
+    def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> Self:
         if field_relative:
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
         else:
@@ -156,6 +159,7 @@ class Swerve(Subsystem):
         self.chassis_speed = ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle())
 
         self.set_module_states(desat_states)
+        return self
 
     def get_chassis_speeds(self) -> ChassisSpeeds:
         return self.chassis_speed
@@ -171,24 +175,32 @@ class Swerve(Subsystem):
     def get_pose(self) -> Pose2d:
         return self.odometry.getPose()
 
-    def reset_odometry(self, pose=Pose2d()) -> None:
+    def reset_odometry(self, pose=Pose2d()) -> Self:
         self.odometry.resetPosition(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), pose)
+        
+        return self
         
     def reset_odometry_command(self) -> Command:
         return self.runOnce(lambda: self.reset_odometry())
+    
+    def reset_yaw(self) -> Self:
+        self.navx.reset()
+        return self
 
     def periodic(self) -> None:
         self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
         self.field.setRobotPose(self.odometry.getPose())
         SmartDashboard.putData(self.field)
         
-    def initialize(self) -> None:
+    def initialize(self) -> Self:
         self.navx.reset()
         
         self.left_front.reset_sensor_position()
         self.left_rear.reset_sensor_position()
         self.right_front.reset_sensor_position()
         self.right_rear.reset_sensor_position()
+        
+        return self
 
 """
 CONVERSIONS
