@@ -55,10 +55,10 @@ class SwerveModule(Subsystem):
         self.direction_motor.set_position(pos * k_direction_gear_ratio)
 
     def get_state(self) -> SwerveModuleState:
-        return SwerveModuleState(rots_to_meters(self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
+        return SwerveModuleState(rots_to_meters(-self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
     
     def get_position(self) -> SwerveModulePosition:
-        return SwerveModulePosition(rots_to_meters(self.drive_motor.get_rotor_position().value, k_drive_gear_ratio), self.get_angle())
+        return SwerveModulePosition(rots_to_meters(-self.drive_motor.get_rotor_position().value, k_drive_gear_ratio), self.get_angle())
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
