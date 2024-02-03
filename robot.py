@@ -3,9 +3,8 @@ from constants import *
 from commands.drive import DriveByController
 from pathplannerlib.auto import PathPlannerAuto
 from subsystems.swerve import Swerve
-from wpimath.geometry import Pose2d
+from wpimath.geometry import Pose2d, Rotation2d
 from wpilib import SendableChooser, SmartDashboard, XboxController
-from wpilib import DriverStation
 
 class Waffles(TimedCommandRobot):
     driver_controller = XboxController(DriverController.port)
@@ -29,14 +28,14 @@ class Waffles(TimedCommandRobot):
         # Start Chooser
         # This is in charge of choosing our start position. failure to change this will result in the bot doing a LOT of weird stuff.
         self.start_chooser.setDefaultOption("Failsafe (0, 0)", Pose2d())
-        self.start_chooser.addOption("Blue 1", Pose2d())
+        self.start_chooser.addOption("Blue 1", Pose2d(1.40, 7.28, Rotation2d()))
         self.start_chooser.addOption("Blue 2", Pose2d())
         self.start_chooser.addOption("Blue 3", Pose2d())
-        self.start_chooser.addOption("Red 1", Pose2d())
+        self.start_chooser.addOption("Red 1", Pose2d(15.142, 7.28, Rotation2d.fromDegrees(180)))
         self.start_chooser.addOption("Red 2", Pose2d())
         self.start_chooser.addOption("Red 3", Pose2d())
         
-        self.start_chooser.onChange(lambda: self.swerve.reset_odometry(self.start_chooser.getSelected()))
+        self.start_chooser.onChange(lambda pose: self.swerve.reset_odometry(pose=self.start_chooser.getSelected()))
         
         SmartDashboard.putData("Auto Route", self.auto_chooser)
         SmartDashboard.putData("Starting Position", self.start_chooser)

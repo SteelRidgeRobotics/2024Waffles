@@ -34,9 +34,9 @@ class DriveByController(Command):
         if self.controller.getRightBumper():
             slowdown_mult += 0.5
 
-        translation_y = deadband(translation_y, DriverController.deadband) ** 3
-        translation_x = deadband(translation_x, DriverController.deadband) ** 3
-        rotation = deadband(rotation, DriverController.deadband) ** 3
+        translation_y = -deadband(translation_y, DriverController.deadband) ** 3
+        translation_x = -deadband(translation_x, DriverController.deadband) ** 3
+        rotation = -deadband(rotation, DriverController.deadband) ** 3
 
         self.swerve.drive(ChassisSpeeds(translation_x * Waffles.k_max_speed / slowdown_mult, 
                                         translation_y * Waffles.k_max_speed / slowdown_mult, 

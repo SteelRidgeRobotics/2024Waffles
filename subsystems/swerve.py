@@ -55,10 +55,10 @@ class SwerveModule(Subsystem):
         self.direction_motor.set_position(pos * k_direction_gear_ratio)
 
     def get_state(self) -> SwerveModuleState:
-        return SwerveModuleState(rots_to_meters(-self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
+        return SwerveModuleState(rots_to_meters(self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
     
     def get_position(self) -> SwerveModulePosition:
-        return SwerveModulePosition(rots_to_meters(-self.drive_motor.get_rotor_position().value, k_drive_gear_ratio), self.get_angle())
+        return SwerveModulePosition(rots_to_meters(self.drive_motor.get_rotor_position().value, k_drive_gear_ratio), self.get_angle())
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
@@ -176,9 +176,8 @@ class Swerve(Subsystem):
     def get_pose(self) -> Pose2d:
         return self.odometry.getPose()
 
-    def reset_odometry(self, pose=Pose2d()) -> Self:
+    def reset_odometry(self, pose=Pose2d()) -> None:
         self.odometry.resetPosition(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), pose)
-        return self
         
     def reset_odometry_command(self) -> Command:
         return self.runOnce(lambda: self.reset_odometry())
