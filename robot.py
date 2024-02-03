@@ -5,6 +5,7 @@ from pathplannerlib.auto import PathPlannerAuto
 from subsystems.swerve import Swerve
 from wpimath.geometry import Pose2d
 from wpilib import SendableChooser, SmartDashboard, XboxController
+from wpilib import DriverStation
 
 class Waffles(TimedCommandRobot):
     driver_controller = XboxController(DriverController.port)
@@ -35,6 +36,8 @@ class Waffles(TimedCommandRobot):
         self.start_chooser.addOption("Red 2", Pose2d())
         self.start_chooser.addOption("Red 3", Pose2d())
         
+        self.start_chooser.onChange(lambda: self.swerve.reset_odometry(self.start_chooser.getSelected()))
+        
         SmartDashboard.putData("Auto Route", self.auto_chooser)
         SmartDashboard.putData("Starting Position", self.start_chooser)
 
@@ -42,7 +45,7 @@ class Waffles(TimedCommandRobot):
         return self.auto_chooser.getSelected()
 
     def autonomousInit(self) -> None:
-        self.swerve.initialize().reset_yaw().reset_odometry(self.auto_chooser.getSelected())
+        self.swerve.initialize().reset_yaw().reset_odometry(self.start_chooser.getSelected())
         self.getSelectedAutoCommand().schedule()
 
     def robotPeriodic(self) -> None:

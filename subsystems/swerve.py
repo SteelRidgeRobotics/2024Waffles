@@ -113,6 +113,7 @@ class Swerve(Subsystem):
 
         SmartDashboard.putData(self.field)
         SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
+        SmartDashboard.putData("Reset Gyro", self.reset_gyro_command())
 
         self.chassis_speed = ChassisSpeeds()
         
@@ -177,11 +178,13 @@ class Swerve(Subsystem):
 
     def reset_odometry(self, pose=Pose2d()) -> Self:
         self.odometry.resetPosition(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), pose)
-        
         return self
         
     def reset_odometry_command(self) -> Command:
         return self.runOnce(lambda: self.reset_odometry())
+    
+    def reset_gyro_command(self) -> Command:
+        return self.runOnce(lambda: self.reset_yaw())
     
     def reset_yaw(self) -> Self:
         self.navx.reset()
@@ -193,8 +196,6 @@ class Swerve(Subsystem):
         SmartDashboard.putData(self.field)
         
     def initialize(self) -> Self:
-        self.navx.reset()
-        
         self.left_front.reset_sensor_position()
         self.left_rear.reset_sensor_position()
         self.right_front.reset_sensor_position()
