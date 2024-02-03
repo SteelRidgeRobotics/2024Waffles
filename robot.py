@@ -29,6 +29,7 @@ class Waffles(TimedCommandRobot):
         return self.auto_chooser.getSelected()
 
     def autonomousInit(self) -> None:
+        self.swerve.initialize()
         self.getSelectedAutoCommand().schedule()
 
     def robotPeriodic(self) -> None:

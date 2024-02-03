@@ -49,8 +49,9 @@ class SwerveModule(Subsystem):
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
+        pass
         pos = -self.turning_encoder.get_absolute_position().value
-        self.direction_motor.set_control(MotionMagicVoltage(pos * k_direction_gear_ratio))
+        self.direction_motor.set_position(pos * k_direction_gear_ratio)
 
     def get_state(self) -> SwerveModuleState:
         return SwerveModuleState(rots_to_meters(self.drive_motor.get_rotor_velocity().value, k_drive_gear_ratio), self.get_angle())
@@ -60,7 +61,7 @@ class SwerveModule(Subsystem):
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
-        
+            
         self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
         
@@ -124,9 +125,9 @@ class Swerve(Subsystem):
                 HolonomicPathFollowerConfig(
                     PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
                     PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
-                    Waffles.k_max_speed / 4,
+                    Waffles.k_max_speed,
                     Waffles.k_drive_base_radius,
-                    ReplanningConfig(enableInitialReplanning=False)
+                    ReplanningConfig(enableInitialReplanning=True)
                 ),
                 lambda: self.should_flip_auto_path(),
                 self
