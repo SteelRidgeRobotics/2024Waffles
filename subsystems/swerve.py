@@ -63,7 +63,7 @@ class SwerveModule(Subsystem):
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
-            
+        
         self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
         
@@ -78,8 +78,11 @@ class SwerveModule(Subsystem):
             while target_angle_dist > 180:
                 target_angle_dist -= 360
             target_angle_dist = abs(target_angle_dist)
+        elif target_angle_dist == 180:
+            # Sometimes kinematics gets confused and gives us an angle 180 degrees off. If this happens, we simply ignore this request.
+            return
 
-        change_in_rots = target_angle_dist / 360
+        change_in_rots = degs_to_rots(target_angle_dist)
 
         if angle_diff < 0 or angle_diff >= 360:
             angle_diff %= 360
