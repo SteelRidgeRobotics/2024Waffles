@@ -50,7 +50,6 @@ class SwerveModule(Subsystem):
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
-        pass
         pos = -self.turning_encoder.get_absolute_position().value
         self.direction_motor.set_position(pos * k_direction_gear_ratio)
 
@@ -143,13 +142,13 @@ class Swerve(Subsystem):
     
     def run_auto(self, auto: PathPlannerAuto) -> Self:
         self.runOnce(lambda: auto)
-        
         return self
 
     def get_angle(self) -> Rotation2d:
         return self.navx.getRotation2d()
     
     def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> Self:
+        chassis_speed = ChassisSpeeds.discretize(chassis_speed, 0.02)
         if field_relative:
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
         else:

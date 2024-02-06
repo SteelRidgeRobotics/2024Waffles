@@ -85,8 +85,6 @@ class DirectionMotorConstants:
         config.motor_output.with_neutral_mode(self.neutral_mode).with_inverted(self.invert)
         config.voltage.with_peak_forward_voltage(self.peak_volt).with_peak_reverse_voltage(-self.peak_volt)
         config.motion_magic.with_motion_magic_cruise_velocity(self.cruise_velocity).with_motion_magic_acceleration(self.cruise_acceleration).with_motion_magic_jerk(self.cruise_jerk)
-        #config.closed_loop_general.continuous_wrap = True
-        #config.feedback.sensor_to_mechanism_ratio = 1
         motor.configurator.apply(config)
         return motor
         
