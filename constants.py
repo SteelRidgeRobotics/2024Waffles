@@ -102,10 +102,10 @@ class MotorIDs:
     RIGHT_REAR_DIRECTION = 7
 
 class CANIDs:
-    LEFT_FRONT = 10
-    RIGHT_FRONT = 12
-    LEFT_REAR = 11
-    RIGHT_REAR = 13
+    LEFT_FRONT = 4
+    LEFT_REAR = 5
+    RIGHT_FRONT = 6
+    RIGHT_REAR = 7
 
 k_direction_gear_ratio = 150 / 7
 k_drive_gear_ratio = 27 / 4
