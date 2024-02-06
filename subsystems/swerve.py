@@ -47,7 +47,9 @@ class SwerveModule(Subsystem):
         direction_motor_constants.apply_configuration(self.direction_motor)
 
     def get_angle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
+        # Calculate predicted position so we get our position next frame (doesn't take into account acceleration, but it's probably fine)
+        predictedPos = self.direction_motor.get_rotor_velocity().value * 0.02 + self.direction_motor.get_rotor_position().value
+        return Rotation2d.fromDegrees(rots_to_degs(predictedPos / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
         pos = -self.turning_encoder.get_absolute_position().value
