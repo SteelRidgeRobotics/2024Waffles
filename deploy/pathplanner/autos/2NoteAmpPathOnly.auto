@@ -1,0 +1,37 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.407706324685116,
+      "y": 7.260718658384535
+    },
+    "rotation": 0
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "StartToAmp"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "AmpToCloseNote"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CloseNoteToAmp"
+          }
+        }
+      ]
+    }
+  },
+  "folder": "Amp",
+  "choreoAuto": false
+}

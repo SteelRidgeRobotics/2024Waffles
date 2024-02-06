@@ -3,51 +3,51 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.5645260933888478,
-        "y": 7.284140331476098
-      },
-      "prevControl": null,
-      "nextControl": {
-        "x": 1.064526093388848,
-        "y": 7.284140331476098
-      },
-      "isLocked": true,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 1.8292964403332503,
-        "y": 7.284140331476098
-      },
-      "prevControl": {
-        "x": 1.8292964403332503,
-        "y": 7.334140331476098
-      },
-      "nextControl": {
-        "x": 1.8292964403332503,
-        "y": 7.234140331476098
-      },
-      "isLocked": true,
-      "linkedName": null
-    },
-    {
-      "anchor": {
         "x": 1.8292964403332503,
         "y": 7.6003329182121995
       },
-      "prevControl": {
+      "prevControl": null,
+      "nextControl": {
         "x": 1.8292964403332503,
-        "y": 7.5503329182122
+        "y": 7.1003329182121995
+      },
+      "isLocked": true,
+      "linkedName": "AtAmp"
+    },
+    {
+      "anchor": {
+        "x": 1.8292964403332503,
+        "y": 6.979658581285779
+      },
+      "prevControl": {
+        "x": 1.7792964403332503,
+        "y": 6.979658581285779
+      },
+      "nextControl": {
+        "x": 1.8792964403332504,
+        "y": 6.979658581285779
+      },
+      "isLocked": true,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.918404239090931,
+        "y": 6.979658581285779
+      },
+      "prevControl": {
+        "x": 2.204083946855154,
+        "y": 6.979658581285779
       },
       "nextControl": null,
       "isLocked": true,
-      "linkedName": "AtAmp"
+      "linkedName": "AmpCloseNote"
     }
   ],
   "rotationTargets": [
     {
       "waypointRelativePos": 1,
-      "rotationDegrees": 90.0,
+      "rotationDegrees": 0,
       "rotateFast": false
     }
   ],
@@ -61,13 +61,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 90.0,
+    "rotation": 0,
     "rotateFast": false
   },
   "reversed": false,
   "folder": "Amp",
   "previewStartingState": {
-    "rotation": 0,
+    "rotation": 90.0,
     "velocity": 0
   },
   "useDefaultConstraints": false
