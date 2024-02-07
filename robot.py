@@ -24,6 +24,9 @@ class Waffles(TimedCommandRobot):
         self.auto_chooser.addOption("B2M", PathPlannerAuto("Backward 2 Meters"))
         self.auto_chooser.addOption("R2M", PathPlannerAuto("Right 2 Meters"))
         self.auto_chooser.addOption("L2M", PathPlannerAuto("Left 2 Meters"))
+        self.auto_chooser.addOption("Amp", PathPlannerAuto("2NoteAmpPathOnly"))
+        self.auto_chooser.addOption("ForwardSpin", PathPlannerAuto("ForwardSpin"))
+        self.auto_chooser.addOption("New Auto", PathPlannerAuto("New Auto"))
         
         # Start Chooser
         # This is in charge of choosing our start position. failure to change this will result in the bot doing a LOT of weird stuff.

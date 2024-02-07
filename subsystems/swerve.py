@@ -15,6 +15,7 @@ from phoenix6.signals import *
 from typing import Self
 from wpilib import DriverStation, Field2d, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.kinematics import (ChassisSpeeds, SwerveDrive4Kinematics,
                                 SwerveDrive4Odometry, SwerveModulePosition,
                                 SwerveModuleState)
@@ -48,7 +49,7 @@ class SwerveModule(Subsystem):
 
     def get_angle(self) -> Rotation2d:
         # Calculate predicted position so we get our position next frame (doesn't take into account acceleration, but it's probably fine)
-        predictedPos = self.direction_motor.get_rotor_velocity().value * 0.02 + self.direction_motor.get_rotor_position().value
+        predictedPos = self.direction_motor.get_rotor_position().value
         return Rotation2d.fromDegrees(rots_to_degs(predictedPos / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
@@ -113,7 +114,7 @@ class Swerve(Subsystem):
     def __init__(self):
         super().__init__()
 
-        self.odometry = SwerveDrive4Odometry(self.kinematics, self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
+        self.odometry = SwerveDrive4PoseEstimator(self.kinematics, self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), Pose2d())
 
         SmartDashboard.putData(self.field)
         SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
@@ -127,10 +128,10 @@ class Swerve(Subsystem):
                 lambda: self.get_pose(),
                 lambda pose: self.reset_odometry(pose),
                 lambda: self.get_chassis_speeds(),
-                lambda chassisSpeed: self.drive(chassisSpeed, field_relative=False),
+                lambda chassisSpeed: self.drive(chassisSpeed, field_relative=True),
                 HolonomicPathFollowerConfig(
                     PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
-                    PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
+                    PIDConstants(0.1, 0.0, 0.0, 0.0), # rotation
                     Waffles.k_max_speed,
                     Waffles.k_drive_base_radius,
                     ReplanningConfig(enableInitialReplanning=True)
@@ -167,7 +168,7 @@ class Swerve(Subsystem):
         return self
 
     def get_chassis_speeds(self) -> ChassisSpeeds:
-        return self.chassis_speed
+        return self.kinematics.toChassisSpeeds((self.left_front.get_state(), self.left_rear.get_state(), self.right_front.get_state(), self.right_rear.get_state()))
 
     def set_module_states(self, module_states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
         desatStates = self.kinematics.desaturateWheelSpeeds(module_states, Waffles.k_max_speed)
@@ -178,7 +179,7 @@ class Swerve(Subsystem):
         self.right_rear.set_desired_state(desatStates[3])
 
     def get_pose(self) -> Pose2d:
-        return self.odometry.getPose()
+        return self.odometry.getEstimatedPosition()
 
     def reset_odometry(self, pose=Pose2d()) -> None:
         self.odometry.resetPosition(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), pose)
@@ -195,7 +196,7 @@ class Swerve(Subsystem):
 
     def periodic(self) -> None:
         self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
-        self.field.setRobotPose(self.odometry.getPose())
+        self.field.setRobotPose(self.odometry.getEstimatedPosition())
         SmartDashboard.putData(self.field)
         
     def initialize(self) -> Self:

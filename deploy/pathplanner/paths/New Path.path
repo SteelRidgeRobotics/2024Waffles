@@ -8,23 +8,39 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.3399999999999999,
+        "x": 2.4,
         "y": 7.28
       },
-      "isLocked": true,
+      "isLocked": false,
+      "linkedName": "AmpStart"
+    },
+    {
+      "anchor": {
+        "x": 5.0,
+        "y": 6.58
+      },
+      "prevControl": {
+        "x": 5.0,
+        "y": 7.58
+      },
+      "nextControl": {
+        "x": 5.0,
+        "y": 5.58
+      },
+      "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": -1.4,
-        "y": 7.28
+        "x": 1.4,
+        "y": 6.2770083885388885
       },
       "prevControl": {
-        "x": -1.46,
-        "y": 7.28
+        "x": 2.4,
+        "y": 6.2770083885388885
       },
       "nextControl": null,
-      "isLocked": true,
+      "isLocked": false,
       "linkedName": null
     }
   ],
@@ -40,10 +56,13 @@
   "goalEndState": {
     "velocity": 0,
     "rotation": 0,
-    "rotateFast": true
+    "rotateFast": false
   },
   "reversed": false,
   "folder": null,
-  "previewStartingState": null,
-  "useDefaultConstraints": true
+  "previewStartingState": {
+    "rotation": 0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": false
 }

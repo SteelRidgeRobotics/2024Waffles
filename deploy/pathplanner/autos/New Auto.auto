@@ -8,12 +8,12 @@
         {
           "type": "path",
           "data": {
-            "pathName": "StartToAmp"
+            "pathName": "New Path"
           }
         }
       ]
     }
   },
-  "folder": "Amp",
+  "folder": null,
   "choreoAuto": false
 }

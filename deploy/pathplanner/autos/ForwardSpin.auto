@@ -8,12 +8,12 @@
         {
           "type": "path",
           "data": {
-            "pathName": "StartToAmp"
+            "pathName": "ForwardSpin"
           }
         }
       ]
     }
   },
-  "folder": "Amp",
+  "folder": null,
   "choreoAuto": false
 }
