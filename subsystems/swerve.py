@@ -49,7 +49,7 @@ class SwerveModule(Subsystem):
 
     def get_angle(self) -> Rotation2d:
         # Calculate predicted position so we get our position next frame (doesn't take into account acceleration, but it's probably fine)
-        predictedPos = self.direction_motor.get_rotor_position().value
+        predictedPos = self.direction_motor.get_rotor_velocity() * 0.02 + self.direction_motor.get_rotor_position().value
         return Rotation2d.fromDegrees(rots_to_degs(predictedPos / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
@@ -79,9 +79,6 @@ class SwerveModule(Subsystem):
             while target_angle_dist > 180:
                 target_angle_dist -= 360
             target_angle_dist = abs(target_angle_dist)
-        elif target_angle_dist == 180:
-            # Sometimes kinematics gets confused and gives us an angle 180 degrees off. If this happens, we simply ignore this request.
-            return
 
         change_in_rots = degs_to_rots(target_angle_dist)
 
