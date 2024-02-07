@@ -116,8 +116,6 @@ class Swerve(Subsystem):
         SmartDashboard.putData(self.field)
         SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
         SmartDashboard.putData("Reset Gyro", self.reset_gyro_command())
-
-        self.chassis_speed = ChassisSpeeds()
         
         if not AutoBuilder.isConfigured():
             # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
@@ -125,13 +123,13 @@ class Swerve(Subsystem):
                 lambda: self.get_pose(),
                 lambda pose: self.reset_odometry(pose),
                 lambda: self.get_chassis_speeds(),
-                lambda chassisSpeed: self.drive(chassisSpeed, field_relative=True),
+                lambda chassisSpeed: self.drive(chassisSpeed, field_relative=False),
                 HolonomicPathFollowerConfig(
                     PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
-                    PIDConstants(0.1, 0.0, 0.0, 0.0), # rotation
+                    PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
                     Waffles.k_max_speed,
                     Waffles.k_drive_base_radius,
-                    ReplanningConfig(enableInitialReplanning=True)
+                    ReplanningConfig()
                 ),
                 lambda: self.should_flip_auto_path(),
                 self
@@ -155,16 +153,15 @@ class Swerve(Subsystem):
         if field_relative:
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
         else:
-            states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speed, self.get_angle()))
+            states = self.kinematics.toSwerveModuleStates(chassis_speed)
 
         desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_speed)
-
-        self.chassis_speed = ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle())
 
         self.set_module_states(desat_states)
         return self
 
     def get_chassis_speeds(self) -> ChassisSpeeds:
+        # Robot relative speeds 
         return self.kinematics.toChassisSpeeds((self.left_front.get_state(), self.left_rear.get_state(), self.right_front.get_state(), self.right_rear.get_state()))
 
     def set_module_states(self, module_states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
