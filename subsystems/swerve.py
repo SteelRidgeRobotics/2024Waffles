@@ -151,7 +151,7 @@ class Swerve(Subsystem):
         return self
 
     def get_angle(self) -> Rotation2d:
-        return self.navx.getRotation2d()
+        return Rotation2d.fromDegrees(-self.navx.getYaw())
     
     def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> Self:
         chassis_speed = ChassisSpeeds.discretize(chassis_speed, 0.02)
