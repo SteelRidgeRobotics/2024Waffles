@@ -8,7 +8,7 @@ class DriverController:
 
 class Waffles:
     k_wheel_size = 0.1 # meters
-    k_max_speed = 4.188790205 # m/s
+    k_max_module_speed =  4.654 # m/s
     k_max_rot_rate = 10.472 # rad/s
     k_drive_base_radius = 0.43 # meters
     

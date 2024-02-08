@@ -10,6 +10,18 @@
           "data": {
             "pathName": "StartToAmp"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "AmpToCloseNote"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CloseNoteToAmp"
+          }
         }
       ]
     }

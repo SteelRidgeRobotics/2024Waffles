@@ -48,9 +48,7 @@ class SwerveModule(Subsystem):
         direction_motor_constants.apply_configuration(self.direction_motor)
 
     def get_angle(self) -> Rotation2d:
-        # Calculate predicted position so we get our position next frame (doesn't take into account acceleration, but it's probably fine)
-        predictedPos = self.direction_motor.get_rotor_velocity() * 0.02 + self.direction_motor.get_rotor_position().value
-        return Rotation2d.fromDegrees(rots_to_degs(predictedPos / k_direction_gear_ratio))
+        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
     
     def reset_sensor_position(self) -> None:
         pos = -self.turning_encoder.get_absolute_position().value
@@ -125,9 +123,9 @@ class Swerve(Subsystem):
                 lambda: self.get_chassis_speeds(),
                 lambda chassisSpeed: self.drive(chassisSpeed, field_relative=False),
                 HolonomicPathFollowerConfig(
-                    PIDConstants(0.0, 0.0, 0.0, 0.0), # translation
-                    PIDConstants(0.0, 0.0, 0.0, 0.0), # rotation
-                    Waffles.k_max_speed,
+                    PIDConstants(1.5, 0.0, 0.0, 0.0), # translation
+                    PIDConstants(2.5, 0.0, 0.0, 0.0), # rotation
+                    Waffles.k_max_module_speed,
                     Waffles.k_drive_base_radius,
                     ReplanningConfig()
                 ),
@@ -140,10 +138,6 @@ class Swerve(Subsystem):
     def should_flip_auto_path(self) -> bool:
         # Flips the PathPlanner path if we're on the red alliance
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
-    
-    def run_auto(self, auto: PathPlannerAuto) -> Self:
-        self.runOnce(lambda: auto)
-        return self
 
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(-self.navx.getYaw())
@@ -155,7 +149,7 @@ class Swerve(Subsystem):
         else:
             states = self.kinematics.toSwerveModuleStates(chassis_speed)
 
-        desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_speed)
+        desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_module_speed)
 
         self.set_module_states(desat_states)
         return self
@@ -165,7 +159,7 @@ class Swerve(Subsystem):
         return self.kinematics.toChassisSpeeds((self.left_front.get_state(), self.left_rear.get_state(), self.right_front.get_state(), self.right_rear.get_state()))
 
     def set_module_states(self, module_states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
-        desatStates = self.kinematics.desaturateWheelSpeeds(module_states, Waffles.k_max_speed)
+        desatStates = self.kinematics.desaturateWheelSpeeds(module_states, Waffles.k_max_module_speed)
 
         self.left_front.set_desired_state(desatStates[0])
         self.left_rear.set_desired_state(desatStates[1])
