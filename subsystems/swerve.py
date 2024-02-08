@@ -19,6 +19,7 @@ from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.kinematics import (ChassisSpeeds, SwerveDrive4Kinematics,
                                 SwerveDrive4Odometry, SwerveModulePosition,
                                 SwerveModuleState)
+from wpimath.controller import PIDController
 
 from constants import *
 
@@ -46,6 +47,9 @@ class SwerveModule(Subsystem):
 
         self.direction_motor = TalonFX(direction_motor_constants.motor_id, "rio")
         direction_motor_constants.apply_configuration(self.direction_motor)
+        
+        self.turning_PID = PIDController(0.5, 0.0, 0.0)
+        self.turning_PID.enableContinuousInput(-math.pi, math.pi)
 
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
@@ -66,7 +70,7 @@ class SwerveModule(Subsystem):
         self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
         self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
         
-        self.change_direction(desiredState.angle)
+        self.change_direction(Rotation2d(self.turning_PID.calculate(self.get_angle().radians(), desiredState.angle.radians())))
     
     def change_direction(self, rotation: Rotation2d) -> None:
         angle_diff = rotation.degrees() - (self.get_angle().degrees())
