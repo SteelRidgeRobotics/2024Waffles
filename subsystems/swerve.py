@@ -2,7 +2,7 @@ import math
 
 import navx
 from commands2 import Command, Subsystem
-from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
+from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.config import (HolonomicPathFollowerConfig, PIDConstants,
                                    ReplanningConfig)
 from phoenix6.configs.cancoder_configs import *
@@ -17,21 +17,14 @@ from wpilib import DriverStation, Field2d, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.kinematics import (ChassisSpeeds, SwerveDrive4Kinematics,
-                                SwerveDrive4Odometry, SwerveModulePosition,
+                                SwerveModulePosition,
                                 SwerveModuleState)
-from wpimath.controller import PIDController
 
 from constants import *
 
 
 class SwerveModule(Subsystem):
-    """
-    Takes inputted SwerveModuleStates and moves the direction and drive motor to the selected positions.
-
-    The direction motor rotates the wheel into position.
-    The drive motor spins the wheel to move.
-    """
-
+    
     def __init__(self, module_name: str, drive_motor_constants: DriveMotorConstants, direction_motor_constants: DirectionMotorConstants, CANcoder_id: int, CAN_offset: float) -> None:
         super().__init__()
 
@@ -65,50 +58,36 @@ class SwerveModule(Subsystem):
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
         desiredState.optimize(desiredState, self.get_angle())
-        desiredAngle = desiredState.angle.degrees()
-        desiredAngle %= 360 # just making sure ;) (0-359)
+        desiredAngle = desiredState.angle.degrees() % 360
 
         angleDist = math.fabs(desiredAngle - self.directionTargetAngle)
 
-        # If the angleDist is more than 90 and less than 270, add 180 to the angle and %= 360 to get oppositeAngle.
-        if (angleDist > 90 and angleDist < 270):
+        if angleDist in range(91, 270):
             targetAngle = (desiredAngle + 180) % 360
-            self.invert_factor = -1
-        
-        # Else, then like, idk, just go to it??? smh
+            invert_factor = -1
         else:
             targetAngle = desiredAngle
-            self.invert_factor = 1
+            invert_factor = 1
 
-        # Before, to move the motor to the right spot, we would take the angle, convert that into talonFX units, then add (the amount of revolutions * 2048), then multiple everything by the motors gear ratio
-        # However, to avoid having to deal with revolution compensation (which caused some issues), we now get the degree change, convert to motor units, then add or subtract depending on the direction we're rotating
         targetAngleDist = math.fabs(targetAngle - self.directionTargetAngle)
 
-        # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
         if targetAngleDist > 180:
             targetAngleDist = abs(targetAngleDist - 360)
 
-        changeInTalonUnits = degs_to_rots(targetAngleDist)
-
-        # Now that we have the correct angle, we figure out if we should rotate counterclockwise or clockwise
         angleDiff = targetAngle - self.directionTargetAngle
 
-        # Accounting if the angleDiff is negative
-        if angleDiff < 0:
+        while angleDiff < 0:
             angleDiff += 360
 
-        # If angleDiff is greater than 180, go counter-clockwise (ccw is positive for talonFX, and vice versa)
         if angleDiff > 180:
-            self.directionTargetPos -= changeInTalonUnits
-
-        # Else, go clockwise
+            self.directionTargetPos -= degs_to_rots(targetAngleDist)
         else:
-            self.directionTargetPos += changeInTalonUnits
+            self.directionTargetPos += degs_to_rots(targetAngleDist)
 
         self.directionTargetAngle = targetAngle
 
         self.direction_motor.set_control(MotionMagicVoltage(self.directionTargetPos * k_direction_gear_ratio))
-        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(self.invert_factor * desiredState.speed, k_drive_gear_ratio)))
+        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(invert_factor * desiredState.speed, k_drive_gear_ratio)))
        
 
 class Swerve(Subsystem):
@@ -133,34 +112,31 @@ class Swerve(Subsystem):
         SmartDashboard.putData("Reset Odometry", self.reset_odometry_command())
         SmartDashboard.putData("Reset Gyro", self.reset_gyro_command())
         
-        if not AutoBuilder.isConfigured():
-            # https://pathplanner.dev/pplib-getting-started.html#holonomic-swerve
-            AutoBuilder.configureHolonomic(
-                lambda: self.get_pose(),
-                lambda pose: self.reset_odometry(pose),
-                lambda: self.get_chassis_speeds(),
-                lambda chassisSpeed: self.drive(chassisSpeed, field_relative=False),
-                HolonomicPathFollowerConfig(
-                    PIDConstants(1.5, 0.0, 0.0, 0.0), # translation
-                    PIDConstants(2.5, 0.0, 0.0, 0.0), # rotation
-                    Waffles.k_max_module_speed,
-                    Waffles.k_drive_base_radius,
-                    ReplanningConfig()
-                ),
-                lambda: self.should_flip_auto_path(),
-                self
-            )
+        AutoBuilder.configureHolonomic(
+            lambda: self.get_pose(),
+            lambda pose: self.reset_odometry(pose),
+            lambda: self.get_chassis_speeds(),
+            lambda chassisSpeed: self.drive(chassisSpeed, field_relative=False),
+            HolonomicPathFollowerConfig(
+                PIDConstants(1.5, 0.0, 0.0, 0.0), # translation
+                PIDConstants(2.5, 0.0, 0.0, 0.0), # rotation
+                Waffles.k_max_module_speed,
+                Waffles.k_drive_base_radius,
+                ReplanningConfig()
+            ),
+            lambda: self.should_flip_auto_path(),
+            self
+        )
         
         self.navx.reset()
 
     def should_flip_auto_path(self) -> bool:
-        # Flips the PathPlanner path if we're on the red alliance
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
 
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(-self.navx.getYaw())
     
-    def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> Self:
+    def drive(self, chassis_speed: ChassisSpeeds, field_relative: bool=True):
         chassis_speed = ChassisSpeeds.discretize(chassis_speed, 0.02)
         if field_relative:
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
@@ -170,10 +146,8 @@ class Swerve(Subsystem):
         desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_module_speed)
 
         self.set_module_states(desat_states)
-        return self
 
     def get_chassis_speeds(self) -> ChassisSpeeds:
-        # Robot relative speeds 
         return self.kinematics.toChassisSpeeds((self.left_front.get_state(), self.left_rear.get_state(), self.right_front.get_state(), self.right_rear.get_state()))
 
     def set_module_states(self, module_states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
@@ -201,67 +175,25 @@ class Swerve(Subsystem):
         return self
 
     def periodic(self) -> None:
-        self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()))
-        self.field.setRobotPose(self.odometry.getEstimatedPosition())
+        self.field.setRobotPose(self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position())))
         SmartDashboard.putData(self.field)
         
-    def initialize(self) -> Self:
+    def initialize(self):
         self.left_front.reset_sensor_position()
         self.left_rear.reset_sensor_position()
         self.right_front.reset_sensor_position()
         self.right_rear.reset_sensor_position()
-        
-        return self
 
-"""
-CONVERSIONS
-"""
+"""Conversions"""
 
 def meters_to_rots(meters: float, ratio: float) -> float:
-    """Converts from the inserted amount of meters to wheel rotations. 
-    This can also be used to convert from velocity in m/s to rps, as well as acceleration in m/s^2 to rps/s
-
-    Args:
-        meters (float): Target in meters.
-
-    Returns:
-        float: Converted amount of rotations. This is multiplied by the mechanism gear ratio.
-    """
-    wheelCircum = math.pi * Waffles.k_wheel_size
-    return (meters / wheelCircum) * ratio
+    return (meters / (math.pi * Waffles.k_wheel_size)) * ratio
 
 def rots_to_meters(rotation: float, ratio: float=1) -> float:
-    """Converts from the applied TalonFX rotations and calculates the amount of meters traveled.
-    This can also be used to convert from velocity in rps to m/s, as well as acceleration in rps/s to m/s^2
-
-    Args:
-        rotation (float): TalonFX rotations
-
-    Returns:
-        float: Meters traveled
-    """
-    baseMotorRot = rotation / ratio
-    wheelCircum = math.pi * Waffles.k_wheel_size
-    return baseMotorRot * wheelCircum
+    return (rotation / ratio) * (math.pi * Waffles.k_wheel_size)
 
 def rots_to_degs(rotation: float) -> float:
-    """Converts from the rotations of the mechanism to degs rotated.
-
-    Args:
-        rotation (float): Rotation of the specified motor.
-
-    Returns:
-        float: Degrees the wheel has rotated.
-    """
     return rotation * 360
 
 def degs_to_rots(degrees: float) -> float:
-    """Converts from degrees to TalonFX rotations.
-
-    Args:
-        degrees (float): Target degrees.
-
-    Returns:
-        float: Rotations of the TalonFX.
-    """
     return degrees / 360
