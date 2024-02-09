@@ -19,6 +19,7 @@ class Waffles(TimedCommandRobot):
         super().robotInit()
         
         self.swerve: Swerve = Swerve()
+        self.swerve.initialize()        
         
         self.auto_chooser.setDefaultOption("Failsafe (F2M)", PathPlannerAuto("FAILSAFE"))
         self.auto_chooser.addOption("B2M", PathPlannerAuto("Backward 2 Meters"))
@@ -47,7 +48,7 @@ class Waffles(TimedCommandRobot):
         return self.auto_chooser.getSelected()
 
     def autonomousInit(self) -> None:
-        self.swerve.initialize().reset_yaw().reset_odometry(self.start_chooser.getSelected())
+        self.swerve.reset_yaw().reset_odometry(self.start_chooser.getSelected())
         self.getSelectedAutoCommand().schedule()
 
     def robotPeriodic(self) -> None:

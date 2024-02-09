@@ -18,9 +18,6 @@ class DriveByController(Command):
         self.addRequirements(self.swerve)
 
         self.controller = controller
-
-    def initialize(self) -> None:
-        self.swerve.initialize()        
     
     def execute(self) -> None:
         translation_x = self.controller.getLeftY()

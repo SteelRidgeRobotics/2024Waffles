@@ -48,8 +48,7 @@ class SwerveModule(Subsystem):
         self.direction_motor = TalonFX(direction_motor_constants.motor_id, "rio")
         direction_motor_constants.apply_configuration(self.direction_motor)
         
-        self.turning_PID = PIDController(0.5, 0.0, 0.0)
-        self.turning_PID.enableContinuousInput(-math.pi, math.pi)
+        self.directionTargetPos = self.directionTargetAngle = 0.0
 
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / k_direction_gear_ratio))
@@ -65,37 +64,52 @@ class SwerveModule(Subsystem):
         return SwerveModulePosition(rots_to_meters(self.drive_motor.get_rotor_position().value, k_drive_gear_ratio), self.get_angle())
 
     def set_desired_state(self, desiredState: SwerveModuleState) -> None:
-        desiredState = SwerveModuleState.optimize(desiredState, self.get_angle())
+        desiredState.optimize(desiredState, self.get_angle())
+        desiredAngle = desiredState.angle.degrees()
+        desiredAngle %= 360 # just making sure ;) (0-359)
+
+        angleDist = math.fabs(desiredAngle - self.directionTargetAngle)
+
+        # If the angleDist is more than 90 and less than 270, add 180 to the angle and %= 360 to get oppositeAngle.
+        if (angleDist > 90 and angleDist < 270):
+            targetAngle = (desiredAngle + 180) % 360
+            self.invert_factor = -1
         
-        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, k_drive_gear_ratio)))
-        self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(desiredState.speed, k_drive_gear_ratio))
-        
-        self.change_direction(Rotation2d(self.turning_PID.calculate(self.get_angle().radians(), desiredState.angle.radians())))
-    
-    def change_direction(self, rotation: Rotation2d) -> None:
-        angle_diff = rotation.degrees() - (self.get_angle().degrees())
-        target_angle_dist = math.fabs(angle_diff)
+        # Else, then like, idk, just go to it??? smh
+        else:
+            targetAngle = desiredAngle
+            self.invert_factor = 1
+
+        # Before, to move the motor to the right spot, we would take the angle, convert that into talonFX units, then add (the amount of revolutions * 2048), then multiple everything by the motors gear ratio
+        # However, to avoid having to deal with revolution compensation (which caused some issues), we now get the degree change, convert to motor units, then add or subtract depending on the direction we're rotating
+        targetAngleDist = math.fabs(targetAngle - self.directionTargetAngle)
 
         # When going from x angle to 0, the robot will try and go "the long way around" to the angle. This just checks to make sure we're actually getting the right distance
-        if target_angle_dist > 180:
-            while target_angle_dist > 180:
-                target_angle_dist -= 360
-            target_angle_dist = abs(target_angle_dist)
+        if targetAngleDist > 180:
+            targetAngleDist = abs(targetAngleDist - 360)
 
-        change_in_rots = degs_to_rots(target_angle_dist)
+        changeInTalonUnits = degs_to_rots(targetAngleDist)
 
-        if angle_diff < 0 or angle_diff >= 360:
-            angle_diff %= 360
-        
-        final_pos = self.direction_motor.get_rotor_position().value / k_direction_gear_ratio
-        if angle_diff > 180:
-            # Move CCW
-            final_pos -= change_in_rots
+        # Now that we have the correct angle, we figure out if we should rotate counterclockwise or clockwise
+        angleDiff = targetAngle - self.directionTargetAngle
+
+        # Accounting if the angleDiff is negative
+        if angleDiff < 0:
+            angleDiff += 360
+
+        # If angleDiff is greater than 180, go counter-clockwise (ccw is positive for talonFX, and vice versa)
+        if angleDiff > 180:
+            self.directionTargetPos -= changeInTalonUnits
+
+        # Else, go clockwise
         else:
-            # Move CW
-            final_pos += change_in_rots
+            self.directionTargetPos += changeInTalonUnits
 
-        self.direction_motor.set_control(MotionMagicVoltage(final_pos * k_direction_gear_ratio))
+        self.directionTargetAngle = targetAngle
+
+        self.direction_motor.set_control(MotionMagicVoltage(self.directionTargetPos * k_direction_gear_ratio))
+        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(self.invert_factor * desiredState.speed, k_drive_gear_ratio)))
+       
 
 class Swerve(Subsystem):
     navx = navx.AHRS.create_spi()
