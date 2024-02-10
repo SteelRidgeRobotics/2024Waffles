@@ -1,4 +1,4 @@
-from commands2 import Command
+from commands2 import *
 from constants import *
 from math import fabs
 from subsystems.swerve import Swerve
@@ -8,9 +8,6 @@ from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.kinematics import ChassisSpeeds
 
 class DriveByController(Command):
-    trans_x_slew = SlewRateLimiter(30)
-    trans_y_slew = SlewRateLimiter(30)
-    rot_slew = SlewRateLimiter(30)
 
     def __init__(self, swerve: Swerve, controller: XboxController) -> None:
         super().__init__()
