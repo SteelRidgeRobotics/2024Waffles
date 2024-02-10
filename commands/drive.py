@@ -4,6 +4,7 @@ from math import fabs
 from subsystems.swerve import Swerve
 from wpilib import XboxController
 from wpimath.filter import SlewRateLimiter
+from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.kinematics import ChassisSpeeds
 
 class DriveByController(Command):
@@ -35,6 +36,10 @@ class DriveByController(Command):
         translation_x = -deadband(translation_x, DriverController.deadband) ** 3
         rotation = -deadband(rotation, DriverController.deadband) ** 3
 
+        if self.controller.getAButton():
+            self.swerve.pivot_around_point(rotation * Waffles.k_max_rot_rate / slowdown_mult, Translation2d(1.78, Rotation2d()))
+            return
+        
         self.swerve.drive(ChassisSpeeds(translation_x * Waffles.k_max_module_speed / slowdown_mult, 
                                         translation_y * Waffles.k_max_module_speed / slowdown_mult, 
                                         rotation * Waffles.k_max_rot_rate / slowdown_mult), field_relative=True)

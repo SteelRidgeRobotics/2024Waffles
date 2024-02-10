@@ -137,7 +137,7 @@ class Swerve(Subsystem):
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(-self.navx.getYaw())
     
-    def drive(self, chassis_speed:ChassisSpeeds, field_relative: bool=True) -> None:
+    def drive(self, chassis_speed: ChassisSpeeds, field_relative: bool=True) -> None:
         chassis_speed = ChassisSpeeds.discretize(chassis_speed, 0.02)
         if field_relative:
             states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(chassis_speed, self.get_angle()))
@@ -146,6 +146,13 @@ class Swerve(Subsystem):
 
         desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_module_speed)
 
+        self.set_module_states(desat_states)
+        
+    def pivot_around_point(self, omega: float, center_of_rotation: Translation2d) -> None:
+        theta_speed = ChassisSpeeds(0, 0, omega)
+        
+        states = self.kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(theta_speed, self.get_angle()), centerOfRotation=center_of_rotation)
+        desat_states = self.kinematics.desaturateWheelSpeeds(states, Waffles.k_max_module_speed)
         self.set_module_states(desat_states)
 
     def get_robot_relative_speeds(self) -> ChassisSpeeds:
