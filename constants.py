@@ -89,21 +89,21 @@ class DirectionMotorConstants:
         return motor
         
 class MotorIDs:
-    LEFT_FRONT_DRIVE = 0
-    LEFT_REAR_DRIVE = 1
-    RIGHT_FRONT_DRIVE = 2
-    RIGHT_REAR_DRIVE = 3
+    LEFT_FRONT_DRIVE = 1
+    LEFT_REAR_DRIVE = 2
+    RIGHT_FRONT_DRIVE = 3
+    RIGHT_REAR_DRIVE = 4
 
-    LEFT_FRONT_DIRECTION = 4
-    LEFT_REAR_DIRECTION = 5
-    RIGHT_FRONT_DIRECTION = 6
-    RIGHT_REAR_DIRECTION = 7
+    LEFT_FRONT_DIRECTION = 5
+    LEFT_REAR_DIRECTION = 6
+    RIGHT_FRONT_DIRECTION = 7
+    RIGHT_REAR_DIRECTION = 8
 
 class CANIDs:
-    LEFT_FRONT = 4
-    LEFT_REAR = 5
-    RIGHT_FRONT = 6
-    RIGHT_REAR = 7
+    LEFT_FRONT = 5
+    LEFT_REAR = 6
+    RIGHT_FRONT = 7
+    RIGHT_REAR = 8
 
 k_direction_gear_ratio = 150 / 7
 k_drive_gear_ratio = 27 / 4
