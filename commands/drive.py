@@ -37,9 +37,9 @@ class DriveByController(Command):
             self.swerve.pivot_around_point(rotation * Waffles.k_max_rot_rate / slowdown_mult, Translation2d(3.56, Rotation2d()))
             return
         
-        self.swerve.drive(ChassisSpeeds(translation_x * Waffles.k_max_module_speed / slowdown_mult, 
+        self.swerve.field_relative_drive(ChassisSpeeds(translation_x * Waffles.k_max_module_speed / slowdown_mult, 
                                         translation_y * Waffles.k_max_module_speed / slowdown_mult, 
-                                        rotation * Waffles.k_max_rot_rate / slowdown_mult), field_relative=True)
+                                        rotation * Waffles.k_max_rot_rate / slowdown_mult))
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)

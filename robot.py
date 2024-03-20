@@ -39,7 +39,7 @@ class Waffles(TimedCommandRobot):
         self.start_chooser.addOption("Red 2", Pose2d())
         self.start_chooser.addOption("Red 3", Pose2d())
         
-        self.start_chooser.onChange(lambda pose: self.swerve.reset_odometry(pose=self.start_chooser.getSelected()))
+        self.start_chooser.onChange(lambda pose: self.swerve.reset_odometry(pose=pose))
         
         SmartDashboard.putData("Auto Route", self.auto_chooser)
         SmartDashboard.putData("Starting Position", self.start_chooser)
