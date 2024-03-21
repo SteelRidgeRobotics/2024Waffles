@@ -24,10 +24,8 @@ from constants import *
 class SwerveModule(Subsystem):
 
 
-    def __init__(self, module_name: str, drive_id: int, direction_id: int, CANcoder_id: int, CAN_offset: float) -> None:
+    def __init__(self, drive_id: int, direction_id: int, CANcoder_id: int, CAN_offset: float) -> None:
         super().__init__()
-
-        self.setName("SwerveModule" + module_name)
 
         self.turning_encoder = CANcoder(CANcoder_id, "rio")
         encoder_config = CANcoderConfiguration()
@@ -50,45 +48,50 @@ class SwerveModule(Subsystem):
         self.drive_motor.configurator.apply(drive_configs)
 
         self.direction_motor = TalonFX(direction_id, "rio")
-        path_configs = TalonFXConfiguration()
-        path_configs.slot0.k_p = DirectionMotorConstants.kP
-        path_configs.slot0.k_i = DirectionMotorConstants.kI
-        path_configs.slot0.k_d = DirectionMotorConstants.kD
-        path_configs.slot0.k_a = DirectionMotorConstants.kA
-        path_configs.slot0.k_s = DirectionMotorConstants.kS
-        path_configs.slot0.k_v = DirectionMotorConstants.kV
-        path_configs.motor_output.neutral_mode = DirectionMotorConstants.kNeutral
-        path_configs.motor_output.inverted = DirectionMotorConstants.kInvert
-        path_configs.feedback.sensor_to_mechanism_ratio = DirectionMotorConstants.kRatio
+        steer_configs = TalonFXConfiguration()
+        steer_configs.slot0.k_p = DirectionMotorConstants.kP
+        steer_configs.slot0.k_i = DirectionMotorConstants.kI
+        steer_configs.slot0.k_d = DirectionMotorConstants.kD
+        steer_configs.slot0.k_a = DirectionMotorConstants.kA
+        steer_configs.slot0.k_s = DirectionMotorConstants.kS
+        steer_configs.slot0.k_v = DirectionMotorConstants.kV
+        steer_configs.motor_output.neutral_mode = DirectionMotorConstants.kNeutral
+        steer_configs.motor_output.inverted = DirectionMotorConstants.kInvert
+        steer_configs.feedback.sensor_to_mechanism_ratio = DirectionMotorConstants.kRatio
         
-        path_configs.feedback.feedback_remote_sensor_id = CANcoder_id
-        path_configs.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
-        path_configs.feedback.rotor_to_sensor_ratio = DirectionMotorConstants.kRatio
+        steer_configs.feedback.feedback_remote_sensor_id = CANcoder_id
+        steer_configs.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
+        steer_configs.feedback.rotor_to_sensor_ratio = DirectionMotorConstants.kRatio
         
-        path_configs.closed_loop_general.continuous_wrap = True
-        self.direction_motor.configurator.apply(path_configs)
-        
-        self.directionTargetPos = self.directionTargetAngle = 0.0
-        
-        self.sim_drive = 0
+        steer_configs.closed_loop_general.continuous_wrap = True
+        self.direction_motor.configurator.apply(steer_configs)
+
+        self.drive_position = self.drive_motor.get_position()
+        self.drive_velocity = self.drive_motor.get_velocity()
+        self.steer_position = self.direction_motor.get_position()
+        self.steer_velocity = self.direction_motor.get_velocity()
+
+        self.signals = [self.drive_position, self.drive_velocity, self.steer_position, self.steer_velocity]
+
+        self.internal_state = SwerveModulePosition()
 
     def get_angle(self) -> Rotation2d:
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / DirectionMotorConstants.kRatio))
-    
-    def simulationPeriodic(self) -> None:
-        self.sim_drive += self.drive_motor.get_velocity().value * 0.02 * 4
-        self.drive_motor.sim_state.set_raw_rotor_position(self.sim_drive)
-    
-    def reset_sensor_position(self) -> None:
-        self.direction_motor.set_position(-self.turning_encoder.get_absolute_position().wait_for_update(0.02).value * DirectionMotorConstants.kRatio)
-        self.direction_motor.sim_state.set_raw_rotor_position(0)
 
     def get_state(self) -> SwerveModuleState:
         return SwerveModuleState(rots_to_meters(self.drive_motor.get_velocity().value), self.get_angle())
     
-    def get_position(self) -> SwerveModulePosition:
-        return SwerveModulePosition(rots_to_meters(self.drive_motor.get_position().value), self.get_angle())
+    def get_position(self, refresh=True) -> SwerveModulePosition:
+        map(lambda signal: signal.refresh(), self.signals) if refresh
 
+        drive_compensated = BaseStatusSignal.get_latency_compensated_value(self.drive_position, self.drive_velocity)
+        steer_compensated = BaseStatusSignal.get_latency_compensated_value(self.steer_position, self.steer_velocity)
+
+        self.internal_state = SwerveModulePosition(rots_to_meters(drive_compensated), Rotation2d.fromRotations(steer_compensated)
+        
+        return self.internal_state
+
+    
     def set_desired_state(self, desiredState: SwerveModuleState, override_brake_dur_neutral: bool=True) -> None:
         desiredState.optimize(desiredState, self.get_angle())
         desiredAngle = desiredState.angle.degrees() % 360
@@ -122,10 +125,7 @@ class SwerveModule(Subsystem):
         self.directionTargetAngle = targetAngle
 
         self.direction_motor.set_control(MotionMagicVoltage(self.directionTargetPos * DirectionMotorConstants.kRatio))
-        self.direction_motor.sim_state.set_raw_rotor_position(self.directionTargetPos * -DirectionMotorConstants.kRatio)
-        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(self.invert_factor * desiredState.speed, DriveMotorConstants.kRatio), override_brake_dur_neutral=override_brake_dur_neutral))
-        self.drive_motor.sim_state.set_rotor_velocity(meters_to_rots(self.invert_factor * desiredState.speed, DriveMotorConstants.kRatio))
-       
+        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(self.invert_factor * desiredState.speed, DriveMotorConstants.kRatio), override_brake_dur_neutral=override_brake_dur_neutral))       
 
 class Swerve(Subsystem):
     navx = navx.AHRS.create_spi()
@@ -135,10 +135,10 @@ class Swerve(Subsystem):
     
     field = Field2d()
     
-    left_front: SwerveModule = SwerveModule("LF", MotorIDs.LEFT_FRONT_DRIVE, MotorIDs.LEFT_FRONT_DIRECTION, CANIDs.LEFT_FRONT, -0.77001953125)
-    left_rear: SwerveModule = SwerveModule("LR", MotorIDs.LEFT_REAR_DRIVE, MotorIDs.LEFT_REAR_DIRECTION, CANIDs.LEFT_REAR, -0.49951171875)
-    right_front: SwerveModule = SwerveModule("RF", MotorIDs.RIGHT_FRONT_DRIVE, MotorIDs.RIGHT_FRONT_DIRECTION, CANIDs.RIGHT_FRONT, 0.569580078125)
-    right_rear: SwerveModule = SwerveModule("RR", MotorIDs.RIGHT_REAR_DRIVE, MotorIDs.RIGHT_REAR_DIRECTION, CANIDs.RIGHT_REAR, 0.596435546875)
+    left_front: SwerveModule = SwerveModule(MotorIDs.LEFT_FRONT_DRIVE, MotorIDs.LEFT_FRONT_DIRECTION, CANIDs.LEFT_FRONT, -0.77001953125)
+    left_rear: SwerveModule = SwerveModule(MotorIDs.LEFT_REAR_DRIVE, MotorIDs.LEFT_REAR_DIRECTION, CANIDs.LEFT_REAR, -0.49951171875)
+    right_front: SwerveModule = SwerveModule(MotorIDs.RIGHT_FRONT_DRIVE, MotorIDs.RIGHT_FRONT_DIRECTION, CANIDs.RIGHT_FRONT, 0.569580078125)
+    right_rear: SwerveModule = SwerveModule(MotorIDs.RIGHT_REAR_DRIVE, MotorIDs.RIGHT_REAR_DIRECTION, CANIDs.RIGHT_REAR, 0.596435546875)
     
 
     def __init__(self):
@@ -247,12 +247,6 @@ class Swerve(Subsystem):
         if sqrt((current_pose.X() - pose.X())**2 + (current_pose.Y() - pose.Y())**2) > 1:
             return
         self.odometry.addVisionMeasurement(pose, timestamp)
-        
-    def initialize(self) -> None:
-        self.left_front.reset_sensor_position()
-        self.left_rear.reset_sensor_position()
-        self.right_front.reset_sensor_position()
-        self.right_rear.reset_sensor_position()
 
 """
 CONVERSIONS
