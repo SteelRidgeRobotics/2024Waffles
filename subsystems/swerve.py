@@ -78,7 +78,7 @@ class SwerveModule(Subsystem):
     def refresh(self) -> None:
         map(lambda signal: signal.refresh(), self.signals)
 
-    def get_signals() -> list[StatusSignal]:
+    def get_signals():
         return self.signals
 
     def get_angle(self, refresh=True) -> Rotation2d:
@@ -176,7 +176,7 @@ class Swerve(Subsystem):
     def get_robot_relative_speeds(self) -> ChassisSpeeds:
         return self.kinematics.toChassisSpeeds((self.left_front.get_state(), self.left_rear.get_state(), self.right_front.get_state(), self.right_rear.get_state()))
 
-    def set_module_states(self, module_states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
+    def set_module_states(self, module_states: tuple) -> None:
         desatStates = self.kinematics.desaturateWheelSpeeds(module_states, self.max_module_speed)
 
         self.left_front.set_desired_state(desatStates[0], override_brake_dur_neutral=self.obdn)
