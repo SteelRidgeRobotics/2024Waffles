@@ -1,4 +1,4 @@
-from math import fabs, pi, sqrt
+from math import pi, sqrt
 
 from commands2 import InstantCommand, Subsystem
 import navx
@@ -6,11 +6,11 @@ from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.config import HolonomicPathFollowerConfig, PIDConstants, ReplanningConfig
 from phoenix6.configs.cancoder_configs import *
 from phoenix6.configs.talon_fx_configs import *
-from phoenix6.configs.config_groups import MagnetSensorConfigs
 from phoenix6.controls import *
 from phoenix6.hardware import CANcoder, TalonFX
 from phoenix6.controls.motion_magic_voltage import MotionMagicVoltage
 from phoenix6.signals import *
+from phoenix6 import BaseStatusSignal
 from typing import Self
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.sysid import SysIdRoutineLog
@@ -78,23 +78,26 @@ class SwerveModule(Subsystem):
     def refresh(self) -> None:
         map(lambda signal: signal.refresh(), self.signals)
 
-    def get_signals():
+    def get_signals(self):
         return self.signals
 
     def get_angle(self, refresh=True) -> Rotation2d:
-        self.refresh() if refresh
+        if refresh:
+            self.refresh()
 
         steer_compensated = BaseStatusSignal.get_latency_compensated_value(self.steer_position, self.steer_velocity)
         
         return Rotation2d.fromRotations(steer_compensated)
 
     def get_state(self, refresh=True) -> SwerveModuleState:
-        self.drive_velocity.refresh() if refresh
+        if refresh:
+            self.refresh()
         
         return SwerveModuleState(rots_to_meters(self.drive_velocity.value), self.get_angle())
     
     def get_position(self, refresh=True) -> SwerveModulePosition:
-        self.refresh() if refresh
+        if refresh:
+            self.refresh()
 
         drive_compensated = BaseStatusSignal.get_latency_compensated_value(self.drive_position, self.drive_velocity)
 
@@ -106,7 +109,7 @@ class SwerveModule(Subsystem):
         desiredState.optimize(desiredState, self.internal_state.angle)
 
         self.direction_motor.set_control(PositionVoltage(degs_to_rots(desiredState.angle.degrees())))
-        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed), override_brake_dur_neutral=override_brake_dur_neutral)
+        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, DriveMotorConstants.kRatio), override_brake_dur_neutral=override_brake_dur_neutral))
         
 
 class Swerve(Subsystem):

@@ -1,6 +1,6 @@
 [tool.robotpy]
 
-robotpy_version = "2024.2.1.1"
+robotpy_version = "2024.3.2.1"
 
 robotpy_extras = [
     "commands2",

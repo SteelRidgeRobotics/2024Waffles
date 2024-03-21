@@ -16,6 +16,9 @@ class DriveByController(Command):
         self.addRequirements(self.swerve)
 
         self.controller = controller
+
+    def initialize(self):
+        self.swerve.field_relative_drive(ChassisSpeeds())
     
     def execute(self) -> None:
         translation_x = self.controller.getLeftY()
@@ -32,10 +35,6 @@ class DriveByController(Command):
         translation_y = -deadband(translation_y, DriverController.deadband) ** 3
         translation_x = -deadband(translation_x, DriverController.deadband) ** 3
         rotation = -deadband(rotation, DriverController.deadband) ** 3
-
-        if self.controller.getAButton():
-            self.swerve.pivot_around_point(rotation * Waffles.k_max_rot_rate / slowdown_mult, Translation2d(3.56, Rotation2d()))
-            return
         
         self.swerve.field_relative_drive(ChassisSpeeds(translation_x * Waffles.k_max_module_speed / slowdown_mult, 
                                         translation_y * Waffles.k_max_module_speed / slowdown_mult, 
