@@ -2,7 +2,7 @@ from commands2 import *
 from constants import *
 from commands.drive import DriveByController
 from pathplannerlib.auto import PathPlannerAuto
-from subsystems.swerve import Swerve
+from subsystems.Dswerve import Swerve
 import time
 from wpimath.geometry import Pose2d, Rotation2d
 from wpilib import RobotBase, SendableChooser, SmartDashboard, XboxController
