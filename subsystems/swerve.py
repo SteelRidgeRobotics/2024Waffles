@@ -75,57 +75,39 @@ class SwerveModule(Subsystem):
 
         self.internal_state = SwerveModulePosition()
 
-    def get_angle(self) -> Rotation2d:
-        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_rotor_position().value / DirectionMotorConstants.kRatio))
+    def refresh(self) -> None:
+        map(lambda signal: signal.refresh(), self.signals)
 
-    def get_state(self) -> SwerveModuleState:
-        return SwerveModuleState(rots_to_meters(self.drive_motor.get_velocity().value), self.get_angle())
+    def get_signals() -> list[StatusSignal]:
+        return self.signals
+
+    def get_angle(self, refresh=True) -> Rotation2d:
+        self.refresh() if refresh
+
+        steer_compensated = BaseStatusSignal.get_latency_compensated_value(self.steer_position, self.steer_velocity)
+        
+        return Rotation2d.fromRotations(steer_compensated)
+
+    def get_state(self, refresh=True) -> SwerveModuleState:
+        self.drive_velocity.refresh() if refresh
+        
+        return SwerveModuleState(rots_to_meters(self.drive_velocity.value), self.get_angle())
     
     def get_position(self, refresh=True) -> SwerveModulePosition:
-        map(lambda signal: signal.refresh(), self.signals) if refresh
+        self.refresh() if refresh
 
         drive_compensated = BaseStatusSignal.get_latency_compensated_value(self.drive_position, self.drive_velocity)
-        steer_compensated = BaseStatusSignal.get_latency_compensated_value(self.steer_position, self.steer_velocity)
 
-        self.internal_state = SwerveModulePosition(rots_to_meters(drive_compensated), Rotation2d.fromRotations(steer_compensated)
+        self.internal_state = SwerveModulePosition(rots_to_meters(drive_compensated), self.get_angle(refresh=False)) # No need to refresh
         
         return self.internal_state
 
-    
     def set_desired_state(self, desiredState: SwerveModuleState, override_brake_dur_neutral: bool=True) -> None:
-        desiredState.optimize(desiredState, self.get_angle())
-        desiredAngle = desiredState.angle.degrees() % 360
+        desiredState.optimize(desiredState, self.internal_state.angle)
 
-        angleDist = fabs(desiredAngle - self.directionTargetAngle)
-
-        if (angleDist > 90 and angleDist < 270):
-            targetAngle = (desiredAngle + 180) % 360
-            self.invert_factor = -1
-        else:
-            targetAngle = desiredAngle
-            self.invert_factor = 1
-
-        targetAngleDist = fabs(targetAngle - self.directionTargetAngle)
-
-        if targetAngleDist > 180:
-            targetAngleDist = abs(targetAngleDist - 360)
-
-        changeInRots = degs_to_rots(targetAngleDist)
-
-        angleDiff = targetAngle - self.directionTargetAngle
-
-        if angleDiff < 0:
-            angleDiff += 360
-
-        if angleDiff > 180:
-            self.directionTargetPos -= changeInRots
-        else:
-            self.directionTargetPos += changeInRots
-
-        self.directionTargetAngle = targetAngle
-
-        self.direction_motor.set_control(MotionMagicVoltage(self.directionTargetPos * DirectionMotorConstants.kRatio))
-        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(self.invert_factor * desiredState.speed, DriveMotorConstants.kRatio), override_brake_dur_neutral=override_brake_dur_neutral))       
+        self.direction_motor.set_control(PositionVoltage(degs_to_rots(desiredState.angle.degrees())))
+        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed), override_brake_dur_neutral=override_brake_dur_neutral)
+        
 
 class Swerve(Subsystem):
     navx = navx.AHRS.create_spi()
@@ -143,7 +125,6 @@ class Swerve(Subsystem):
 
     def __init__(self):
         super().__init__()
-        self.setName("drivetrain")
 
         self.odometry = SwerveDrive4PoseEstimator(self.kinematics, self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position()), Pose2d())
 
