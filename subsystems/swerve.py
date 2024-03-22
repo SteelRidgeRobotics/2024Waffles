@@ -57,7 +57,6 @@ class SwerveModule(Subsystem):
         steer_configs.slot0.k_v = DirectionMotorConstants.kV
         steer_configs.motor_output.neutral_mode = DirectionMotorConstants.kNeutral
         steer_configs.motor_output.inverted = DirectionMotorConstants.kInvert
-        steer_configs.feedback.sensor_to_mechanism_ratio = DirectionMotorConstants.kRatio
         
         steer_configs.feedback.feedback_remote_sensor_id = CANcoder_id
         steer_configs.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
