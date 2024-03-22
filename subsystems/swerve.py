@@ -7,7 +7,7 @@ from pathplannerlib.config import HolonomicPathFollowerConfig, PIDConstants, Rep
 from phoenix6.configs.cancoder_configs import *
 from phoenix6.configs.talon_fx_configs import *
 from phoenix6.controls import *
-from phoenix6.hardware import CANcoder, TalonFX
+from phoenix6.hardware import CANcoder, TalonFX, ParentDevice
 from phoenix6.controls.motion_magic_voltage import MotionMagicVoltage
 from phoenix6.signals import *
 from phoenix6 import BaseStatusSignal
@@ -71,6 +71,8 @@ class SwerveModule(Subsystem):
         self.steer_velocity = self.direction_motor.get_velocity()
 
         self.signals = [self.drive_position, self.drive_velocity, self.steer_position, self.steer_velocity]
+        map(lambda signal: signal.set_update_frequency(250), self.signals)
+        ParentDevice.optimize_bus_utilization_for_all(self.drive_motor, self.direction_motor, self.turning_encoder)
 
         self.internal_state = SwerveModulePosition()
 
