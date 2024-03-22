@@ -73,6 +73,9 @@ class SwerveModule(Subsystem):
         self.signals = [self.drive_position, self.drive_velocity, self.steer_position, self.steer_velocity]
         map(lambda signal: signal.set_update_frequency(250), self.signals)
         ParentDevice.optimize_bus_utilization_for_all(self.drive_motor, self.direction_motor, self.turning_encoder)
+        
+        self.angle_setter = PositionVoltage(0)
+        self.velocity_setter = VelocityTorqueCurrentFOC(0)
 
         self.internal_state = SwerveModulePosition()
 
@@ -109,8 +112,8 @@ class SwerveModule(Subsystem):
     def set_desired_state(self, desiredState: SwerveModuleState, override_brake_dur_neutral: bool=True) -> None:
         desiredState.optimize(desiredState, self.internal_state.angle)
 
-        self.direction_motor.set_control(PositionVoltage(degs_to_rots(desiredState.angle.degrees())))
-        self.drive_motor.set_control(VelocityVoltage(meters_to_rots(desiredState.speed, DriveMotorConstants.kRatio), override_brake_dur_neutral=override_brake_dur_neutral))
+        self.direction_motor.set_control(self.angle_setter.with_position(degs_to_rots(desiredState.angle.degrees())))
+        self.drive_motor.set_control(self.velocity_setter.with_velocity(meters_to_rots(desiredState.speed, DriveMotorConstants.kRatio)).with_override_coast_dur_neutral(override_brake_dur_neutral))
         
 
 class Swerve(Subsystem):
