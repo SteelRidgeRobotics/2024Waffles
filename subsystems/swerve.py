@@ -7,7 +7,7 @@ from pathplannerlib.config import HolonomicPathFollowerConfig, PIDConstants, Rep
 from phoenix6.configs.cancoder_configs import *
 from phoenix6.configs.talon_fx_configs import *
 from phoenix6.controls import *
-from phoenix6.hardware import CANcoder, TalonFX, ParentDevice
+from phoenix6.hardware import CANcoder, TalonFX
 from phoenix6.controls.motion_magic_voltage import MotionMagicVoltage
 from phoenix6.signals import *
 from phoenix6 import BaseStatusSignal
@@ -120,8 +120,8 @@ class Swerve(Subsystem):
     left_rear: SwerveModule = SwerveModule(MotorIDs.LEFT_REAR_DRIVE, MotorIDs.LEFT_REAR_DIRECTION, CANIDs.LEFT_REAR, -0.49951171875)
     right_front: SwerveModule = SwerveModule(MotorIDs.RIGHT_FRONT_DRIVE, MotorIDs.RIGHT_FRONT_DIRECTION, CANIDs.RIGHT_FRONT, -0.098876953125)
     right_rear: SwerveModule = SwerveModule(MotorIDs.RIGHT_REAR_DRIVE, MotorIDs.RIGHT_REAR_DIRECTION, CANIDs.RIGHT_REAR, 0.596435546875)
+    modules = [left_front, left_rear, right_front, right_rear]
     
-
     def __init__(self):
         super().__init__()
 
@@ -153,7 +153,13 @@ class Swerve(Subsystem):
         
         self.navx.reset()
         self.obdn = True
-
+        
+        all_signals: list[BaseStatusSignal] = []
+        for module in Swerve.modules:
+            for signal in module.get_signals():
+                all_signals.append(signal)
+        map(lambda signal: signal.set_update_frequency(250), all_signals)
+        
     def should_flip_auto_path(self) -> bool:
         if RobotBase.isReal():
             return DriverStation.getAlliance() == DriverStation.Alliance.kRed
@@ -177,11 +183,11 @@ class Swerve(Subsystem):
 
     def set_module_states(self, module_states: tuple) -> None:
         desatStates = self.kinematics.desaturateWheelSpeeds(module_states, self.max_module_speed)
-
-        self.left_front.set_desired_state(desatStates[0], override_brake_dur_neutral=self.obdn)
-        self.left_rear.set_desired_state(desatStates[1], override_brake_dur_neutral=self.obdn)
-        self.right_front.set_desired_state(desatStates[2], override_brake_dur_neutral=self.obdn)
-        self.right_rear.set_desired_state(desatStates[3], override_brake_dur_neutral=self.obdn)
+        
+        i = 0
+        for module in self.modules:
+            module.set_desired_state(desatStates[i], override_brake_dur_neutral=self.obdn)
+            i += 1
         
     def set_max_module_speed(self, max_module_speed: float=Waffles.k_max_module_speed) -> None:
         self.max_module_speed = max_module_speed
@@ -217,7 +223,9 @@ class Swerve(Subsystem):
         return self
 
     def periodic(self) -> None:
-        self.field.setRobotPose(self.odometry.update(self.get_angle(), (self.left_front.get_position(), self.left_rear.get_position(), self.right_front.get_position(), self.right_rear.get_position())))
+        map(lambda module: module.refresh(), self.modules)
+        self.field.setRobotPose(self.odometry.update(self.get_angle(), (self.left_front.get_position(False), self.left_rear.get_position(False), self.right_front.get_position(False), self.right_rear.get_position(False))))
+        
         SmartDashboard.putData(self.field)
         SmartDashboard.putNumber("Gyro", -self.get_angle().degrees())
         SmartDashboard.putBoolean("NavX Connection", self.navx.isConnected())
