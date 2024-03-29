@@ -36,12 +36,7 @@ class SwerveModule(Subsystem):
         
         self.drive_motor = TalonFX(drive_id, "rio")
         drive_configs = TalonFXConfiguration()
-        drive_configs.slot0.k_p = DriveMotorConstants.kP
-        drive_configs.slot0.k_i = DriveMotorConstants.kI
-        drive_configs.slot0.k_d = DriveMotorConstants.kD
-        drive_configs.slot0.k_a = DriveMotorConstants.kA
-        drive_configs.slot0.k_s = DriveMotorConstants.kS
-        drive_configs.slot0.k_v = DriveMotorConstants.kV
+        drive_configs.slot0 = Slot0Configs().with_k_p(DriveMotorConstants.kP).with_k_a(DriveMotorConstants.kA).with_k_s(DriveMotorConstants.kS)
         drive_configs.motor_output.neutral_mode = DriveMotorConstants.kNeutral
         drive_configs.motor_output.inverted = DriveMotorConstants.kInvert
         drive_configs.feedback.sensor_to_mechanism_ratio = DriveMotorConstants.kRatio
@@ -49,23 +44,17 @@ class SwerveModule(Subsystem):
 
         self.direction_motor = TalonFX(direction_id, "rio")
         steer_configs = TalonFXConfiguration()
-        steer_configs.slot0.k_p = DirectionMotorConstants.kP
-        steer_configs.slot0.k_i = DirectionMotorConstants.kI
-        steer_configs.slot0.k_d = DirectionMotorConstants.kD
-        steer_configs.slot0.k_a = DirectionMotorConstants.kA
-        steer_configs.slot0.k_s = DirectionMotorConstants.kS
-        steer_configs.slot0.k_v = DirectionMotorConstants.kV
-        steer_configs.motor_output.neutral_mode = DirectionMotorConstants.kNeutral
-        steer_configs.motor_output.inverted = DirectionMotorConstants.kInvert
+        steer_configs.slot0 = Slot0Configs().with_k_p(SteerMotorConstants.kP).with_k_i(SteerMotorConstants.kI).with_k_s(SteerMotorConstants.kS)
+        steer_configs.motor_output.neutral_mode = SteerMotorConstants.kNeutral
+        steer_configs.motor_output.inverted = SteerMotorConstants.kInvert
         
         steer_configs.feedback.feedback_remote_sensor_id = CANcoder_id
         steer_configs.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
-        steer_configs.feedback.rotor_to_sensor_ratio = DirectionMotorConstants.kRatio
+        steer_configs.feedback.rotor_to_sensor_ratio = SteerMotorConstants.kRatio
         
         steer_configs.closed_loop_general.continuous_wrap = True
         self.direction_motor.configurator.apply(steer_configs)
 
-        
         self.drive_position = self.drive_motor.get_position()
         self.drive_velocity = self.drive_motor.get_velocity()
         self.steer_position = self.direction_motor.get_position()

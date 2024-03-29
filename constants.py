@@ -12,22 +12,16 @@ class Waffles:
     
 class DriveMotorConstants:
     kS = 0.4
-    kV = 0
     kA = 0
     kP = 0.133
-    kI = 0
-    kD = 0
     kInvert = InvertedValue.COUNTER_CLOCKWISE_POSITIVE
     kNeutral = NeutralModeValue.BRAKE
     kRatio = 27 / 4
     
-class DirectionMotorConstants:
+class SteerMotorConstants:
     kS = 0.26
-    kV = 0
-    kA = 0
     kP = 12
     kI = 10
-    kD = 0
     kNeutral = NeutralModeValue.BRAKE
     kInvert = InvertedValue.CLOCKWISE_POSITIVE
     kRatio = 150 / 7
