@@ -3,8 +3,9 @@ from constants import *
 from commands.drive import DriveByController
 from pathplannerlib.auto import PathPlannerAuto
 from subsystems.swerve import Swerve
+import time
 from wpimath.geometry import Pose2d, Rotation2d
-from wpilib import SendableChooser, SmartDashboard, XboxController
+from wpilib import RobotBase, SendableChooser, SmartDashboard, XboxController
 
 class Waffles(TimedCommandRobot):
     driver_controller = XboxController(DriverController.port)
@@ -13,11 +14,13 @@ class Waffles(TimedCommandRobot):
     start_chooser = SendableChooser()
     
     def __init__(self, period = 0.02) -> None:
+        if RobotBase.isReal():
+            time.sleep(5) # Ensures the previous deployed code is fully removed before initing TalonFX's
         super().__init__(period)
         
     def robotInit(self) -> None:
         super().robotInit()
-        
+
         self.swerve: Swerve = Swerve()       
         
         self.auto_chooser.setDefaultOption("Failsafe (F2M)", PathPlannerAuto("FAILSAFE"))
