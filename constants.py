@@ -23,14 +23,11 @@ class DriveMotorConstants:
     
 class DirectionMotorConstants:
     kS = 0.26
-    kV = 0.1186
+    kV = 0
     kA = 0
-    kP = 7
-    kI = 0
+    kP = 12
+    kI = 10
     kD = 0
-    kVel = 240
-    kAcc = 600
-    kJerk = 6500
     kNeutral = NeutralModeValue.BRAKE
     kInvert = InvertedValue.CLOCKWISE_POSITIVE
     kRatio = 150 / 7

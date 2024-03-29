@@ -29,9 +29,9 @@ class SwerveModule(Subsystem):
 
         self.turning_encoder = CANcoder(CANcoder_id, "rio")
         encoder_config = CANcoderConfiguration()
-        encoder_config.magnet_sensor.sensor_direction = SensorDirectionValue.CLOCKWISE_POSITIVE
+        encoder_config.magnet_sensor.sensor_direction = SensorDirectionValue.COUNTER_CLOCKWISE_POSITIVE
         encoder_config.magnet_sensor.magnet_offset = CAN_offset
-        encoder_config.magnet_sensor.absolute_sensor_range = AbsoluteSensorRangeValue.UNSIGNED_0_TO1
+        encoder_config.magnet_sensor.absolute_sensor_range = AbsoluteSensorRangeValue.SIGNED_PLUS_MINUS_HALF
         self.turning_encoder.configurator.apply(encoder_config)
         
         self.drive_motor = TalonFX(drive_id, "rio")
@@ -65,16 +65,19 @@ class SwerveModule(Subsystem):
         steer_configs.closed_loop_general.continuous_wrap = True
         self.direction_motor.configurator.apply(steer_configs)
 
+        
         self.drive_position = self.drive_motor.get_position()
         self.drive_velocity = self.drive_motor.get_velocity()
         self.steer_position = self.direction_motor.get_position()
         self.steer_velocity = self.direction_motor.get_velocity()
 
         self.signals = [self.drive_position, self.drive_velocity, self.steer_position, self.steer_velocity]
+        """
         map(lambda signal: signal.set_update_frequency(250), self.signals)
         ParentDevice.optimize_bus_utilization_for_all(self.drive_motor, self.direction_motor, self.turning_encoder)
+        """
         
-        self.angle_setter = PositionVoltage(0)
+        self.angle_setter = PositionDutyCycle(0)
         self.velocity_setter = VelocityTorqueCurrentFOC(0)
 
         self.internal_state = SwerveModulePosition()
