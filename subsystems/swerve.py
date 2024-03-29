@@ -61,10 +61,6 @@ class SwerveModule(Subsystem):
         self.steer_velocity = self.direction_motor.get_velocity()
 
         self.signals = [self.drive_position, self.drive_velocity, self.steer_position, self.steer_velocity]
-        """
-        map(lambda signal: signal.set_update_frequency(250), self.signals)
-        ParentDevice.optimize_bus_utilization_for_all(self.drive_motor, self.direction_motor, self.turning_encoder)
-        """
         
         self.angle_setter = PositionDutyCycle(0)
         self.velocity_setter = VelocityTorqueCurrentFOC(0)
