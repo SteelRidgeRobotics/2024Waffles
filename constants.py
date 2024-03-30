@@ -11,9 +11,9 @@ class Waffles:
     k_drive_base_radius = 0.43 # meters
     
 class DriveMotorConstants:
-    kS = 0.4
+    kS = 2
     kA = 0
-    kP = 0.133
+    kP = 1.2
     kInvert = InvertedValue.COUNTER_CLOCKWISE_POSITIVE
     kNeutral = NeutralModeValue.BRAKE
     kRatio = 27 / 4
