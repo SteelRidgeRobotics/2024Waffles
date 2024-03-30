@@ -101,7 +101,7 @@ class SwerveModule(Subsystem):
         desiredState.optimize(desiredState, self.internal_state.angle)
 
         self.direction_motor.set_control(self.angle_setter.with_position(degs_to_rots(desiredState.angle.degrees())))
-        self.drive_motor.set_control(self.velocity_setter.with_velocity(meters_to_rots(desiredState.speed, DriveMotorConstants.kRatio)).with_override_coast_dur_neutral(override_brake_dur_neutral))
+        self.drive_motor.set_control(self.velocity_setter.with_velocity(meters_to_rots(desiredState.speed)).with_override_coast_dur_neutral(override_brake_dur_neutral))
         
 
 class Swerve(Subsystem):
@@ -236,11 +236,11 @@ class Swerve(Subsystem):
 CONVERSIONS
 """
 
-def meters_to_rots(meters: float, ratio: float) -> float:
-    return meters / (pi * Waffles.k_wheel_size) * ratio
+def meters_to_rots(meters: float) -> float:
+    return meters / (pi * Waffles.k_wheel_size)
 
-def rots_to_meters(rotation: float, ratio: float=1) -> float:
-    return (rotation / ratio) * (pi * Waffles.k_wheel_size)
+def rots_to_meters(rotation: float) -> float:
+    return rotation * (pi * Waffles.k_wheel_size)
 
 def rots_to_degs(rotation: float) -> float:
     return rotation * 360
