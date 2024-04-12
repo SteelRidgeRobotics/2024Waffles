@@ -53,8 +53,9 @@ class SwerveModule(Subsystem):
             steer_configs.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
         steer_configs.motor_output.inverted = SteerMotorConstants.kInvert
         
-        steer_configs.feedback.feedback_remote_sensor_id = CANcoder_id
-        steer_configs.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
+        if RobotBase.isReal():
+            steer_configs.feedback.feedback_remote_sensor_id = CANcoder_id
+            steer_configs.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
         steer_configs.feedback.rotor_to_sensor_ratio = SteerMotorConstants.kRatio
         
         steer_configs.closed_loop_general.continuous_wrap = True
@@ -87,8 +88,8 @@ class SwerveModule(Subsystem):
             self.refresh()
 
         #steer_compensated = self.steer_position.value #BaseStatusSignal.get_latency_compensated_value(self.steer_position, self.steer_velocity)
-        SmartDashboard.putNumber("testAngle", rots_to_degs(self.direction_motor.get_position().value) % 360)
-        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_position().value) % 360)
+        SmartDashboard.putNumber(f"{self.drive_motor.device_id} testAngle", rots_to_degs(self.direction_motor.get_position().value % 360))
+        return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_position().value))
 
     def get_state(self, refresh=True) -> SwerveModuleState:
         if refresh:
@@ -105,6 +106,9 @@ class SwerveModule(Subsystem):
         self.internal_state = SwerveModulePosition(rots_to_meters(drive_compensated), self.get_angle())
         
         return self.internal_state
+    
+    def _invert_drive(self) -> None:
+        self.speed_multiplier *= -1
 
     def set_desired_state(self, desiredState: SwerveModuleState, override_brake_dur_neutral: bool=True) -> None:
         self.refresh()
@@ -114,9 +118,10 @@ class SwerveModule(Subsystem):
 
         if (angleDist > 90 and angleDist < 270):
             desiredAngle = (desiredAngle + 180) % 360
-            self.speed_multiplier = -1
+            self._invert_drive()
 
         self.direction_motor.set_control(self.angle_setter.with_position(degs_to_rots(desiredAngle)))
+        SmartDashboard.putNumber(f"{self.drive_motor.device_id} Control Speed", desiredState.speed * self.speed_multiplier)
         self.drive_motor.set_control(self.velocity_setter.with_velocity(meters_to_rots(desiredState.speed * self.speed_multiplier)).with_override_coast_dur_neutral(override_brake_dur_neutral))
         
 
