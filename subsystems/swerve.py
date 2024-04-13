@@ -14,7 +14,6 @@ from phoenix6.signals import *
 from phoenix6 import BaseStatusSignal
 from typing import Self
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
-from wpilib.shuffleboard import Shuffleboard
 from wpilib.sysid import SysIdRoutineLog
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.estimator import SwerveDrive4PoseEstimator
@@ -26,7 +25,7 @@ from constants import *
 class SwerveModule(Subsystem):
 
 
-    def __init__(self, drive_id: int, direction_id: int, CANcoder_id: int, CAN_offset: float, tab_name: str, dir_inverted: bool=False) -> None:
+    def __init__(self, drive_id: int, direction_id: int, CANcoder_id: int, CAN_offset: float, dir_inverted: bool=False) -> None:
         super().__init__()
 
         self.turning_encoder = CANcoder(CANcoder_id, "rio")
@@ -73,9 +72,9 @@ class SwerveModule(Subsystem):
 
         self.internal_state = SwerveModulePosition()
 
-        self.tab_name = tab_name
-
         self.speed_multiplier = 1
+        
+        self._previousDesiredAngle = 0
 
     def refresh(self) -> None:
         map(lambda signal: signal.refresh(), self.signals)
@@ -87,7 +86,6 @@ class SwerveModule(Subsystem):
         if refresh:
             self.refresh()
 
-        #steer_compensated = self.steer_position.value #BaseStatusSignal.get_latency_compensated_value(self.steer_position, self.steer_velocity)
         SmartDashboard.putNumber(f"{self.drive_motor.device_id} testAngle", rots_to_degs(self.direction_motor.get_position().value % 360))
         return Rotation2d.fromDegrees(rots_to_degs(self.direction_motor.get_position().value))
 
@@ -107,22 +105,26 @@ class SwerveModule(Subsystem):
         
         return self.internal_state
     
-    def _invert_drive(self) -> None:
-        self.speed_multiplier *= -1
+    def simulationPeriodic(self) -> None:
+        self.drive_motor.sim_state.add_rotor_position(self.drive_motor.get_rotor_velocity().value * 0.02 * self.speed_multiplier)
+        SmartDashboard.putNumber(f"{self.drive_motor.device_id} drive pos", self.drive_motor.get_position().value)
 
     def set_desired_state(self, desiredState: SwerveModuleState, override_brake_dur_neutral: bool=True) -> None:
         self.refresh()
         desiredAngle = desiredState.angle.degrees() % 360
 
-        angleDist = math.fabs(desiredAngle - self.internal_state.angle.degrees())
+        angleDist = math.fabs(desiredAngle - self._previousDesiredAngle)
 
         if (angleDist > 90 and angleDist < 270):
-            desiredAngle = (desiredAngle + 180) % 360
-            self._invert_drive()
+            self.speed_multiplier *= -1
 
         self.direction_motor.set_control(self.angle_setter.with_position(degs_to_rots(desiredAngle)))
-        SmartDashboard.putNumber(f"{self.drive_motor.device_id} Control Speed", desiredState.speed * self.speed_multiplier)
+        self.direction_motor.sim_state.set_raw_rotor_position(degs_to_rots(desiredAngle))
+        
         self.drive_motor.set_control(self.velocity_setter.with_velocity(meters_to_rots(desiredState.speed * self.speed_multiplier)).with_override_coast_dur_neutral(override_brake_dur_neutral))
+        self.drive_motor.sim_state.set_rotor_velocity(desiredState.speed * self.speed_multiplier * DriveMotorConstants.kRatio)
+        
+        self._previousDesiredAngle = desiredAngle
         
 
 class Swerve(Subsystem):
@@ -133,10 +135,10 @@ class Swerve(Subsystem):
     
     field = Field2d()
     
-    left_front: SwerveModule = SwerveModule(MotorIDs.LEFT_FRONT_DRIVE, MotorIDs.LEFT_FRONT_DIRECTION, CANIDs.LEFT_FRONT, CANOffsets.LEFT_FRONT, "Left Front", True)
-    left_rear: SwerveModule = SwerveModule(MotorIDs.LEFT_REAR_DRIVE, MotorIDs.LEFT_REAR_DIRECTION, CANIDs.LEFT_REAR, CANOffsets.LEFT_REAR, "Left Rear", True)
-    right_front: SwerveModule = SwerveModule(MotorIDs.RIGHT_FRONT_DRIVE, MotorIDs.RIGHT_FRONT_DIRECTION, CANIDs.RIGHT_FRONT, CANOffsets.RIGHT_FRONT, "Right Front")
-    right_rear: SwerveModule = SwerveModule(MotorIDs.RIGHT_REAR_DRIVE, MotorIDs.RIGHT_REAR_DIRECTION, CANIDs.RIGHT_REAR, CANOffsets.RIGHT_REAR, "Right Rear")
+    left_front: SwerveModule = SwerveModule(MotorIDs.LEFT_FRONT_DRIVE, MotorIDs.LEFT_FRONT_DIRECTION, CANIDs.LEFT_FRONT, CANOffsets.LEFT_FRONT, True)
+    left_rear: SwerveModule = SwerveModule(MotorIDs.LEFT_REAR_DRIVE, MotorIDs.LEFT_REAR_DIRECTION, CANIDs.LEFT_REAR, CANOffsets.LEFT_REAR, True)
+    right_front: SwerveModule = SwerveModule(MotorIDs.RIGHT_FRONT_DRIVE, MotorIDs.RIGHT_FRONT_DIRECTION, CANIDs.RIGHT_FRONT, CANOffsets.RIGHT_FRONT)
+    right_rear: SwerveModule = SwerveModule(MotorIDs.RIGHT_REAR_DRIVE, MotorIDs.RIGHT_REAR_DIRECTION, CANIDs.RIGHT_REAR, CANOffsets.RIGHT_REAR)
     modules = [left_front, left_rear, right_front, right_rear]
     
     def __init__(self):
