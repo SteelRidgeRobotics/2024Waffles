@@ -1,17 +1,11 @@
 from phoenix6.configs.talon_fx_configs import *
 from wpimath.geometry import Translation2d
 
-class DriverController:
-    port = 0
-    deadband = 0.15
 
-class Waffles:
-    k_wheel_size = 0.1 # meters
-    k_max_module_speed =  4.654 # m/s
-    k_max_rot_rate = 10.472 # rad/s
-    k_drive_base_radius = 0.43 # meters
-    
 class Constants:
+    
+    class Controller:
+        k_driver_controller_port = 0
     
     class CanIDs:
         # TalonFXs
@@ -40,7 +34,9 @@ class Constants:
     class Drivetrain:
         k_wheel_size = 0.1 # Diameter of wheels in meters
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
+        
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
+        k_max_rot_rate = 10.472 # Max chassis rotation rate (rad/s)
         
         class ModuleLocations:
             # To find Translation2d amount:
@@ -79,6 +75,11 @@ class Constants:
         k_enable_stator_limit = False
         k_stator_limit = 0
         
+        # Motion Magic
+        k_cruise_velocity = 75
+        k_cruise_acceleration = 100
+        k_jerk = 0
+        
         # Physical Properties
         k_gear_ratio = 27 / 4
         
@@ -101,10 +102,14 @@ class Constants:
         k_enable_stator_limit = False
         k_stator_limit = 0
         
+        # Motion Magic
+        k_cruise_velocity = 75
+        k_cruise_acceleration = 100
+        k_jerk = 0
+        
         # Sensors (in case we switch it to a synced cancoder later on)
         k_remote_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
         
         # Physical Properties
         k_gear_ratio = 150 / 7
         
-

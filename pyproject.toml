@@ -10,4 +10,4 @@ robotpy_extras = [
 ]
 
 # Other pip packages to install
-requires = ["frc6343"]
+requires = []
