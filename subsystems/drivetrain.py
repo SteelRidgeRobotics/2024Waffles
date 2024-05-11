@@ -9,7 +9,6 @@ from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveDrive4Odometry, SwerveModuleState
-from wpimath.trajectory import Trajectory, TrajectoryConfig, TrajectoryGenerator
 
 
 from constants import Constants
