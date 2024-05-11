@@ -15,7 +15,7 @@ Waffles contains the following:
 - Fused CANcoders for precise steering
 - Continuous wrap for optimized steering
 - Motion Magic + torque control to increase traction
-- Buttons to switching between robot-centric and field-relative drive
+- Buttons for switching between robot-centric and field-relative drive
 - PathPlanner support (includes Choreo configuration)
 - NavX simulation
 - Full simulation support for all modes
