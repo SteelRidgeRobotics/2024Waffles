@@ -113,3 +113,17 @@ class Constants:
         # Physical Properties
         k_gear_ratio = 150 / 7
         
+    class PathPlanner:
+        ## PID Constants ##
+        
+        # Translation
+        k_translation_p = 5
+        k_translation_i = 0
+        k_translation_d = 0
+        k_translation_i_zone = 0 # This basically means "how powerful can k_i be at any given time"
+        
+        # Rotation
+        k_rotation_p = 5
+        k_rotation_i = 0
+        k_rotation_d = 0
+        k_rotation_i_zone = 0

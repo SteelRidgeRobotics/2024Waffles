@@ -95,8 +95,18 @@ class Drivetrain(Subsystem):
             self.get_robot_speed,
             lambda speeds: self.drive_robot_centric(speeds),
             HolonomicPathFollowerConfig( # Holonomic-specific config
-                PIDConstants(5, 0, 0, 0), # PID for translation
-                PIDConstants(5, 0, 0, 0), # PID for rotation
+                PIDConstants( # PID for translation
+                        Constants.PathPlanner.k_translation_p,
+                        Constants.PathPlanner.k_translation_i,
+                        Constants.PathPlanner.k_translation_d,
+                        Constants.PathPlanner.k_translation_i_zone
+                    ), 
+                PIDConstants( # PID for rotation
+                        Constants.PathPlanner.k_rotation_p,
+                        Constants.PathPlanner.k_rotation_i,
+                        Constants.PathPlanner.k_rotation_d,
+                        Constants.PathPlanner.k_rotation_i_zone
+                    ), 
                 Constants.Drivetrain.k_max_attainable_speed, # Max module speed (matches the one in PathPlanner)
                 Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
                 ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
