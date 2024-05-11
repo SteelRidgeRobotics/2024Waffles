@@ -78,6 +78,8 @@ class SwerveModule(Subsystem):
     
     steer_config.closed_loop_general.continuous_wrap = True # This does our angle optimizations for us (yay)
     
+    # With a fused CANcoder, we change the rotor_to_sensor ratio, that way the encoder position tells us the rotations of the wheel itself
+    # (Obviously this will vary from mechanism, but most of the time, if it uses a CANcoder, change this instead)
     steer_config.feedback.rotor_to_sensor_ratio = Constants.SteerConfig.k_gear_ratio
     
     
@@ -125,6 +127,7 @@ class SwerveModule(Subsystem):
         self.encoder_sim = self.encoder.sim_state
         
         # Remove encoder offset if we're in simulation
+        # Rotate wheel 90 degrees as well since they initialize facing the wrong way
         self.encoder_sim.set_raw_position(-encoder_offset + 0.25)
         
         # Create variables to keep track of our modules "state"
