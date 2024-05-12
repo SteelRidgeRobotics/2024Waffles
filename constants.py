@@ -68,6 +68,11 @@ class Constants:
         
         k_neutral_mode = NeutralModeValue.BRAKE
         
+        # Torque limits
+        k_torque_neutral_deadband = 0 # Default: 0A
+        k_peak_forward_torque_current = 800 # Default: 800A
+        k_peak_reverse_torque_current = -800 # Default: -800A
+        
         # Current limits
         k_enable_supply_limit = False
         k_supply_limit = 0
@@ -95,7 +100,12 @@ class Constants:
         
         k_neutral_mode = NeutralModeValue.BRAKE
         
-        # Current limits
+        # Torque limits
+        k_torque_neutral_deadband = 0 # Default: 0A
+        k_peak_forward_torque_current = 800 # Default: 800A
+        k_peak_reverse_torque_current = -800 # Default: -800A
+        
+        # Current limits (only needed if using non-torque control)
         k_enable_supply_limit = False
         k_supply_limit = 0
         

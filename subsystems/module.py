@@ -3,10 +3,10 @@ from commands2 import Subsystem
 from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
-from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicVoltage
+from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC
 from phoenix6.hardware import CANcoder, TalonFX
 
-from wpilib import RobotBase, SmartDashboard
+from wpilib import RobotBase
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 
@@ -28,6 +28,11 @@ class SwerveModule(Subsystem):
     drive_config.slot0.k_s = Constants.DriveConfig.k_s
     drive_config.slot0.k_v = Constants.DriveConfig.k_v
     drive_config.slot0.k_a = Constants.DriveConfig.k_a
+    
+    # Torque current
+    drive_config.torque_current.torque_neutral_deadband = Constants.DriveConfig.k_torque_neutral_deadband
+    drive_config.torque_current.peak_forward_torque_current = Constants.DriveConfig.k_peak_forward_torque_current
+    drive_config.torque_current.peak_reverse_torque_current = Constants.DriveConfig.k_peak_reverse_torque_current
     
     # Supply current
     drive_config.current_limits.supply_current_limit_enable = Constants.DriveConfig.k_enable_supply_limit
@@ -59,6 +64,11 @@ class SwerveModule(Subsystem):
     steer_config.slot0.k_s = Constants.SteerConfig.k_s
     steer_config.slot0.k_v = Constants.SteerConfig.k_v
     steer_config.slot0.k_a = Constants.SteerConfig.k_a
+    
+    # Torque current
+    steer_config.torque_current.torque_neutral_deadband = Constants.SteerConfig.k_torque_neutral_deadband
+    steer_config.torque_current.peak_forward_torque_current = Constants.SteerConfig.k_peak_forward_torque_current
+    steer_config.torque_current.peak_reverse_torque_current = Constants.SteerConfig.k_peak_reverse_torque_current
     
     # Supply current
     steer_config.current_limits.supply_current_limit_enable = Constants.SteerConfig.k_enable_supply_limit
@@ -115,7 +125,7 @@ class SwerveModule(Subsystem):
         self.encoder.configurator.apply(module_encoder_config)
         
         # Create control requests and set them to the talons
-        self.steer_request = MotionMagicVoltage(0)
+        self.steer_request = MotionMagicTorqueCurrentFOC(0)
         self.drive_request = MotionMagicVelocityTorqueCurrentFOC(0)
         
         self.steer_talon.set_control(self.steer_request)
