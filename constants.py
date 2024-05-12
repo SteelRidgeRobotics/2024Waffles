@@ -73,7 +73,7 @@ class Constants:
         k_peak_forward_torque_current = 800 # Default: 800A
         k_peak_reverse_torque_current = -800 # Default: -800A
         
-        # Current limits
+        # Current limits (only needed if using non-torque control)
         k_enable_supply_limit = False
         k_supply_limit = 0
         
