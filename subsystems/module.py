@@ -5,6 +5,7 @@ from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
 from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC
 from phoenix6.hardware import CANcoder, TalonFX
+from phoenix6.status_signal import BaseStatusSignal
 
 from wpilib import RobotBase
 from wpimath.geometry import Rotation2d
@@ -155,18 +156,44 @@ class SwerveModule(Subsystem):
     def get_angle(self) -> Rotation2d:
         """Returns the current angle of the wheel by converting the steer motor position into degrees."""
         
-        degrees = rots_to_degs(self.steer_talon.get_position().value)
+        # Get compensated velocity for compensating for compensated position
+        # "Do you think he's compensating for something?"
+        compensated_velocity = BaseStatusSignal.get_latency_compensated_value(
+            self.steer_talon.get_velocity().refresh(), # This fucntion doesn't refresh the status signals, so we do it here
+            self.steer_talon.get_acceleration().refresh(), # Same for this signal
+            0.06
+        )
+        
+        # Do our own latency compression because BaseStatusSignal doesn't allow compensation-inversion madness (smh)
+        latency = self.steer_talon.get_position().timestamp.get_latency()
+        compensated_position = self.steer_talon.get_position().refresh().value + (compensated_velocity * latency)
+        
+        degrees = rots_to_degs(compensated_position)
         return Rotation2d.fromDegrees(degrees)
     
     def get_speed(self) -> float:
         """Returns the module's current driving speed (m/s)."""
         
-        return rot_to_meters(self.drive_talon.get_velocity().value)
+        # Compensate for acceleration
+        compensated_speed = BaseStatusSignal.get_latency_compensated_value(
+            self.drive_talon.get_velocity().refresh(),
+            self.drive_talon.get_acceleration().refresh(),
+            0.06
+        )
+        
+        return rot_to_meters(compensated_speed)
         
     def get_position(self) -> SwerveModulePosition:
         """Returns the current position of the module; distance travelled and current angle."""
         
-        distance = rot_to_meters(self.drive_talon.get_position().value)
+        # Compensate for velocity
+        compensated_position = BaseStatusSignal.get_latency_compensated_value(
+            self.drive_talon.get_position().refresh(),
+            self.drive_talon.get_velocity().refresh(),
+            0.06
+        )
+        
+        distance = rot_to_meters(compensated_position)
         
         return SwerveModulePosition(
             distance, 
