@@ -4,7 +4,7 @@ from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
 from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC
-from phoenix6.hardware import CANcoder, TalonFX
+from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
 from wpilib import RobotBase
@@ -140,6 +140,24 @@ class SwerveModule(Subsystem):
         # Remove encoder offset if we're in simulation
         # Rotate wheel 90 degrees as well since they initialize facing the wrong way
         self.encoder_sim.set_raw_position(-encoder_offset + 0.25)
+        
+        ## Set StatusSignal update frequencies ##
+        # Drive Motor
+        self.drive_talon.get_acceleration().set_update_frequency(50)
+        self.drive_talon.get_position().set_update_frequency(50)
+        self.drive_talon.get_velocity().set_update_frequency(50)
+        
+        # Steer Motor
+        self.steer_talon.get_acceleration().set_update_frequency(50)
+        self.steer_talon.get_position().set_update_frequency(50)
+        self.steer_talon.get_velocity().set_update_frequency(50)
+        
+        # CANcoder
+        self.encoder.get_position().set_update_frequency(100)
+        self.encoder.get_velocity().set_update_frequency(100)
+        
+        # Disable all unset status signals for all devices in this module
+        ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
         
         # Create variables to keep track of our modules "state"
         self.previous_desired_angle = 0
