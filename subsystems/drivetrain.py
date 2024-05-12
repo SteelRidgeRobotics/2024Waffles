@@ -7,6 +7,7 @@ from pathplannerlib.controller import PIDConstants
 
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
+from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveDrive4Odometry, SwerveModuleState
 
@@ -61,7 +62,7 @@ class Drivetrain(Subsystem):
     )
     
     # Odometry
-    odometry = SwerveDrive4Odometry(
+    odometry = SwerveDrive4PoseEstimator(
         kinematics, # The wheel locations on the robot
         navx.getRotation2d(), # The current angle of the robot
         ( # The current recorded positions of all modules
@@ -69,7 +70,8 @@ class Drivetrain(Subsystem):
             left_rear.get_position(),
             right_front.get_position(),
             right_rear.get_position()
-        )
+        ),
+        Pose2d()
     )
     
     # Simulated navX angle
@@ -90,7 +92,7 @@ class Drivetrain(Subsystem):
         
         # Configure PathPlanner
         AutoBuilder.configureHolonomic(
-            self.odometry.getPose,
+            self.odometry.getEstimatedPosition,
             lambda pose: self.reset_pose(pose),
             self.get_robot_speed,
             lambda speeds: self.drive_robot_centric(speeds),
@@ -129,7 +131,7 @@ class Drivetrain(Subsystem):
         )
         
         # ...then update the field pose
-        self.field.setRobotPose(self.odometry.getPose())
+        self.field.setRobotPose(self.odometry.getEstimatedPosition())
         
         # Update Gyro widget (shuffleboard REALLY likes to duplicate widgets, very annoying)
         # I'll just use SmartDashboard for this instead: Elastic won't auto-populate, so no worries about incorrect tabs or anything
