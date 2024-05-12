@@ -31,6 +31,9 @@ class RobotContainer:
     
     def __init__(self) -> None:
         
+        # Set onChange actions for choosers
+        self.auto_chooser.onChange(lambda auto: self.show_auto_to_dashboard(auto))
+        
         # Create both commands for the drivetrain, one for robot-centric, one for field-relative
         # (both snazzy lambdas)
         self.robot_centric_command = self.drivetrain.runOnce(
@@ -62,6 +65,14 @@ class RobotContainer:
         """Returns the selected auto."""
         
         return self.auto_chooser.getSelected()
+    
+    def show_auto_to_dashboard(self, auto: PathPlannerAuto | None) -> None:
+        """Clears and displays the selected auto onto the drivetrain's Field2d widget."""
+        
+        self.drivetrain.clear_auto_trajectory()
+        
+        if auto is not None:
+            self.drivetrain.load_auto_trajectory(auto)
     
     def configure_button_bindings(self) -> None:
         """Setup all button bindings."""
