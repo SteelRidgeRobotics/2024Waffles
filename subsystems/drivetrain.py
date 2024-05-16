@@ -143,7 +143,7 @@ class Drivetrain(Subsystem):
         # If we're in simulation, then calculate how much the robot *should* be moving.
         # Otherwise, just read the current NavX heading.
         if RobotBase.isReal():
-            angle = self.nav_x.getRotation2d()
+            angle = self.navx.getRotation2d()
         else:
             angle = Rotation2d.fromDegrees(self.gyro_sim)
             
