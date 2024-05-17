@@ -1,5 +1,7 @@
 from commands2 import Subsystem
 
+from limelight import Limelight
+
 import navx
 
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, PathPlannerAuto, ReplanningConfig
@@ -74,6 +76,10 @@ class Drivetrain(Subsystem):
         Pose2d()
     )
     
+    # Limelight
+    limelight = Limelight(Constants.Limelight.k_limelight_name)
+    odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
+    
     # Simulated navX angle
     gyro_sim = 0
     
@@ -130,6 +136,18 @@ class Drivetrain(Subsystem):
             )
         )
         
+        # Add Vision Measurements
+        if Constants.Limelight.k_vision_odometry:
+            
+            results = self.limelight.latest_results
+            
+            # Only do anything if we see an apriltag
+            if results.is_valid:
+                self.odometry.addVisionMeasurement(
+                    results.botpose_wpiblue_2D,
+                    results.targeting_latency
+                )
+                
         # ...then update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
         
