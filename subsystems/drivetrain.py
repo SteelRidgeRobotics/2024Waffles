@@ -151,7 +151,7 @@ class Drivetrain(Subsystem):
 
             # We don't want to update what the limelight thinks our yaw is, so we ignore it by tell it "we are NOT confident at ALL!!!!"
             # (0.7 is placeholder, basically means we're kinda confident. Lower = more confident in limelight)
-            self.odometry.setVisionMeasurementStdDevs([0.7, 0.7, 99999999])
+            self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
 
             self.odometry.addVisionMeasurement(
                 mega_tag2.pose,
