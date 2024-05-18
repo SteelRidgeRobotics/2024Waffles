@@ -1,14 +1,12 @@
 """
-4096's 2023 Charged Up limelight.py file, found at https://github.com/CtrlZ-FRC4096/Robot-2023-Public/blob/main/robot/limelight.py
+Custom LimelightHelpers file translated into Python. Slightly based off 4096's 2023 Charged Up limelight.py file, found at https://github.com/CtrlZ-FRC4096/Robot-2023-Public/blob/main/robot/limelight.py
 """
 
-import json
 from dataclasses import dataclass
-from enum import IntEnum
-from functools import lru_cache
-from typing import Sequence, cast
 
-import ntcore
+from typing import Sequence
+
+from ntcore import NetworkTable, NetworkTableEntry, NetworkTableInstance
 from wpimath.geometry import (
 	Pose2d,
 	Pose3d,
@@ -21,7 +19,6 @@ from wpimath.geometry import (
 from math import radians
 
 # The `cast` calls are no-ops at runtime but are a workaround for broken type hints in ntcore
-
 
 def _ll_to_Pose3d(data: Sequence) -> Pose3d | None:
 	if not data:
@@ -54,87 +51,99 @@ def _ll_to_Pose2d(data: Sequence) -> Pose2d | None:
 
 @dataclass(frozen=True)
 class LimelightTarget_Retro:
-	# points: tuple[tuple[float, float]] # The example json has empty pts so idk what the format is
+	
+	camera_pose_target_space: Pose3d | None
+	robot_pose_field_space: Pose3d | None
+	robot_pose_target_space: Pose3d | None
+	target_pose_camera_space: Pose3d | None
+	target_pose_robot_space: Pose3d | None
+
+	camera_pose_target_space_2D: Pose2d | None
+	robot_pose_field_space_2D: Pose2d | None
+	robot_pose_target_space_2D: Pose2d | None
+	target_pose_camera_space_2D: Pose2d | None
+	target_pose_robot_space_2D: Pose2d | None
+
 	ta: float
 	tx: float
 	ty: float
 	txp: float
 	typ: float
-	camera_pose_in_target_space: Pose3d | None
-	robot_pose_in_field_space: Pose3d | None
-	robot_pose_in_target_space: Pose3d | None
-	target_pose_in_camera_space: Pose3d | None
-	target_pose_in_robot_space: Pose3d | None
-	camera_pose_in_target_space_2D: Pose2d | None
-	robot_pose_in_field_space_2D: Pose2d | None
-	robot_pose_in_target_space_2D: Pose2d | None
-	target_pose_in_camera_space_2D: Pose2d | None
-	target_pose_in_robot_space_2D: Pose2d | None
+	ts: float
 
 	@staticmethod
 	def from_limelight_json(data: dict) -> "LimelightTarget_Retro":
 		return LimelightTarget_Retro(
+			camera_pose_target_space=_ll_to_Pose3d(data["t6c_ts"]),
+			robot_pose_field_space=_ll_to_Pose3d(data["t6r_fs"]),
+			robot_pose_target_space=_ll_to_Pose3d(data["t6r_ts"]),
+			target_pose_camera_space=_ll_to_Pose3d(data["t6t_cs"]),
+			target_pose_robot_space=_ll_to_Pose3d(data["t6t_rs"]),
+
+			camera_pose_target_space_2D=_ll_to_Pose2d(data["t6c_ts"]),
+			robot_pose_field_space_2D=_ll_to_Pose2d(data["t6r_fs"]),
+			robot_pose_target_space_2D=_ll_to_Pose2d(data["t6r_ts"]),
+			target_pose_camera_space_2D=_ll_to_Pose2d(data["t6t_cs"]),
+			target_pose_robot_space_2D=_ll_to_Pose2d(data["t6t_rs"]),
+
 			ta=data["ta"],
 			tx=data["tx"],
 			ty=data["ty"],
 			txp=data["txp"],
 			typ=data["typ"],
-			camera_pose_in_target_space=_ll_to_Pose3d(data["t6c_ts"]),
-			robot_pose_in_field_space=_ll_to_Pose3d(data["t6r_fs"]),
-			robot_pose_in_target_space=_ll_to_Pose3d(data["t6r_ts"]),
-			target_pose_in_camera_space=_ll_to_Pose3d(data["t6t_cs"]),
-			target_pose_in_robot_space=_ll_to_Pose3d(data["t6t_rs"]),
-			camera_pose_in_target_space_2D=_ll_to_Pose2d(data["t6c_ts"]),
-			robot_pose_in_field_space_2D=_ll_to_Pose2d(data["t6r_fs"]),
-			robot_pose_in_target_space_2D=_ll_to_Pose2d(data["t6r_ts"]),
-			target_pose_in_camera_space_2D=_ll_to_Pose2d(data["t6t_cs"]),
-			target_pose_in_robot_space_2D=_ll_to_Pose2d(data["t6t_rs"]),
+			ts=data["ts"]
 		)
-
 
 @dataclass(frozen=True)
 class LimelightTarget_Fiducial:
-	id: int
+	
+	id: float
 	family: str
-	# points: tuple[tuple[float, float]] # The example json has empty pts so idk what the format is
+	
+	camera_pose_target_space: Pose3d | None
+	robot_pose_field_space: Pose3d | None
+	robot_pose_target_space: Pose3d | None
+	target_pose_camera_space: Pose3d | None
+	target_pose_robot_space: Pose3d | None
+
+	camera_pose_target_space_2D: Pose2d | None
+	robot_pose_field_space_2D: Pose2d | None
+	robot_pose_target_space_2D: Pose2d | None
+	target_pose_camera_space_2D: Pose2d | None
+	target_pose_robot_space_2D: Pose2d | None
+
 	ta: float
 	tx: float
 	ty: float
 	txp: float
 	typ: float
-	camera_pose_in_target_space: Pose3d | None
-	robot_pose_in_field_space: Pose3d | None
-	robot_pose_in_target_space: Pose3d | None
-	target_pose_in_camera_space: Pose3d | None
-	target_pose_in_robot_space: Pose3d | None
-	camera_pose_in_target_space_2D: Pose2d | None
-	robot_pose_in_field_space_2D: Pose2d | None
-	robot_pose_in_target_space_2D: Pose2d | None
-	target_pose_in_camera_space_2D: Pose2d | None
-	target_pose_in_robot_space_2D: Pose2d | None
+	ts: float
 
 	@staticmethod
 	def from_limelight_json(data: dict) -> "LimelightTarget_Fiducial":
 		return LimelightTarget_Fiducial(
-			id=data["id"],
-			family=data["family"],
+			id=data["fID"],
+			family=data["fam"],
+
+			camera_pose_target_space=_ll_to_Pose3d(data["t6c_ts"]),
+			robot_pose_field_space=_ll_to_Pose3d(data["t6r_fs"]),
+			robot_pose_target_space=_ll_to_Pose3d(data["t6r_ts"]),
+			target_pose_camera_space=_ll_to_Pose3d(data["t6t_cs"]),
+			target_pose_robot_space=_ll_to_Pose3d(data["t6t_rs"]),
+
+			camera_pose_target_space_2D=_ll_to_Pose2d(data["t6c_ts"]),
+			robot_pose_field_space_2D=_ll_to_Pose2d(data["t6r_fs"]),
+			robot_pose_target_space_2D=_ll_to_Pose2d(data["t6r_ts"]),
+			target_pose_camera_space_2D=_ll_to_Pose2d(data["t6t_cs"]),
+			target_pose_robot_space_2D=_ll_to_Pose2d(data["t6t_rs"]),
+
 			ta=data["ta"],
 			tx=data["tx"],
 			ty=data["ty"],
 			txp=data["txp"],
 			typ=data["typ"],
-			camera_pose_in_target_space=_ll_to_Pose3d(data["t6c_ts"]),
-			robot_pose_in_field_space=_ll_to_Pose3d(data["t6r_fs"]),
-			robot_pose_in_target_space=_ll_to_Pose3d(data["t6r_ts"]),
-			target_pose_in_camera_space=_ll_to_Pose3d(data["t6t_cs"]),
-			target_pose_in_robot_space=_ll_to_Pose3d(data["t6t_rs"]),
-			camera_pose_in_target_space_2D=_ll_to_Pose2d(data["t6c_ts"]),
-			robot_pose_in_field_space_2D=_ll_to_Pose2d(data["t6r_fs"]),
-			robot_pose_in_target_space_2D=_ll_to_Pose2d(data["t6r_ts"]),
-			target_pose_in_camera_space_2D=_ll_to_Pose2d(data["t6t_cs"]),
-			target_pose_in_robot_space_2D=_ll_to_Pose2d(data["t6t_rs"]),
+			ts=data["ts"]
 		)
-
 
 @dataclass(frozen=True)
 class LimelightTarget_Barcode:
@@ -143,14 +152,41 @@ class LimelightTarget_Barcode:
 	@staticmethod
 	def from_limelight_json(data: dict) -> "LimelightTarget_Barcode":
 		return LimelightTarget_Barcode()
+	
+@dataclass(frozen=True)
+class LimelightTarget_Classifier:
 
+	class_name: str
+	id: float
+	confidence: float
+	zone: float
 
+	tx: float
+	ty: float
+	txp: float
+	typ: float
+
+	@staticmethod
+	def from_limelight_json(data: dict) -> "LimelightTarget_Classifier":
+		return LimelightTarget_Classifier(
+			class_name=data["class"],
+			id=data["classID"],
+			confidence=data["conf"],
+			zone=data["zone"],
+
+			tx=data["tx"],
+			ty=data["ty"],
+			txp=data["txp"],
+			typ=data["typ"]
+		)
+	
 @dataclass(frozen=True)
 class LimelightTarget_Detector:
+
 	class_name: str
-	id: int
+	id: float
 	confidence: float
-	# points: tuple[tuple[float, float]] # The example json has empty pts so idk what the format is
+
 	ta: float
 	tx: float
 	ty: float
@@ -163,66 +199,72 @@ class LimelightTarget_Detector:
 			class_name=data["class"],
 			id=data["classID"],
 			confidence=data["conf"],
+
 			ta=data["ta"],
 			tx=data["tx"],
 			ty=data["ty"],
 			txp=data["txp"],
-			typ=data["typ"],
+			typ=data["typ"]
 		)
-
-
-@dataclass(frozen=True)
-class LimelightTarget_Classifier:
-	class_name: str
-	id: int
-	confidence: float
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "LimelightTarget_Classifier":
-		return LimelightTarget_Classifier(
-			class_name=data["class"],
-			id=data["classID"],
-			confidence=data["conf"],
-		)
-
-
+	
 milliseconds = float
-
 
 @dataclass(frozen=True)
 class Results:
-	pipeline_index: float
-	targeting_latency: float
-	timestamp: milliseconds
+
+	pipeline_id: float
+	latency_pipeline: float
+	latency_capture: float
+
+	timestamp_LIMELIGHT_publish: float
+	timestamp_RIOFPGA_capture: float
+
 	is_valid: bool
 
 	botpose: Pose3d | None
 	botpose_wpired: Pose3d | None
 	botpose_wpiblue: Pose3d | None
+	botpose_tagcount: float
+	botpose_span: float
+	botpose_avgdist: float
+	botpose_avgarea: float
+	camerapose_robotspace: Pose3d | None
 
 	botpose_2D: Pose2d | None
 	botpose_wpired_2D: Pose2d | None
 	botpose_wpiblue_2D: Pose2d | None
 
-	retro_results: list[LimelightTarget_Retro]
-	fiducial_results: list[LimelightTarget_Fiducial]
-	barcode_results: list[LimelightTarget_Barcode]
-	classifier_results: list[LimelightTarget_Classifier]
-	detector_results: list[LimelightTarget_Detector]
+	retro_targets: list[LimelightTarget_Retro]
+	fiducial_targets: list[LimelightTarget_Fiducial]
+	classifier_targets: list[LimelightTarget_Classifier]
+	detector_targets: list[LimelightTarget_Detector]
+	barcode_targets: list[LimelightTarget_Barcode]
 
 	@staticmethod
 	def from_limelight_json(data: dict) -> "Results":
 		return Results(
-			pipeline_index=data["pID"],
-			targeting_latency=data["tl"],
-			timestamp=data["ts"],
+			pipeline_id=data["pID"],
+			latency_pipeline=data["tl"],
+			latency_capture=data["cl"],
+
+			timestamp_LIMELIGHT_publish=data["ts"],
+			timestamp_RIOFPGA_capture=data["ts_rio"],
+
 			is_valid=data["v"],
+
 			botpose=_ll_to_Pose3d(data["botpose"]),
 			botpose_wpired=_ll_to_Pose3d(data["botpose_wpired"]),
 			botpose_wpiblue=_ll_to_Pose3d(data["botpose_wpiblue"]),
+			botpose_tagcount=data["botpose_tagcount"],
+			botpose_span=data["botpose_span"],
+			botpose_avgdist=data["botpose_avgdist"],
+			botpose_avgarea=data["botpose_avgarea"],
+			camerapose_robotspace=_ll_to_Pose3d(data["t6c_rs"]),
+
 			botpose_2D=_ll_to_Pose2d(data["botpose"]),
 			botpose_wpired_2D=_ll_to_Pose2d(data["botpose_wpired"]),
 			botpose_wpiblue_2D=_ll_to_Pose2d(data["botpose_wpiblue"]),
+
 			retro_results=[
 				LimelightTarget_Retro.from_limelight_json(x) for x in data["Retro"]
 				],
@@ -230,85 +272,563 @@ class Results:
 				LimelightTarget_Fiducial.from_limelight_json(x)
 				for x in data["Fiducial"]
 				],
-			barcode_results=[],  # [LimelightTarget_Barcode.from_limelight_json(x) for x in data['Barcode']],
 			classifier_results=[
 				LimelightTarget_Classifier.from_limelight_json(x)
 				for x in data["Classifier"]
 				],
+			barcode_results=[LimelightTarget_Barcode.from_limelight_json(x) for x in data['Barcode']],
 			detector_results=[
 				LimelightTarget_Detector.from_limelight_json(x)
 				for x in data["Detector"]
 				],
 		)
+	
+@dataclass
+class RawFiducial:
+	id: int = 0
+	txyc: float = 0
+	tync: float = 0
+	ta: float = 0
+	dist_to_camera: float = 0
+	dist_to_robot: float = 0
+	ambiguity: float = 0
 
+@dataclass
+class RawDetection:
+	class_id: int = 0
+	txyc: float = 0
+	tync: float = 0
+	ta: float = 0
+	corner0_x: float = 0
+	corner0_y: float = 0
+	corner1_x: float = 0
+	corner1_y: float = 0
+	corner2_x: float = 0
+	corner2_y: float = 0
+	corner3_x: float = 0
+	corner3_y: float = 0
 
-class LEDMode(IntEnum):
-	PIPELINE_CONTROL = 0
-	FORCE_OFF = 1
-	FORCE_BLINK = 2
-	FORCE_ON = 3
+@dataclass
+class PoseEstimate:
+	pose: Pose2d
+	timestamp_seconds: float
+	latency: float
+	tag_count: int
+	tag_span: float
+	avg_tag_dist: float
+	avg_tag_area: float
+	raw_fiducials: list[RawFiducial]
 
+class LimelightHelpers:
+	
+	@staticmethod
+	def _sanitize_name(name: str) -> str:
+		if name == "" or name is None:
+			return "limelight"
+		else:
+			return name
+	
+	@staticmethod
+	def _to_Pose3D(in_data: list[float]) -> Pose3d:
+		if len(in_data) < 6:
+			return Pose3d()
+		else:
+			return Pose3d(
+				Translation3d(in_data[0], in_data[1], in_data[2]),
+				Rotation3d(radians(in_data[3]), radians(in_data[4]), radians(in_data[5]))
+			)
+		
+	@staticmethod
+	def _to_Pose2D(in_data: list[float]) -> Pose2d:
+		if len(in_data) < 6:
+			return Pose2d()
+		else:
+			return Pose2d(
+				Translation2d(in_data[0], in_data[1]),
+				Rotation2d(radians(in_data[5]))
+			)
+		
+	@staticmethod
+	def _extract_array_entry(in_data: list[float], position: int) -> float:
+		if len(in_data) < position + 1:
+			return 0
+		else:
+			return in_data[position]
+		
+	@staticmethod
+	def _get_botpose_estimate(limelight_name: str, entry_name: str) -> PoseEstimate:
+		pose_entry = LimelightHelpers.get_limelight_NTTableEntry(limelight_name, entry_name)
+		pose_array = pose_entry.getDoubleArray([])
+		pose = LimelightHelpers._to_Pose2D(pose_array)
+		latency = LimelightHelpers._extract_array_entry(pose_array, 6)
+		tag_count = LimelightHelpers._extract_array_entry(pose_array, 7)
+		tag_span = LimelightHelpers._extract_array_entry(pose_array, 8)
+		tag_dist = LimelightHelpers._extract_array_entry(pose_array, 9)
+		tag_area = LimelightHelpers._extract_array_entry(pose_array, 10)
+		# getlastchange() in microseconds, ll latency in milliseconds
+		timestamp = (pose_entry.getLastChange() / 1000000) - (latency / 1000)
 
-class StreamMode(IntEnum):
-	STANDARD = 0
-	PIP_MAIN = 1
-	PIP_SECONDARY = 2
+		raw_fiducials = []
+		vals_per_fiducial = 7
+		expected_total_vals = 11 + vals_per_fiducial * tag_count
 
+		if len(pose_array) != expected_total_vals:
+			# Don't populate fiducials
+			return PoseEstimate(pose, timestamp, latency, tag_count, tag_span, tag_dist, tag_area, raw_fiducials)
+		else:
+			for i in range(tag_count):
+				base_index = 11 + (i * vals_per_fiducial)
+				id = pose_array[base_index]
+				txnc = pose_array[base_index + 1]
+				tync = pose_array[base_index + 2]
+				ta = pose_array[base_index + 3]
+				dist_to_camera = pose_array[base_index + 4]
+				dist_to_robot = pose_array[base_index + 5]
+				ambiguity = pose_array[base_index + 6]
+				raw_fiducials.append(
+					RawFiducial(id, txnc, tync, ta, dist_to_camera, dist_to_robot, ambiguity)
+				)
 
-class Limelight:
-	def __init__(self, name: str = "limelight"):
-		self.name = name
-		self.nt_table = ntcore.NetworkTableInstance.getDefault().getTable(self.name)
+			return PoseEstimate(pose, timestamp, latency, tag_count, tag_span, tag_dist, tag_area, raw_fiducials)
 
-	def __repr__(self) -> str:
-		return f"Limelight(name={self.name})"
+	@staticmethod
+	def _get_raw_fiducials(limelight_name: str) -> list[RawFiducial]:
+		entry = LimelightHelpers.get_limelight_NTTableEntry(limelight_name, "rawfiducials")
+		raw_fiducial_array = entry.getDoubleArray([])
+		vals_per_entry = 7
+		if len(raw_fiducial_array) % vals_per_entry != 0:
+			return RawFiducial()
+		
+		num_fiducials = len(raw_fiducial_array) // vals_per_entry
+		raw_fiducials = []
 
-	@property
-	def pipeline_index(self) -> float:
-		return cast(float, self.nt_table.getEntry("pipeline").getDouble(0))
+		for i in range(num_fiducials):
+			base_index = i * vals_per_entry
+			id = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index)
+			txnc = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 1)
+			tync = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 2)
+			ta = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 3)
+			dist_to_camera = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 4)
+			dist_to_robot = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 5)
+			ambiguity = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 6)
 
-	@pipeline_index.setter
-	def pipeline_index(self, value: float) -> None:
-		self.nt_table.getEntry("pipeline").setDouble(value)
+			raw_fiducials.append(
+				RawFiducial(id, txnc, tync, ta, dist_to_camera, dist_to_robot, ambiguity)
+			)
 
-	@property
-	def led_mode(self) -> LEDMode:
-		return LEDMode(self.nt_table.getEntry("ledMode").getDouble(0))
+	@staticmethod
+	def get_raw_detections(limelight_name: str) -> list[RawDetection]:
+		entry = LimelightHelpers.get_limelight_NTTableEntry(limelight_name, "rawdetections")
+		raw_detection_array = entry.getDoubleArray([])
+		vals_per_entry = 11
+		if len(raw_detection_array) % vals_per_entry != 0:
+			return RawDetection()
+		
+		num_detections = len(raw_detection_array) // vals_per_entry
+		raw_detections = []
 
-	@led_mode.setter
-	def led_mode(self, value: LEDMode) -> None:
-		self.nt_table.getEntry("ledMode").setDouble(int(value))
+		for i in range(num_detections):
+			base_index = i * vals_per_entry
+			class_id = LimelightHelpers._extract_array_entry(raw_detection_array, base_index)
+			txnc = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 1)
+			tync = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 2)
+			ta = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 3)
+			corner0_x = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 4)
+			corner0_y = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 5)
+			corner1_x = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 6)
+			corner1_y = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 7)
+			corner2_x = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 8)
+			corner2_y = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 9)
+			corner3_x = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 10)
+			corner3_y = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 11)
 
-	@property
-	def stream_mode(self) -> StreamMode:
-		return StreamMode(self.nt_table.getEntry("stream").getDouble(0))
+			raw_detections.append(
+				RawDetection(class_id, txnc, tync, ta, corner0_x, corner0_y, corner1_x, corner1_y, corner2_x, corner2_y, corner3_x, corner3_y)
+			)
 
-	@stream_mode.setter
-	def stream_mode(self, value: StreamMode) -> None:
-		self.nt_table.getEntry("stream").setDouble(int(value))
+		return raw_detections
 
-	@property
-	def crop_window(self) -> tuple[tuple[float, float], tuple[float, float]]:
-		arr = cast(list, self.nt_table.getEntry("crop").getDoubleArray([0, 0, 0, 0]))
-		return ((arr[0], arr[1]), (arr[2], arr[3]))
+	@staticmethod
+	def _print_PoseEstimate(pose: PoseEstimate) -> None:
+		if pose is None:
+			print("No PoseEstimate available.")
+			return
+		
+		print("Pose Estimate Information:")
+		print(f"Timestamp (Seconds): {pose.timestamp_seconds}")
+		print(f"Latency: {pose.latency}")
+		print(f"Tag Count: {pose.tag_count}")
+		print(f"Tag Span: {pose.tag_span} meters")
+		print(f"Average Tag Distance: {pose.avg_tag_dist} meters")
+		print(f"Average Tag Area: {pose.avg_tag_area} of image")
+		print()
 
-	@crop_window.setter
-	def crop_window(self, value: tuple[tuple[float, float], tuple[float, float]]) -> None:
-		self.nt_table.getEntry("crop").setDoubleArray(
-			[value[0][0], value[0][1], value[1][0], value[1][1]]
-		)
+		if pose.raw_fiducials is None or len(pose.raw_fiducials) == 0:
+			print("No RawFiducials data available.")
+			return
+		
+		print("Raw Fiducials Details:")
+		for i in range(len(pose.raw_fiducials)):
+			fiducial = pose.raw_fiducials[i]
+			print(f" Fiducial #{i+1}:")
+			print(f" ID: {fiducial.id}")
+			print(f" TXNC: {fiducial.txyc}")
+			print(f" TYNC: {fiducial.tync}")
+			print(f" TA: {fiducial.ta}")
+			print(f" Distance to Camera: {fiducial.dist_to_camera} meters")
+			print(f" Distance to Robot: {fiducial.dist_to_robot} meters")
+			print(f" Ambiguity: {fiducial.ambiguity}")
+			print()
 
-	@property
-	def json_dump(self) -> str | None:
-		return self.nt_table.getEntry("json").getString(None) # type: ignore
+	@staticmethod
+	def get_limelight_NTTable(table_name: str) -> NetworkTable:
+		return NetworkTableInstance.getDefault().getTable(LimelightHelpers._sanitize_name(table_name))
+	
+	@staticmethod
+	def get_limelight_NTTableEntry(table_name: str, entry_name: str) -> NetworkTableEntry:
+		return LimelightHelpers.get_limelight_NTTable(table_name).getEntry(entry_name)
+	
+	@staticmethod
+	def get_limelight_NTDouble(table_name: str, entry_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTTableEntry(table_name, entry_name).getDouble(0.0)
+	
+	@staticmethod
+	def set_limelight_NTDouble(table_name: str, entry_name: str, val: float) -> None:
+		LimelightHelpers.get_limelight_NTTableEntry(table_name, entry_name).setDouble(val)
 
-	@lru_cache(maxsize=2)
-	def _json_to_results(self, json_dump: str) -> Results:
-		return Results.from_limelight_json(json.loads(json_dump)["Results"])
+	@staticmethod
+	def get_limelight_NTDoubleArray(table_name: str, entry_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTTableEntry(table_name, entry_name).getDoubleArray([])
 
-	@property
-	def latest_results(self) -> Results | None:
-		json_dump = self.json_dump
-		if json_dump is None:
-			return None
-		return self._json_to_results(json_dump)
+	@staticmethod
+	def set_limelight_NTDoubleArray(table_name: str, entry_name: str, val: list[float]) -> None:
+		LimelightHelpers.get_limelight_NTTableEntry(table_name, entry_name).setDoubleArray(val)
+
+	@staticmethod
+	def get_limelight_NTString(table_name: str, entry_name: str) -> str:
+		return LimelightHelpers.get_limelight_NTTableEntry(table_name, entry_name).getString("")
+	
+	@staticmethod
+	def get_limelight_NTStringArray(table_name: str, entry_name: str) -> list[str]:
+		return LimelightHelpers.get_limelight_NTTableEntry(table_name, entry_name).getStringArray([])
+	
+	@staticmethod
+	def get_limelight_url_string(table_name: str, request: str):
+		return f"http://{LimelightHelpers._sanitize_name(table_name)}.local:5807/{request}"
+	# TODO: Add MalformedURLException from java version
+
+	@staticmethod
+	def get_tx(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "tx")
+	
+	@staticmethod
+	def get_ty(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "ty")
+	
+	@staticmethod
+	def get_ta(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "ta")
+	
+	@staticmethod
+	def get_t2d_array(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "t2d")
+	
+	@staticmethod
+	def get_target_count(limelight_name: str) -> int:
+		t2d = LimelightHelpers.get_t2d_array(limelight_name)
+		if len(t2d) == 17:
+			return t2d[1]
+		else:
+			return 0
+		
+	@staticmethod
+	def get_classifier_class_index(limelight_name: str) -> int:
+		t2d = LimelightHelpers.get_t2d_array(limelight_name)
+		if len(t2d) == 17:
+			return t2d[10]
+		else:
+			return 0
+		
+	@staticmethod
+	def get_detector_class_index(limelight_name: str) -> int:
+		t2d = LimelightHelpers.get_t2d_array(limelight_name)
+		if t2d.length == 17:
+			return t2d[11]
+		else:
+			return 0
+		
+	@staticmethod
+	def get_classifier_class(limelight_name: str) -> str:
+		return LimelightHelpers.get_limelight_NTString(limelight_name, "tcclass")
+	
+	@staticmethod
+	def get_detector_class(limelight_name: str) -> str:
+		return LimelightHelpers.get_limelight_NTString(limelight_name, "tdclass")
+	
+	@staticmethod
+	def get_latency_pipeline(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "tl")
+	
+	@staticmethod
+	def get_latency_capture(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "cl")
+	
+	@staticmethod
+	def get_current_pipeline_index(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "getpipe")
+	
+	@staticmethod
+	def get_current_pipeline_type(limelight_name: str) -> str:
+		return LimelightHelpers.get_limelight_NTString(limelight_name, "getpipetype")
+	
+	@staticmethod
+	def get_JSON_dump(limelight_name: str) -> str:
+		return LimelightHelpers.get_limelight_NTString(limelight_name, "json")
+	
+	@staticmethod
+	def get_botpose(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "botpose")
+	
+	@staticmethod
+	def get_botpose_wpired(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "botpose_wpired")
+	
+	@staticmethod
+	def get_botpose_wpiblue(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "botpose_wpiblue")
+	
+	@staticmethod
+	def get_botpose_targetspace(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "botpose_targetspace")
+	
+	@staticmethod
+	def get_camerapose_targetspace(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "camerapose_targetspace")
+	
+	@staticmethod
+	def get_camerapose_robotspace(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "camerapose_robotspace")
+	
+	@staticmethod
+	def get_targetpose_cameraspace(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "targetpose_cameraspace")
+	
+	@staticmethod
+	def get_targetpose_robotspace(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "targetpose_robotspace")
+	
+	@staticmethod
+	def get_target_color(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "tc")
+	
+	@staticmethod
+	def get_fiducial_id(limelight_name: str) -> float:
+		return LimelightHelpers.get_limelight_NTDouble(limelight_name, "tid")
+	
+	@staticmethod
+	def get_neural_class_id(limelight_name: str) -> str:
+		return LimelightHelpers.get_limelight_NTString(limelight_name, "tclass")
+	
+	@staticmethod
+	def get_raw_barcode_data(limelight_name: str) -> list[str]:
+		return LimelightHelpers.get_limelight_NTStringArray(limelight_name, "rawbarcodes")
+	
+
+	@staticmethod
+	def get_botpose_3d(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_botpose(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_botpose_3d_wpired(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_botpose_wpired(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_botpose_3d_wpiblue(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_botpose_wpiblue(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_botpose_3d_targetspace(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_botpose_targetspace(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_camerapose_3d_targetspace(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_camerapose_targetspace(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_targetpose_3d_cameraspace(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_targetpose_cameraspace(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_targetpose_3d_robotspace(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_targetpose_robotspace(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+	@staticmethod
+	def get_camerapose_3d_robotspace(limelight_name: str) -> Pose3d:
+		pose_array = LimelightHelpers.get_camerapose_robotspace(limelight_name)
+		return LimelightHelpers._to_Pose3D(pose_array)
+	
+
+	@staticmethod
+	def get_botpose_2d_wpiblue(limelight_name: str) -> Pose2d:
+		"""Gets the Pose2d for easy use with Odometry vision pose estimator
+		(addVisionMeasurement)"""
+		result = LimelightHelpers.get_botpose_wpiblue(limelight_name)
+		return LimelightHelpers._to_Pose2D(result)
+	
+	@staticmethod
+	def get_botpose_estimate_wpiblue(limelight_name: str) -> PoseEstimate:
+		"""Gets the Pose2d and timestamp for use with WPILib pose estimator (addVisionMeasurement) when you are on the BLUE
+		alliance"""
+		return LimelightHelpers._get_botpose_estimate(limelight_name, "botpose_wpiblue")
+	
+	@staticmethod
+	def get_botpose_estimate_wpiblue_megatag2(limelight_name: str) -> PoseEstimate:
+		"""Gets the Pose2d and timestamp for use with WPILib pose estimator (addVisionMeasurement) when you are on the BLUE
+		alliance"""
+		return LimelightHelpers._get_botpose_estimate(limelight_name, "botpose_orb_wpiblue")
+	
+	@staticmethod
+	def get_botpose_2d_wpired(limelight_name: str) -> Pose2d:
+		"""Gets the Pose2d for easy use with Odometry vision pose estimator
+		(addVisionMeasurement)"""
+		result = LimelightHelpers.get_botpose_wpired(limelight_name)
+		return LimelightHelpers._to_Pose2D(result)
+	
+	@staticmethod
+	def get_botpose_estimate_wpired(limelight_name: str) -> PoseEstimate:
+		"""Gets the Pose2d and timestamp for use with WPILib pose estimator (addVisionMeasurement) when you are on the RED
+		alliance"""
+		return LimelightHelpers._get_botpose_estimate(limelight_name, "botpose_wpired")
+	
+	@staticmethod
+	def get_botpose_estimate_wpired_megatag2(limelight_name: str) -> PoseEstimate:
+		"""Gets the Pose2d and timestamp for use with WPILib pose estimator (addVisionMeasurement) when you are on the RED
+		alliance"""
+		return LimelightHelpers._get_botpose_estimate(limelight_name, "botpose_orb_wpired")
+	
+	@staticmethod
+	def get_botpose_2d(limelight_name: str) -> Pose2d:
+		result = LimelightHelpers.get_botpose(limelight_name)
+		return LimelightHelpers._to_Pose2D(result)
+	
+	@staticmethod
+	def get_tv(limelight_name: str) -> bool:
+		return 1.0 == LimelightHelpers.get_limelight_NTDouble(limelight_name, "tv")
+	
+
+	@staticmethod
+	def set_pipeline_index(limelight_name: str, pipeline_index: int) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "pipeline", pipeline_index)
+
+	@staticmethod
+	def set_priority_tag_id(limelight_name: str, id: int) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "priorityid", id)
+
+	@staticmethod
+	def set_LED_to_pipeline_control(limelight_name: str) -> None:
+		"""The LEDs will be controlled by Limelight pipeline settings, and not by robot code.
+		"""
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "ledMode", 0)
+
+	@staticmethod
+	def set_LED_to_force_off(limelight_name: str) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "ledMode", 1)
+
+	@staticmethod
+	def set_LED_to_force_blink(limelight_name: str) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "ledMode", 2)
+
+	@staticmethod
+	def set_LED_to_force_on(limelight_name: str) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "ledMode", 3)
+
+	@staticmethod
+	def set_stream_mode_to_standard(limelight_name: str) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "stream", 0)
+
+	@staticmethod
+	def set_stream_mode_to_PiPMain(limelight_name: str) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "stream", 1)
+
+	@staticmethod
+	def set_stream_mode_to_PiPSecondary(limelight_name: str) -> None:
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "stream", 2)
+
+	
+	@staticmethod
+	def set_crop_window(limelight_name: str, crop_x_min: float, crop_x_max: float, crop_y_min: float, crop_y_max: float) -> None:
+		"""Sets the crop window. The crop windows in the UI must be completely open for 
+		dynamic cropping to work."""
+		entries = [crop_x_min, crop_x_max, crop_y_min, crop_y_max]
+		LimelightHelpers.set_limelight_NTDoubleArray(limelight_name, "crop", entries)
+
+	@staticmethod
+	def set_fiducial_3d_offset(limelight_name: str, offset_x: float, offset_y: float, offset_z: float) -> None:
+		"""Sets 3D offset point for easy 3D targeting."""
+		entries = [offset_x, offset_y, offset_z]
+		LimelightHelpers.set_limelight_NTDoubleArray(limelight_name, "fiducial_offset_set", entries)
+
+	@staticmethod
+	def set_robot_orientation(limelight_name: str, yaw: float, yaw_rate: float, pitch: float, pitch_rate: float, roll: float, roll_rate: float) -> None:
+		entries = [yaw, yaw_rate, pitch, pitch_rate, roll, roll_rate]
+		LimelightHelpers.set_limelight_NTDoubleArray(limelight_name, "robot_orientation_set", entries)
+
+	@staticmethod
+	def set_fiducial_id_filters_override(limelight_name: str, valid_ids: list[int]) -> None:
+		# Convert to floats
+		valid_ids_float = []
+		for i in range(len(valid_ids)):
+			valid_ids_float.append(
+				float(valid_ids[i])
+			)
+		LimelightHelpers.set_limelight_NTDoubleArray(limelight_name, "fiducial_id_filters_set", valid_ids_float)
+
+	@staticmethod
+	def set_fiducial_downscaling_override(limelight_name: str, downscale: float) -> None:
+		d = 0
+		if downscale == 1.0:
+			d = 1
+		elif downscale == 1.5:
+			d = 2
+		elif downscale == 2:
+			d = 3
+		elif downscale == 3:
+			d = 4
+		elif downscale == 4:
+			d = 5
+		LimelightHelpers.set_limelight_NTDouble(limelight_name, "fiducial_downscale_set", d)
+
+	@staticmethod
+	def set_camerapose_robotspace(limelight_name: str, forward: float, side: float, up: float, roll: float, pitch: float, yaw: float) -> None:
+		entries = [forward, side, up, roll, pitch, yaw]
+		LimelightHelpers.set_limelight_NTDoubleArray(limelight_name, "camerapose_robotspace_set", entries)
+
+	
+	@staticmethod
+	def set_python_script_data(limelight_name: str, outgoing_python_data: list[float]) -> None:
+		LimelightHelpers.set_limelight_NTDoubleArray(limelight_name, "llrobot", outgoing_python_data)
+
+	@staticmethod
+	def get_python_script_data(limelight_name: str) -> list[float]:
+		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "llpython")
+	
+
+	@staticmethod
+	def take_snapshot(table_name: str, snapshot_name: str) -> None:
+		pass # TODO: implement
+
+	@staticmethod
+	def _synch_take_snapshot(table_name: str, snapshot_name: str) -> bool:
+		return False # TODO: implement
+	
+	@staticmethod
+	def get_latest_results(limelight_name: str) -> Results:
+		pass # TODO: implement
+	

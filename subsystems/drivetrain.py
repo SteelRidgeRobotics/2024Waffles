@@ -1,6 +1,6 @@
 from commands2 import Subsystem
 
-from limelight import Limelight
+from limelight import LimelightHelpers
 
 import navx
 
@@ -11,8 +11,7 @@ from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
-from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveDrive4Odometry, SwerveModuleState
-
+from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModuleState
 
 from constants import Constants
 from conversions import *
@@ -76,10 +75,6 @@ class Drivetrain(Subsystem):
         Pose2d()
     )
     
-    # Limelight
-    limelight = Limelight(Constants.Limelight.k_limelight_name)
-    odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
-    
     # Simulated navX angle
     gyro_sim = 0
     
@@ -137,17 +132,33 @@ class Drivetrain(Subsystem):
         )
         
         # Add Vision Measurements
-        if Constants.Limelight.k_vision_odometry:
-            
-            results = self.limelight.latest_results
-            
-            # Only do anything if we see an apriltag
-            if results.is_valid:
-                self.odometry.addVisionMeasurement(
-                    results.botpose_wpiblue_2D,
-                    results.targeting_latency
-                )
-                
+        # Tell the limelight what orientation we're currently facing.
+        LimelightHelpers.set_robot_orientation(
+            Constants.Limelight.k_limelight_name,
+            self.odometry.getEstimatedPosition().rotation().degrees(),
+            0,
+            0,
+            0, 
+            0, 
+            0
+        )
+
+        # Get mega tag 2 pose (where the limelight thinks we are using MegaTag 2)
+        mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
+
+        # Only update if we're not spinning fast AND we can see 1+ april tag
+        if abs(self.navx.getRate()) < 720 and mega_tag2.tag_count > 0:
+
+            # We don't want to update what the limelight thinks our yaw is, so we ignore it by tell it "we are NOT confident at ALL!!!!"
+            # (0.7 is placeholder, basically means we're kinda confident. Lower = more confident in limelight)
+            self.odometry.setVisionMeasurementStdDevs([0.7, 0.7, 99999999])
+
+            self.odometry.addVisionMeasurement(
+                mega_tag2.pose,
+                mega_tag2.timestamp_seconds
+            )
+        
+
         # ...then update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
         
@@ -175,7 +186,7 @@ class Drivetrain(Subsystem):
         self.navx.reset()
     
     def simulate_gyro(self, degrees_per_second: float) -> None:
-        """Calculates the current angle of the gyro from the degrees per second travelled."""
+        """Calculates the current angle of the gyro from the degrees per second traveled."""
         
         self.gyro_sim += degrees_per_second * 0.02
         
