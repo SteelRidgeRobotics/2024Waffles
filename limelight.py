@@ -1,10 +1,8 @@
 """
-Custom LimelightHelpers file translated into Python. Slightly based off 4096's 2023 Charged Up limelight.py file, found at https://github.com/CtrlZ-FRC4096/Robot-2023-Public/blob/main/robot/limelight.py
+Translated into Python from https://github.com/LimelightVision/limelightlib-wpijava/blob/main/LimelightHelpers.java
 """
 
 from dataclasses import dataclass
-
-from typing import Sequence
 
 from ntcore import NetworkTable, NetworkTableEntry, NetworkTableInstance
 from wpimath.geometry import (
@@ -15,274 +13,9 @@ from wpimath.geometry import (
 	Translation2d,
 	Translation3d,
 )
-# from wpimath.units import degreesToRadians as radians
+
 from math import radians
 
-# The `cast` calls are no-ops at runtime but are a workaround for broken type hints in ntcore
-
-def _ll_to_Pose3d(data: Sequence) -> Pose3d | None:
-	if not data:
-		return None
-	return Pose3d(
-		Translation3d(
-			data[0],
-			data[1],
-			data[2],
-			),
-		Rotation3d(  # type: ignore
-			radians(data[3]),
-			radians(data[4]),
-			radians(data[5]),
-			),
-	)
-
-
-def _ll_to_Pose2d(data: Sequence) -> Pose2d | None:
-	if not data:
-		return None
-	return Pose2d(
-		Translation2d(
-			data[0],
-			data[1],
-			),
-		Rotation2d.fromDegrees(data[5]),
-	)
-
-
-@dataclass(frozen=True)
-class LimelightTarget_Retro:
-	
-	camera_pose_target_space: Pose3d | None
-	robot_pose_field_space: Pose3d | None
-	robot_pose_target_space: Pose3d | None
-	target_pose_camera_space: Pose3d | None
-	target_pose_robot_space: Pose3d | None
-
-	camera_pose_target_space_2D: Pose2d | None
-	robot_pose_field_space_2D: Pose2d | None
-	robot_pose_target_space_2D: Pose2d | None
-	target_pose_camera_space_2D: Pose2d | None
-	target_pose_robot_space_2D: Pose2d | None
-
-	ta: float
-	tx: float
-	ty: float
-	txp: float
-	typ: float
-	ts: float
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "LimelightTarget_Retro":
-		return LimelightTarget_Retro(
-			camera_pose_target_space=_ll_to_Pose3d(data["t6c_ts"]),
-			robot_pose_field_space=_ll_to_Pose3d(data["t6r_fs"]),
-			robot_pose_target_space=_ll_to_Pose3d(data["t6r_ts"]),
-			target_pose_camera_space=_ll_to_Pose3d(data["t6t_cs"]),
-			target_pose_robot_space=_ll_to_Pose3d(data["t6t_rs"]),
-
-			camera_pose_target_space_2D=_ll_to_Pose2d(data["t6c_ts"]),
-			robot_pose_field_space_2D=_ll_to_Pose2d(data["t6r_fs"]),
-			robot_pose_target_space_2D=_ll_to_Pose2d(data["t6r_ts"]),
-			target_pose_camera_space_2D=_ll_to_Pose2d(data["t6t_cs"]),
-			target_pose_robot_space_2D=_ll_to_Pose2d(data["t6t_rs"]),
-
-			ta=data["ta"],
-			tx=data["tx"],
-			ty=data["ty"],
-			txp=data["txp"],
-			typ=data["typ"],
-			ts=data["ts"]
-		)
-
-@dataclass(frozen=True)
-class LimelightTarget_Fiducial:
-	
-	id: float
-	family: str
-	
-	camera_pose_target_space: Pose3d | None
-	robot_pose_field_space: Pose3d | None
-	robot_pose_target_space: Pose3d | None
-	target_pose_camera_space: Pose3d | None
-	target_pose_robot_space: Pose3d | None
-
-	camera_pose_target_space_2D: Pose2d | None
-	robot_pose_field_space_2D: Pose2d | None
-	robot_pose_target_space_2D: Pose2d | None
-	target_pose_camera_space_2D: Pose2d | None
-	target_pose_robot_space_2D: Pose2d | None
-
-	ta: float
-	tx: float
-	ty: float
-	txp: float
-	typ: float
-	ts: float
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "LimelightTarget_Fiducial":
-		return LimelightTarget_Fiducial(
-			id=data["fID"],
-			family=data["fam"],
-
-			camera_pose_target_space=_ll_to_Pose3d(data["t6c_ts"]),
-			robot_pose_field_space=_ll_to_Pose3d(data["t6r_fs"]),
-			robot_pose_target_space=_ll_to_Pose3d(data["t6r_ts"]),
-			target_pose_camera_space=_ll_to_Pose3d(data["t6t_cs"]),
-			target_pose_robot_space=_ll_to_Pose3d(data["t6t_rs"]),
-
-			camera_pose_target_space_2D=_ll_to_Pose2d(data["t6c_ts"]),
-			robot_pose_field_space_2D=_ll_to_Pose2d(data["t6r_fs"]),
-			robot_pose_target_space_2D=_ll_to_Pose2d(data["t6r_ts"]),
-			target_pose_camera_space_2D=_ll_to_Pose2d(data["t6t_cs"]),
-			target_pose_robot_space_2D=_ll_to_Pose2d(data["t6t_rs"]),
-
-			ta=data["ta"],
-			tx=data["tx"],
-			ty=data["ty"],
-			txp=data["txp"],
-			typ=data["typ"],
-			ts=data["ts"]
-		)
-
-@dataclass(frozen=True)
-class LimelightTarget_Barcode:
-	...
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "LimelightTarget_Barcode":
-		return LimelightTarget_Barcode()
-	
-@dataclass(frozen=True)
-class LimelightTarget_Classifier:
-
-	class_name: str
-	id: float
-	confidence: float
-	zone: float
-
-	tx: float
-	ty: float
-	txp: float
-	typ: float
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "LimelightTarget_Classifier":
-		return LimelightTarget_Classifier(
-			class_name=data["class"],
-			id=data["classID"],
-			confidence=data["conf"],
-			zone=data["zone"],
-
-			tx=data["tx"],
-			ty=data["ty"],
-			txp=data["txp"],
-			typ=data["typ"]
-		)
-	
-@dataclass(frozen=True)
-class LimelightTarget_Detector:
-
-	class_name: str
-	id: float
-	confidence: float
-
-	ta: float
-	tx: float
-	ty: float
-	txp: float
-	typ: float
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "LimelightTarget_Detector":
-		return LimelightTarget_Detector(
-			class_name=data["class"],
-			id=data["classID"],
-			confidence=data["conf"],
-
-			ta=data["ta"],
-			tx=data["tx"],
-			ty=data["ty"],
-			txp=data["txp"],
-			typ=data["typ"]
-		)
-	
-milliseconds = float
-
-@dataclass(frozen=True)
-class Results:
-
-	pipeline_id: float
-	latency_pipeline: float
-	latency_capture: float
-
-	timestamp_LIMELIGHT_publish: float
-	timestamp_RIOFPGA_capture: float
-
-	is_valid: bool
-
-	botpose: Pose3d | None
-	botpose_wpired: Pose3d | None
-	botpose_wpiblue: Pose3d | None
-	botpose_tagcount: float
-	botpose_span: float
-	botpose_avgdist: float
-	botpose_avgarea: float
-	camerapose_robotspace: Pose3d | None
-
-	botpose_2D: Pose2d | None
-	botpose_wpired_2D: Pose2d | None
-	botpose_wpiblue_2D: Pose2d | None
-
-	retro_targets: list[LimelightTarget_Retro]
-	fiducial_targets: list[LimelightTarget_Fiducial]
-	classifier_targets: list[LimelightTarget_Classifier]
-	detector_targets: list[LimelightTarget_Detector]
-	barcode_targets: list[LimelightTarget_Barcode]
-
-	@staticmethod
-	def from_limelight_json(data: dict) -> "Results":
-		return Results(
-			pipeline_id=data["pID"],
-			latency_pipeline=data["tl"],
-			latency_capture=data["cl"],
-
-			timestamp_LIMELIGHT_publish=data["ts"],
-			timestamp_RIOFPGA_capture=data["ts_rio"],
-
-			is_valid=data["v"],
-
-			botpose=_ll_to_Pose3d(data["botpose"]),
-			botpose_wpired=_ll_to_Pose3d(data["botpose_wpired"]),
-			botpose_wpiblue=_ll_to_Pose3d(data["botpose_wpiblue"]),
-			botpose_tagcount=data["botpose_tagcount"],
-			botpose_span=data["botpose_span"],
-			botpose_avgdist=data["botpose_avgdist"],
-			botpose_avgarea=data["botpose_avgarea"],
-			camerapose_robotspace=_ll_to_Pose3d(data["t6c_rs"]),
-
-			botpose_2D=_ll_to_Pose2d(data["botpose"]),
-			botpose_wpired_2D=_ll_to_Pose2d(data["botpose_wpired"]),
-			botpose_wpiblue_2D=_ll_to_Pose2d(data["botpose_wpiblue"]),
-
-			retro_results=[
-				LimelightTarget_Retro.from_limelight_json(x) for x in data["Retro"]
-				],
-			fiducial_results=[
-				LimelightTarget_Fiducial.from_limelight_json(x)
-				for x in data["Fiducial"]
-				],
-			classifier_results=[
-				LimelightTarget_Classifier.from_limelight_json(x)
-				for x in data["Classifier"]
-				],
-			barcode_results=[LimelightTarget_Barcode.from_limelight_json(x) for x in data['Barcode']],
-			detector_results=[
-				LimelightTarget_Detector.from_limelight_json(x)
-				for x in data["Detector"]
-				],
-		)
-	
 @dataclass
 class RawFiducial:
 	id: int = 0
@@ -318,9 +51,10 @@ class PoseEstimate:
 	avg_tag_dist: float
 	avg_tag_area: float
 	raw_fiducials: list[RawFiducial]
+	
 
 class LimelightHelpers:
-	
+
 	@staticmethod
 	def _sanitize_name(name: str) -> str:
 		if name == "" or name is None:
@@ -819,6 +553,13 @@ class LimelightHelpers:
 	def get_python_script_data(limelight_name: str) -> list[float]:
 		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "llpython")
 	
+	"""
+	The following functions from LimelightHelpers.java are not present here:
+	- public static CompletableFuture<Boolean> takeSnapshot(String tableName, String snapshotName)
+	- private static boolean SYNCH_TAKESNAPSHOT(String tableName, String snapshotName)
+	- public static LimelightResults getLatestResults(String limelightName)
+	"""
+	
 
 	@staticmethod
 	def take_snapshot(table_name: str, snapshot_name: str) -> None:
@@ -829,6 +570,6 @@ class LimelightHelpers:
 		return False # TODO: implement
 	
 	@staticmethod
-	def get_latest_results(limelight_name: str) -> Results:
+	def get_latest_results(limelight_name: str) -> None:
 		pass # TODO: implement
 	
