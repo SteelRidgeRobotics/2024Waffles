@@ -82,6 +82,12 @@ class Drivetrain(Subsystem):
     field = Field2d()
     
     Shuffleboard.getTab("Main").add("Field", field).withWidget(BuiltInWidgets.kField)
+
+    # Tell the limelight what AprilTags we want to read (all of them)
+    LimelightHelpers.set_fiducial_id_filters_override(
+        Constants.Limelight.k_limelight_name, 
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    )
     
     def __init__(self) -> None:
         
