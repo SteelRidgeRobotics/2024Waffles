@@ -1,109 +1,148 @@
-from phoenix6.configs.talon_fx_configs import InvertedValue, NeutralModeValue, TalonFXConfiguration
-from phoenix6.hardware.talon_fx import TalonFX
+from phoenix6.configs.talon_fx_configs import *
+from wpilib import RobotBase
+from wpimath.geometry import Translation2d
 
 
-class DriverController:
-    port = 0
-    deadband = 0.15
-
-class Waffles:
-    k_wheel_size = 0.1 # meters
-    k_max_module_speed =  4.654 # m/s
-    k_max_rot_rate = 10.472 # rad/s
-    k_drive_base_radius = 0.43 # meters
+class Constants:
     
-class DriveMotorConstants:
-    """Constants for a TalonFX drive motor for a swerve module."""
+    class Controller:
+        k_driver_controller_port = 0
     
-    def __init__(self, motor_id: int, 
-                 k_s: float=0.4, k_v: float=0, k_a: float=0, k_p: float=0.133, k_i: float=0, k_d: float=0, inverted: InvertedValue=InvertedValue.COUNTER_CLOCKWISE_POSITIVE) -> None:
+    class CanIDs:
+        # TalonFXs
+        k_left_front_drive = 1
+        k_left_rear_drive = 2
+        k_right_front_drive = 3
+        k_right_rear_drive = 4
         
-        self.motor_id = motor_id
+        k_left_front_direction = 5
+        k_left_rear_direction = 6
+        k_right_front_direction = 7
+        k_right_rear_direction = 8
         
-        self.k_s = k_s
-        self.k_v = k_v
-        self.k_a = k_a
-        self.k_p = k_p
-        self.k_i = k_i
-        self.k_d = k_d
+        # CANcoders
+        k_left_front_encoder = 5
+        k_left_rear_encoder = 6
+        k_right_front_encoder = 7
+        k_right_rear_encoder = 8
         
-        self.inverted = inverted
+    class CanOffsets:
+        k_left_front_offset = 0.474853515625
+        k_left_rear_offset = -0.0009765625
+        k_right_front_offset = 0.398681640625
+        k_right_rear_offset = -0.41845703125
         
-        self.neutral_mode = NeutralModeValue.BRAKE
+    class Drivetrain:
+        k_wheel_size = 0.1 # Diameter of wheels in meters
+        k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
         
-    def apply_configuration(self, motor: TalonFX) -> TalonFX:
-        """Applies the DriveMotorConstants into the TalonFX.
-
-        Args:
-            motor (TalonFX): The drive motor to apply the constants to.
-
-        Returns:
-            TalonFX: The new configurated TalonFX for method chaining.
-        """
-        config = TalonFXConfiguration()
-        config.slot0.with_k_s(self.k_s).with_k_v(self.k_v).with_k_a(self.k_a).with_k_p(self.k_p).with_k_i(self.k_i).with_k_d(self.k_d)
-        config.motor_output.with_neutral_mode(self.neutral_mode).with_inverted(self.inverted)
-        config.feedback.sensor_to_mechanism_ratio = k_drive_gear_ratio
-        motor.configurator.apply(config)
-        return motor
+        k_max_attainable_speed = 4.654 # Max speed of modules in m/s
+        k_max_rot_rate = 10.472 # Max chassis rotation rate (rad/s)
         
-class DirectionMotorConstants:
+        class ModuleLocations:
+            # To find Translation2d amount:
+            # a^2 + b^2 = c^2
+            # x^2 + y^2 = k_drive_base_radius
+            # 2x^2 = 0.83^2 (square drivetrain, so x = y)
+            # 2x^2 = 0.6889
+            # x^2 = 0.34445
+            # x = sqrt(0.3445) ~= 0.587
+            # x ~= 0.587
+            
+            # +x is the front of the robot
+            # +y is the left of the robot
+            
+            k_left_front_location = Translation2d(0.587, 0.587)
+            k_left_rear_location = Translation2d(-0.587, 0.587)
+            k_right_front_location = Translation2d(0.587, -0.587)
+            k_right_rear_location = Translation2d(-0.587, -0.587)
     
-    def __init__(self, motor_id: int, 
-                 k_s: float=0.26, cruise_velocity: int=240, cruise_acceleration: int=600, cruise_jerk: int=6500, 
-                 k_v: float=0.1186, k_a: float=0, k_p: float=7, k_i: float=0, k_d: float=0) -> None:
+    class DriveConfig:
+        # PID and Feedforward
+        k_p = 1.2
+        k_i = 0
+        k_d = 0
         
-        self.motor_id = motor_id
+        k_s = 2
+        k_v = 0
+        k_a = 0
         
-        self.k_s = k_s
-        self.k_v = k_v
-        self.k_a = k_a
-        self.k_p = k_p
-        self.k_i = k_i
-        self.k_d = k_d
+        k_neutral_mode = NeutralModeValue.BRAKE
         
-        self.cruise_velocity = cruise_velocity
-        self.cruise_acceleration = cruise_acceleration
-        self.cruise_jerk = cruise_jerk
+        # Torque limits
+        k_torque_neutral_deadband = 0 # Default: 0A
+        k_peak_forward_torque_current = 800 # Default: 800A
+        k_peak_reverse_torque_current = -800 # Default: -800A
         
-        self.peak_volt = 16
+        # Current limits (only needed if using non-torque control)
+        k_enable_supply_limit = False
+        k_supply_limit = 0
         
-        self.neutral_mode = NeutralModeValue.BRAKE
-        self.invert = InvertedValue.CLOCKWISE_POSITIVE
+        k_enable_stator_limit = False
+        k_stator_limit = 0
         
-    def apply_configuration(self, motor: TalonFX) -> TalonFX:
-        """Applies the DriveMotorConstants into the TalonFX.
-
-        Args:
-            motor (TalonFX): The drive motor to apply the constants to.
-
-        Returns:
-            TalonFX: The new configurated TalonFX for method chaining.
-        """
-        config = TalonFXConfiguration()
-        config.slot0.with_k_s(self.k_s).with_k_v(self.k_v).with_k_a(self.k_a).with_k_p(self.k_p).with_k_i(self.k_i).with_k_d(self.k_d)
-        config.motor_output.with_neutral_mode(self.neutral_mode).with_inverted(self.invert)
-        config.voltage.with_peak_forward_voltage(self.peak_volt).with_peak_reverse_voltage(-self.peak_volt)
-        config.motion_magic.with_motion_magic_cruise_velocity(self.cruise_velocity).with_motion_magic_acceleration(self.cruise_acceleration).with_motion_magic_jerk(self.cruise_jerk)
-        motor.configurator.apply(config)
-        return motor
+        # Motion Magic
+        k_cruise_velocity = 75
+        k_cruise_acceleration = 100
+        k_jerk = 0
         
-class MotorIDs:
-    LEFT_FRONT_DRIVE = 1
-    LEFT_REAR_DRIVE = 2
-    RIGHT_FRONT_DRIVE = 3
-    RIGHT_REAR_DRIVE = 4
-
-    LEFT_FRONT_DIRECTION = 5
-    LEFT_REAR_DIRECTION = 6
-    RIGHT_FRONT_DIRECTION = 7
-    RIGHT_REAR_DIRECTION = 8
-
-class CANIDs:
-    LEFT_FRONT = 5
-    LEFT_REAR = 6
-    RIGHT_FRONT = 7
-    RIGHT_REAR = 8
-
-k_direction_gear_ratio = 150 / 7
-k_drive_gear_ratio = 27 / 4
+        # Physical Properties
+        k_gear_ratio = 27 / 4
+        
+    class SteerConfig:
+        # PID and Feedforward
+        k_p = 12
+        k_i = 10
+        k_d = 0
+        
+        k_s = 0.26
+        k_v = 0
+        k_a = 0
+        
+        k_neutral_mode = NeutralModeValue.BRAKE
+        
+        # Torque limits
+        k_torque_neutral_deadband = 0 # Default: 0A
+        k_peak_forward_torque_current = 800 # Default: 800A
+        k_peak_reverse_torque_current = -800 # Default: -800A
+        
+        # Current limits (only needed if using non-torque control)
+        k_enable_supply_limit = False
+        k_supply_limit = 0
+        
+        k_enable_stator_limit = False
+        k_stator_limit = 0
+        
+        # Motion Magic
+        k_cruise_velocity = 75
+        k_cruise_acceleration = 100
+        k_jerk = 0
+        
+        # Sensors (in case we switch it to a synced cancoder later on)
+        k_remote_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
+        
+        # Physical Properties
+        k_gear_ratio = 150 / 7
+        
+    class PathPlanner:
+        ## PID Constants ##
+        
+        # Translation
+        k_translation_p = 5
+        k_translation_i = 0
+        k_translation_d = 0
+        k_translation_i_zone = 0 # This basically means "how powerful can k_i be at any given time"
+        
+        # Rotation
+        k_rotation_p = 5
+        k_rotation_i = 0
+        k_rotation_d = 0
+        k_rotation_i_zone = 0
+        
+    class Limelight:
+        
+        k_vision_odometry = RobotBase.isReal() # False if there's no Limelight on the robot.
+        
+        k_limelight_name = "limelight" # "limelight" by default. Name of the limelight to use for vision.
+        
+        k_standard_deviations = [0.7, 0.7, 999999] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.

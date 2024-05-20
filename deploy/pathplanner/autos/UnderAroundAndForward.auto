@@ -1,6 +1,12 @@
 {
   "version": 1.0,
-  "startingPose": null,
+  "startingPose": {
+    "position": {
+      "x": 2.0,
+      "y": 7.0
+    },
+    "rotation": 0
+  },
   "command": {
     "type": "sequential",
     "data": {
@@ -8,24 +14,24 @@
         {
           "type": "path",
           "data": {
-            "pathName": "StartToAmp"
+            "pathName": "UnderTheStage"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "AmpToMiddle"
+            "pathName": "AroundTheStage"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "MiddleToAmp"
+            "pathName": "MoveForward"
           }
         }
       ]
     }
   },
-  "folder": "Amp",
+  "folder": null,
   "choreoAuto": false
 }
