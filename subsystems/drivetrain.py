@@ -152,8 +152,8 @@ class Drivetrain(Subsystem):
         # Get mega tag 2 pose (where the limelight thinks we are using MegaTag 2)
         mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
 
-        # Only update if we're not spinning fast AND we can see 1+ april tag
-        if abs(self.navx.getRate()) < 720 and mega_tag2.tag_count > 0:
+        # Only update if we're not spinning fast AND we can see 1+ april tag (and we're not in simulation)
+        if abs(self.navx.getRate()) < 720 and mega_tag2.tag_count > 0 and RobotBase.isReal():
 
             # We don't want to update what the limelight thinks our yaw is, so we ignore it by tell it "we are NOT confident at ALL!!!!"
             # (0.7 is placeholder, basically means we're kinda confident. Lower = more confident in limelight)
