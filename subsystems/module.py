@@ -177,7 +177,7 @@ class SwerveModule(Subsystem):
         # Get compensated velocity for compensating for compensated position
         # "Do you think he's compensating for something?"
         compensated_velocity = BaseStatusSignal.get_latency_compensated_value(
-            self.steer_talon.get_velocity().refresh(), # This fucntion doesn't refresh the status signals, so we do it here
+            self.steer_talon.get_velocity().refresh(), # This function doesn't refresh the status signals, so we do it here
             self.steer_talon.get_acceleration().refresh(), # Same for this signal
             0.06
         )
@@ -202,7 +202,7 @@ class SwerveModule(Subsystem):
         return rot_to_meters(compensated_speed)
         
     def get_position(self) -> SwerveModulePosition:
-        """Returns the current position of the module; distance travelled and current angle."""
+        """Returns the current position of the module; distance traveled and current angle."""
         
         # Compensate for velocity
         compensated_position = BaseStatusSignal.get_latency_compensated_value(
@@ -252,6 +252,6 @@ class SwerveModule(Subsystem):
         self.steer_sim.add_rotor_position(degs_to_rots(angle_diff) * Constants.SteerConfig.k_gear_ratio)
         self.encoder_sim.add_position(degs_to_rots(angle_diff))
         
-        # This current angle will be the preivious one in the next update, so update it here.        
+        # This current angle will be the previous one in the next update, so update it here.        
         self.previous_desired_angle = desired_angle
         
