@@ -10,7 +10,7 @@ from pathplannerlib.controller import PIDConstants
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.geometry import Pose2d, Rotation2d, Transform2d, Translation2d
 from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModuleState
 
 from constants import Constants
@@ -167,6 +167,47 @@ class Drivetrain(Subsystem):
 
         # ...then update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
+
+        ## Show swerve module direction on robot
+        robot_pose = self.field.getRobotPose()
+
+        # Left Front
+        left_front_pose = robot_pose.transformBy(
+            Transform2d(
+                    Constants.Drivetrain.ModuleLocations.k_left_front_location, 
+                    self.left_front.get_angle()
+            )
+        )
+        
+        # Left Rear
+        left_rear_pose = robot_pose.transformBy(
+            Transform2d(
+                    Constants.Drivetrain.ModuleLocations.k_left_rear_location, 
+                    self.left_rear.get_angle()
+            )
+        )
+
+        # Right Front
+        right_front_pose = robot_pose.transformBy(
+            Transform2d(
+                    Constants.Drivetrain.ModuleLocations.k_right_front_location, 
+                    self.right_front.get_angle()
+            )
+        )
+
+        # Right Rear
+        right_rear_pose = robot_pose.transformBy(
+            Transform2d(
+                    Constants.Drivetrain.ModuleLocations.k_right_rear_location, 
+                    self.right_rear.get_angle()
+            )
+        )
+
+        # Send all the module poses to the field widget
+        self.field.getObject("modules").setPoses(
+            [left_front_pose, left_rear_pose, right_front_pose, right_rear_pose]
+        )
+        
         
         # Update Gyro widget (shuffleboard REALLY likes to duplicate widgets, very annoying)
         # I'll just use SmartDashboard for this instead: Elastic won't auto-populate, so no worries about incorrect tabs or anything
