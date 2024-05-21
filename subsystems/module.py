@@ -241,8 +241,8 @@ class SwerveModule(Subsystem):
             self.speed_multiplier *= -1
             
         # Update control requests
-        self.steer_request.position = degs_to_rots(desired_angle)
-        self.drive_request.velocity = meters_to_rots(state.speed * self.speed_multiplier)
+        self.steer_request.position += degs_to_rots(angle_diff)
+        self.drive_request.velocity = meters_to_rots(state.speed) * self.speed_multiplier
         
         # Update sim states
         self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * self.speed_multiplier * Constants.DriveConfig.k_gear_ratio)
