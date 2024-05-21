@@ -59,11 +59,11 @@ class Constants:
     
     class DriveConfig:
         # PID and Feedforward
-        k_p = 1.2
+        k_p = 25
         k_i = 0
         k_d = 0
         
-        k_s = 2
+        k_s = 0
         k_v = 0
         k_a = 0
         
@@ -82,8 +82,8 @@ class Constants:
         k_stator_limit = 0
         
         # Motion Magic
-        k_cruise_velocity = 75
-        k_cruise_acceleration = 100
+        k_cruise_velocity = 12.5
+        k_cruise_acceleration = 12
         k_jerk = 0
         
         # Physical Properties
