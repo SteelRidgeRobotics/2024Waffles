@@ -1,10 +1,11 @@
-from commands2 import Subsystem
+from commands2 import Command, Subsystem
 
 from limelight import LimelightHelpers
 
 import navx
 
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, PathPlannerAuto, ReplanningConfig
+from pathplannerlib.path import GoalEndState, PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
@@ -331,4 +332,18 @@ class Drivetrain(Subsystem):
         """Clears the loaded auto trajectory onto the Field."""
         
         self.field.getObject("auto_trajectory").setPose(Pose2d(-1000, -1000, 0))
-    
+
+    def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
+        """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""
+
+        pathfind_command = AutoBuilder.pathfindToPose(
+            end_pose, 
+            PathConstraints(
+                Constants.Drivetrain.k_max_attainable_speed, 
+                rot_to_meters(12),
+                Constants.Drivetrain.k_max_rot_rate,
+                Constants.Drivetrain.k_max_rot_rate
+            ),
+        )
+
+        return pathfind_command

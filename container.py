@@ -4,6 +4,7 @@ from pathplannerlib.auto import PathPlannerAuto
 
 from wpilib import SendableChooser, XboxController
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
+from wpimath.geometry import Pose2d, Rotation2d
 from wpimath.kinematics import ChassisSpeeds
 
 from constants import Constants
@@ -38,7 +39,7 @@ class RobotContainer:
         # (both snazzy lambdas)
         self.robot_centric_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_robot_centric(
-               ChassisSpeeds(
+                ChassisSpeeds(
                    -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
                    -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
                    -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
@@ -48,7 +49,7 @@ class RobotContainer:
         
         self.field_relative_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_field_relative(
-               ChassisSpeeds(
+                ChassisSpeeds(
                    -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
                    -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
                    -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
@@ -58,7 +59,7 @@ class RobotContainer:
         
         # Field-relative by default
         self.drivetrain.setDefaultCommand(self.field_relative_command)
-        
+
         self.configure_button_bindings()
         
     def get_selected_auto(self) -> PathPlannerAuto | None:
@@ -82,6 +83,19 @@ class RobotContainer:
         
         # Switch to robot-centric
         JoystickButton(self.driver_controller, XboxController.Button.kRightBumper).onTrue(self.robot_centric_command)
-        
+
+        # Drive to amp (blue alliance)
+        JoystickButton(self.driver_controller, XboxController.Button.kA).whileTrue(
+            self.drivetrain.pathfind_to_pose(
+                Pose2d(1.855, 7.741, Rotation2d.fromDegrees(90))
+            )
+        )
+
+
+        """.onlyIf(lambda: DriverStation.getAlliance() is DriverStation.Alliance.kBlue).andThen(
+                self.drivetrain.pathfind_to_pose(
+                    Pose2d(14.692, 7.742, Rotation2d.fromDegrees(90))
+                ).onlyIf(lambda: DriverStation.getAlliance() is DriverStation.Alliance.kRed)
+            )"""
         
     
