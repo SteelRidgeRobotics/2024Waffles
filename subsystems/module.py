@@ -228,18 +228,13 @@ class SwerveModule(Subsystem):
         
     def set_desired_state(self, state: SwerveModuleState) -> None:
         """Sets the motor control requests to the desired state."""
-        
-        desired_angle = state.angle.degrees() % 360
-        
-        angle_diff = desired_angle - self.previous_desired_angle
-        angle_dist = math.fabs(angle_diff) # Calculate the angle distance since we last updated
 
-        # If we have to travel more than 90 degrees CCW or CW, 
-        # Invert the direction the wheel is supposed to travel in
-        # (The continuous wrap handles the position for us)
-        if 90 < angle_dist < 270 and RobotBase.isReal(): # Check is robot is real since continuous wrap doesn't work in sim 
-            self.speed_multiplier *= -1
-            
+        # Angle optimizations and reverse velocity if needed
+        state = SwerveModuleState.optimize(state, Rotation2d.fromDegrees(self.previous_desired_angle))
+        
+        # Calculate the angle difference
+        angle_diff = state.angle.degrees() - self.previous_desired_angle
+
         # Update control requests
         self.steer_request.position += degs_to_rots(angle_diff)
         self.drive_request.velocity = meters_to_rots(state.speed) * self.speed_multiplier
@@ -247,11 +242,9 @@ class SwerveModule(Subsystem):
         # Update sim states
         self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * self.speed_multiplier * Constants.DriveConfig.k_gear_ratio)
         
-        # Continuous wrap doesn't work in sim, so we add the difference in the angles and add it to the encoder and motor (in rots)
-        # That way the wheels stay aligned and can rotate both directions
         self.steer_sim.add_rotor_position(degs_to_rots(angle_diff) * Constants.SteerConfig.k_gear_ratio)
         self.encoder_sim.add_position(degs_to_rots(angle_diff))
         
         # This current angle will be the previous one in the next update, so update it here.        
-        self.previous_desired_angle = desired_angle
+        self.previous_desired_angle = state.angle.degrees()
         
