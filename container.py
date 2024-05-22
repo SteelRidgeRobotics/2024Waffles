@@ -18,7 +18,7 @@ class RobotContainer:
     # Subsystems
     drivetrain = Drivetrain()
     
-    # Choosers
+    # Auto Chooser
     auto_chooser = SendableChooser()
     auto_chooser.setDefaultOption("Do Nothing :(", None)
     auto_chooser.addOption("Under The Stage", PathPlannerAuto("UnderTheStage"))
