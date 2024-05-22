@@ -5,6 +5,7 @@ from limelight import LimelightHelpers
 import navx
 
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, PathPlannerAuto, ReplanningConfig
+from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import GoalEndState, PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
@@ -124,6 +125,12 @@ class Drivetrain(Subsystem):
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "Hey Caden, when do we flip the path?"
             self # "Yes, this is the drivetrain. Why would I configure an AutoBuilder for an intake, pathplannerlib?"
         )
+
+        # Shows the target pose in the field widget
+        PathPlannerLogging.setLogTargetPoseCallback(lambda pose: self.field.getObject("target").setPose(pose))
+
+        # Shows the active path on the field widget
+        PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
         
     def periodic(self) -> None:
         
@@ -306,32 +313,6 @@ class Drivetrain(Subsystem):
         self.left_rear.set_desired_state(left_rear_state)
         self.right_front.set_desired_state(right_front_state)
         self.right_rear.set_desired_state(right_rear_state)
-        
-    def load_auto_trajectory(self, auto: PathPlannerAuto) -> None:
-        """Visualizes the loaded auto trajectory onto the Field."""
-        
-        # Decompile auto into individual paths
-        paths = PathPlannerAuto.getPathGroupFromAutoFile(auto.getName())
-        
-        # Get every pose and combine them all into 1 list
-        auto_poses = []
-        for path in paths:
-            
-            # Flip the path if we're on the opposite side of the field
-            if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-                path = path.flipPath()
-            
-            poses = path.getPathPoses()
-            for pose in poses:
-                auto_poses.append(pose)
-                
-        # Generate the trajectory by passing in all poses
-        self.field.getObject("auto_trajectory").setPoses(auto_poses)
-        
-    def clear_auto_trajectory(self) -> None:
-        """Clears the loaded auto trajectory onto the Field."""
-        
-        self.field.getObject("auto_trajectory").setPose(Pose2d(-1000, -1000, 0))
 
     def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
         """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""

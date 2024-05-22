@@ -39,16 +39,11 @@ class Waffles(TimedCommandRobot):
         else:
             selected_auto.schedule()
             
-            # Show trajectory on field widget
-            self.container.drivetrain.load_auto_trajectory(selected_auto)
-            
     def autonomousPeriodic(self) -> None:
         pass
     
     def autonomousExit(self) -> None:
-        
-        # Clear the auto trajectory when we leave auto.
-        self.container.drivetrain.clear_auto_trajectory()
+        pass
             
     def teleopInit(self) -> None:
         pass
