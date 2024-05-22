@@ -171,10 +171,10 @@ class Drivetrain(Subsystem):
         ## Show swerve module direction on robot
         robot_pose = self.field.getRobotPose()
 
-        # Left Front
+        # Left Front (We subtract the size of the wheel pose on the field widget to make the wheel appear to be inside the robot's frame.)
         left_front_pose = robot_pose.transformBy(
             Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_left_front_location, 
+                    Constants.Drivetrain.ModuleLocations.k_left_front_location - Translation2d(Constants.Drivetrain.ModuleLocations.k_wheel_size, Constants.Drivetrain.ModuleLocations.k_wheel_size), 
                     self.left_front.get_angle()
             )
         )
@@ -182,7 +182,7 @@ class Drivetrain(Subsystem):
         # Left Rear
         left_rear_pose = robot_pose.transformBy(
             Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_left_rear_location, 
+                    Constants.Drivetrain.ModuleLocations.k_left_rear_location - Translation2d(-Constants.Drivetrain.ModuleLocations.k_wheel_size, Constants.Drivetrain.ModuleLocations.k_wheel_size), 
                     self.left_rear.get_angle()
             )
         )
@@ -190,7 +190,7 @@ class Drivetrain(Subsystem):
         # Right Front
         right_front_pose = robot_pose.transformBy(
             Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_right_front_location, 
+                    Constants.Drivetrain.ModuleLocations.k_right_front_location - Translation2d(Constants.Drivetrain.ModuleLocations.k_wheel_size, -Constants.Drivetrain.ModuleLocations.k_wheel_size), 
                     self.right_front.get_angle()
             )
         )
@@ -198,7 +198,7 @@ class Drivetrain(Subsystem):
         # Right Rear
         right_rear_pose = robot_pose.transformBy(
             Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_right_rear_location, 
+                    Constants.Drivetrain.ModuleLocations.k_right_rear_location - Translation2d(-Constants.Drivetrain.ModuleLocations.k_wheel_size, -Constants.Drivetrain.ModuleLocations.k_wheel_size), 
                     self.right_rear.get_angle()
             )
         )

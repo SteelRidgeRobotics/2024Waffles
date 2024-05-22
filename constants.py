@@ -56,6 +56,8 @@ class Constants:
             k_left_rear_location = Translation2d(-0.587, 0.587)
             k_right_front_location = Translation2d(0.587, -0.587)
             k_right_rear_location = Translation2d(-0.587, -0.587)
+
+            k_wheel_size = 0.25
     
     class DriveConfig:
         # PID and Feedforward
