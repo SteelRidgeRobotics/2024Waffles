@@ -95,7 +95,7 @@ class LimelightHelpers:
 		pose_array = pose_entry.getDoubleArray([])
 		pose = LimelightHelpers._to_Pose2D(pose_array)
 		latency = LimelightHelpers._extract_array_entry(pose_array, 6)
-		tag_count = LimelightHelpers._extract_array_entry(pose_array, 7)
+		tag_count = int(LimelightHelpers._extract_array_entry(pose_array, 7))
 		tag_span = LimelightHelpers._extract_array_entry(pose_array, 8)
 		tag_dist = LimelightHelpers._extract_array_entry(pose_array, 9)
 		tag_area = LimelightHelpers._extract_array_entry(pose_array, 10)
@@ -110,9 +110,9 @@ class LimelightHelpers:
 			# Don't populate fiducials
 			return PoseEstimate(pose, timestamp, latency, tag_count, tag_span, tag_dist, tag_area, raw_fiducials)
 		else:
-			for i in range(int(tag_count)):
+			for i in range(tag_count):
 				base_index = 11 + (i * vals_per_fiducial)
-				id = pose_array[base_index]
+				id = int(pose_array[base_index])
 				txnc = pose_array[base_index + 1]
 				tync = pose_array[base_index + 2]
 				ta = pose_array[base_index + 3]
@@ -138,7 +138,7 @@ class LimelightHelpers:
 
 		for i in range(num_fiducials):
 			base_index = i * vals_per_entry
-			id = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index)
+			id = int(LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index))
 			txnc = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 1)
 			tync = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 2)
 			ta = LimelightHelpers._extract_array_entry(raw_fiducial_array, base_index + 3)
@@ -163,7 +163,7 @@ class LimelightHelpers:
 
 		for i in range(num_detections):
 			base_index = i * vals_per_entry
-			class_id = LimelightHelpers._extract_array_entry(raw_detection_array, base_index)
+			class_id = int(LimelightHelpers._extract_array_entry(raw_detection_array, base_index))
 			txnc = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 1)
 			tync = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 2)
 			ta = LimelightHelpers._extract_array_entry(raw_detection_array, base_index + 3)
