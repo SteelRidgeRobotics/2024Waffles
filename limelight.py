@@ -110,7 +110,7 @@ class LimelightHelpers:
 			# Don't populate fiducials
 			return PoseEstimate(pose, timestamp, latency, tag_count, tag_span, tag_dist, tag_area, raw_fiducials)
 		else:
-			for i in range(tag_count):
+			for i in range(int(tag_count)):
 				base_index = 11 + (i * vals_per_fiducial)
 				id = pose_array[base_index]
 				txnc = pose_array[base_index + 1]
