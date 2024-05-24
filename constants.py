@@ -143,8 +143,10 @@ class Constants:
         
     class Limelight:
         
-        k_vision_odometry = RobotBase.isReal() # False if there's no Limelight on the robot.
+        k_enable_vision_odometry = RobotBase.isReal() # False if there's no Limelight on the robot.
         
         k_limelight_name = "limelight" # "limelight" by default. Name of the limelight to use for vision.
+
+        k_use_mega_tag_2 = True # If False, uses MegaTag 1.
         
         k_standard_deviations = [0.3, 0.3, 999999] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.

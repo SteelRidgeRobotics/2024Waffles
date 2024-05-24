@@ -146,36 +146,64 @@ class Drivetrain(Subsystem):
                 self.right_rear.get_position()
             )
         )
+
+        ## Vision Odometry ##
+
+        add_vision_estimate = Constants.Limelight.k_enable_vision_odometry
+        if not Constants.Limelight.k_use_mega_tag_2: # Mega Tag 1
+            
+            mega_tag1 = LimelightHelpers.get_botpose_estimate_wpiblue(Constants.Limelight.k_limelight_name)
+
+            # Check if we're confident on where we are on the field
+            if mega_tag1.tag_count == 1 and len(mega_tag1.raw_fiducials) == 1:
+
+                if mega_tag1.raw_fiducials[0].ambiguity > .7 \
+                    or mega_tag1.raw_fiducials[0].dist_to_camera > 3: # Don't trust mega tag 1 if we're not close to the april tags
+
+                    add_vision_estimate = False 
+            
+            elif mega_tag1.tag_count == 0:
+                add_vision_estimate = False # Obviously, don't add vision measurements if it doesn't see any apriltags
+
+            # Add Vision Measurement
+            if add_vision_estimate:
+                self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
+                self.odometry.addVisionMeasurement(
+                    mega_tag1.pose,
+                    mega_tag1.timestamp_seconds
+                )
         
-        # Add Vision Measurements
-        # Tell the limelight what orientation we're currently facing.
-        LimelightHelpers.set_robot_orientation(
-            Constants.Limelight.k_limelight_name,
-            self.navx.getRotation2d().degrees(),
-            0,
-            0,
-            0, 
-            0, 
-            0
-        )
+        else: # Mega Tag 2
 
-        # Get mega tag 2 pose (where the limelight thinks we are using MegaTag 2)
-        mega_tag = LimelightHelpers.get_botpose_estimate_wpiblue(Constants.Limelight.k_limelight_name)
-
-        # Only update if we're not spinning fast AND we can see 1+ april tag (and we're not in simulation)
-        if abs(self.navx.getRate()) < 720 and mega_tag.tag_count > 0 and RobotBase.isReal():
-
-            # We don't want to update what the limelight thinks our yaw is, so we ignore it by tell it "we are NOT confident at ALL!!!!"
-            # (0.7 is placeholder, basically means we're kinda confident. Lower = more confident in limelight)
-            self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
-
-            self.odometry.addVisionMeasurement(
-                mega_tag.pose,
-                mega_tag.timestamp_seconds
+            # Set Robot Orientation
+            LimelightHelpers.set_robot_orientation(
+                Constants.Limelight.k_limelight_name,
+                self.navx.getRotation2d().degrees(),
+                0, # Potentially add -self.navx.getRate() here?
+                0,
+                0,
+                0,
+                0
             )
-        
 
-        # ...then update the field pose
+            mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
+
+            # If we're spinning or we don't see an apriltag, don't add vision measurements
+            if abs(self.navx.getRate()) > 720 or  \
+                mega_tag2.tag_count == 0:
+
+                add_vision_estimate = False
+
+            # Add Vision Measurement
+            if add_vision_estimate:
+                self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
+                self.odometry.addVisionMeasurement(
+                    mega_tag2.pose,
+                    mega_tag2.timestamp_seconds
+                )
+
+            
+        # Update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
 
         ## Show swerve module direction on robot
