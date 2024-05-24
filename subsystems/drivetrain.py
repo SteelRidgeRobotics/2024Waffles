@@ -86,10 +86,12 @@ class Drivetrain(Subsystem):
     Shuffleboard.getTab("Main").add("Field", field).withWidget(BuiltInWidgets.kField)
 
     # Tell the limelight what AprilTags we want to read (all of them)
+    """
     LimelightHelpers.set_fiducial_id_filters_override(
         Constants.Limelight.k_limelight_name, 
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     )
+    """
     
     def __init__(self) -> None:
         
@@ -149,7 +151,7 @@ class Drivetrain(Subsystem):
         # Tell the limelight what orientation we're currently facing.
         LimelightHelpers.set_robot_orientation(
             Constants.Limelight.k_limelight_name,
-            self.odometry.getEstimatedPosition().rotation().degrees(),
+            self.navx.getRotation2d().degrees(),
             0,
             0,
             0, 
@@ -158,18 +160,18 @@ class Drivetrain(Subsystem):
         )
 
         # Get mega tag 2 pose (where the limelight thinks we are using MegaTag 2)
-        mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
+        mega_tag = LimelightHelpers.get_botpose_estimate_wpiblue(Constants.Limelight.k_limelight_name)
 
         # Only update if we're not spinning fast AND we can see 1+ april tag (and we're not in simulation)
-        if abs(self.navx.getRate()) < 720 and mega_tag2.tag_count > 0 and RobotBase.isReal():
+        if abs(self.navx.getRate()) < 720 and mega_tag.tag_count > 0 and RobotBase.isReal():
 
             # We don't want to update what the limelight thinks our yaw is, so we ignore it by tell it "we are NOT confident at ALL!!!!"
             # (0.7 is placeholder, basically means we're kinda confident. Lower = more confident in limelight)
             self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
 
             self.odometry.addVisionMeasurement(
-                mega_tag2.pose,
-                mega_tag2.timestamp_seconds
+                mega_tag.pose,
+                mega_tag.timestamp_seconds
             )
         
 

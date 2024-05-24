@@ -7,7 +7,7 @@ from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTo
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
-from wpilib import RobotBase
+from wpilib import SmartDashboard
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 
@@ -86,6 +86,8 @@ class SwerveModule(Subsystem):
     
     # Sensors and Feedback
     steer_config.feedback.feedback_sensor_source = Constants.SteerConfig.k_remote_sensor_source
+
+    steer_config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
     
     steer_config.closed_loop_general.continuous_wrap = True # This does our angle optimizations for us (yay)
     
@@ -157,7 +159,7 @@ class SwerveModule(Subsystem):
         self.encoder.get_velocity().set_update_frequency(100)
         
         # Disable all unset status signals for all devices in this module
-        ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
+        #ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
         
         # Create variables to keep track of our modules "state"
         self.previous_desired_angle = 0
@@ -238,6 +240,9 @@ class SwerveModule(Subsystem):
         # Update control requests
         self.steer_request.position += degs_to_rots(angle_diff)
         self.drive_request.velocity = meters_to_rots(state.speed) * self.speed_multiplier
+
+        self.steer_talon.set_control(self.steer_request)
+        self.drive_talon.set_control(self.drive_request)
         
         # Update sim states
         self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * self.speed_multiplier * Constants.DriveConfig.k_gear_ratio)
