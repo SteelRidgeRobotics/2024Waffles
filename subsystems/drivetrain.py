@@ -4,11 +4,11 @@ from limelight import LimelightHelpers
 
 import navx
 
-from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, PathPlannerAuto, ReplanningConfig
+from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
 from pathplannerlib.commands import PathfindThenFollowPathHolonomic
 from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
-from pathplannerlib.path import GoalEndState, PathConstraints, PathPlannerPath
+from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
