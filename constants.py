@@ -85,7 +85,7 @@ class Constants:
         
         # Motion Magic
         k_cruise_velocity = 12.5
-        k_cruise_acceleration = 12
+        k_cruise_acceleration = 24
         k_jerk = 0
         
         # Physical Properties
@@ -93,11 +93,11 @@ class Constants:
         
     class SteerConfig:
         # PID and Feedforward
-        k_p = 12
-        k_i = 10
-        k_d = 0
+        k_p = 350
+        k_i = 2
+        k_d = 20
         
-        k_s = 0.26
+        k_s = 0
         k_v = 0
         k_a = 0
         
@@ -147,4 +147,4 @@ class Constants:
         
         k_limelight_name = "limelight" # "limelight" by default. Name of the limelight to use for vision.
         
-        k_standard_deviations = [0.7, 0.7, 999999] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.
+        k_standard_deviations = [0.3, 0.3, 999999] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.
