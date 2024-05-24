@@ -1,6 +1,7 @@
 from commands2.button import JoystickButton
 
 from pathplannerlib.auto import PathPlannerAuto
+from pathplannerlib.path import PathConstraints
 
 from wpilib import SendableChooser, XboxController
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
@@ -75,16 +76,10 @@ class RobotContainer:
 
         # Drive to amp (blue alliance)
         JoystickButton(self.driver_controller, XboxController.Button.kA).whileTrue(
-            self.drivetrain.pathfind_to_pose(
-                Pose2d(1.855, 7.741, Rotation2d.fromDegrees(90))
+            self.drivetrain.pathfind_to_path(
+                "AlignToAmp", 
+                path_constraints=PathConstraints(4.5, 4.5, 3.14, 3.14),
+                rotation_delay_distance=5
             )
         )
-
-
-        """.onlyIf(lambda: DriverStation.getAlliance() is DriverStation.Alliance.kBlue).andThen(
-                self.drivetrain.pathfind_to_pose(
-                    Pose2d(14.692, 7.742, Rotation2d.fromDegrees(90))
-                ).onlyIf(lambda: DriverStation.getAlliance() is DriverStation.Alliance.kRed)
-            )"""
-        
     
