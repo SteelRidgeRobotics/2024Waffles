@@ -209,8 +209,7 @@ class SwerveModule(Subsystem):
         # Compensate for velocity
         compensated_position = BaseStatusSignal.get_latency_compensated_value(
             self.drive_talon.get_position().refresh(),
-            self.drive_talon.get_velocity().refresh(),
-            0.06
+            self.drive_talon.get_velocity().refresh()
         )
         
         distance = rot_to_meters(compensated_position)
