@@ -246,7 +246,7 @@ class Drivetrain(Subsystem):
                     )
                 )
             self.field.getObject("modules").setPoses(module_poses)
-        else:
+        elif len(self.field.getObject("modules").getPoses()) > 1:
             self.field.getObject("modules").setPose(-1000, -1000, Rotation2d())
 
         # Update Gyro widget
