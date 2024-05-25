@@ -4,7 +4,7 @@ from limelight import LimelightHelpers
 
 import navx
 
-from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
+from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, PathfindHolonomic, ReplanningConfig
 from pathplannerlib.commands import PathfindThenFollowPathHolonomic
 from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
@@ -94,6 +94,26 @@ class Drivetrain(Subsystem):
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     )
     """
+
+    # PathPlanner Config
+    path_follower_config = HolonomicPathFollowerConfig(
+        # Holonomic-specific config
+        PIDConstants( # PID for translation
+            Constants.PathPlanner.k_translation_p,
+            Constants.PathPlanner.k_translation_i,
+            Constants.PathPlanner.k_translation_d,
+            Constants.PathPlanner.k_translation_i_zone
+        ), 
+        PIDConstants( # PID for rotation
+            Constants.PathPlanner.k_rotation_p,
+            Constants.PathPlanner.k_rotation_i,
+            Constants.PathPlanner.k_rotation_d,
+            Constants.PathPlanner.k_rotation_i_zone
+        ), 
+        Constants.Drivetrain.k_max_attainable_speed, # Max module speed (matches the one in PathPlanner)
+        Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
+        ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
+    )
     
     def __init__(self) -> None:
         
@@ -109,23 +129,7 @@ class Drivetrain(Subsystem):
             lambda pose: self.reset_pose(pose),
             self.get_robot_speed,
             lambda speeds: self.drive_robot_centric(speeds),
-            HolonomicPathFollowerConfig( # Holonomic-specific config
-                PIDConstants( # PID for translation
-                        Constants.PathPlanner.k_translation_p,
-                        Constants.PathPlanner.k_translation_i,
-                        Constants.PathPlanner.k_translation_d,
-                        Constants.PathPlanner.k_translation_i_zone
-                    ), 
-                PIDConstants( # PID for rotation
-                        Constants.PathPlanner.k_rotation_p,
-                        Constants.PathPlanner.k_rotation_i,
-                        Constants.PathPlanner.k_rotation_d,
-                        Constants.PathPlanner.k_rotation_i_zone
-                    ), 
-                Constants.Drivetrain.k_max_attainable_speed, # Max module speed (matches the one in PathPlanner)
-                Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
-                ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
-            ),
+            self.path_follower_config,
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "Hey Caden, when do we flip the path?"
             self # "Yes, this is the drivetrain. Why would I configure an AutoBuilder for an intake, pathplannerlib?"
         )
@@ -361,6 +365,21 @@ class Drivetrain(Subsystem):
 
         return pathfind_command
     
+    def pathfind_to_flipped_pose(self, end_pose: Pose2d, path_constraints: PathConstraints = PathConstraints(3.5, 3.5, 7.85398, 7.85398)) -> Command:
+        """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field.
+        If we're on the red alliance, the end_pose will be flipped to the opposite side of the field."""
+
+        return PathfindHolonomic(
+            path_constraints, # Constraints while pathfinding (max velocity, max rotation, etc)
+            self.odometry.getEstimatedPosition, # Pose supplier
+            self.get_robot_speed, # Speed Supplier
+            self.drive_robot_centric, # Speed Consumer
+            self.path_follower_config,
+            lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "hey caden when do we invert the path"
+            self, # We ARE a DRIVE-TEAM!!!!!!
+            target_pose=end_pose # End Pose
+        )
+    
     def pathfind_to_path(self, path_name: str, path_constraints: PathConstraints = PathConstraints(3.5, 3.5, 7.85398, 7.85398), rotation_delay_distance = 0) -> Command:
         """Uses Pathplanner's on-the-fly path generation to drive to and executes the given PathPlannerPath"""
 
@@ -372,23 +391,7 @@ class Drivetrain(Subsystem):
             self.odometry.getEstimatedPosition, # Pose supplier
             self.get_robot_speed, # Speed Supplier
             self.drive_robot_centric, # Speed Consumer
-            HolonomicPathFollowerConfig( # Holonomic-specific config (same as constructor, copied down here so we can invert paths when on the red alliance)
-                PIDConstants( # PID for translation
-                        Constants.PathPlanner.k_translation_p,
-                        Constants.PathPlanner.k_translation_i,
-                        Constants.PathPlanner.k_translation_d,
-                        Constants.PathPlanner.k_translation_i_zone
-                    ), 
-                PIDConstants( # PID for rotation
-                        Constants.PathPlanner.k_rotation_p,
-                        Constants.PathPlanner.k_rotation_i,
-                        Constants.PathPlanner.k_rotation_d,
-                        Constants.PathPlanner.k_rotation_i_zone
-                    ), 
-                Constants.Drivetrain.k_max_attainable_speed, # Max module speed
-                Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
-                ReplanningConfig() # Replanning Config
-            ),
+            self.path_follower_config,
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "hey caden when do we invert the path"
             self, # We ARE a DRIVE-TEAM!!!!!!
             rotation_delay_distance # Amount the robot needs to move before it rotates (when pathfinding)
