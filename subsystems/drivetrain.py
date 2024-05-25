@@ -4,7 +4,7 @@ from limelight import LimelightHelpers
 
 import navx
 
-from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, PathfindHolonomic, ReplanningConfig
+from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
 from pathplannerlib.commands import PathfindThenFollowPathHolonomic
 from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
@@ -15,7 +15,7 @@ from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Transform2d, Translation2d
-from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModuleState
+from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModulePosition, SwerveModuleState
 
 from constants import Constants
 from conversions import *
@@ -25,75 +25,51 @@ from subsystems.module import SwerveModule
 class Drivetrain(Subsystem):
     """Swerve drivetrain :partying_face:"""
     
-    # Creating all modules
-    left_front = SwerveModule(
-        Constants.CanIDs.k_left_front_drive,
-        Constants.CanIDs.k_left_front_direction,
-        Constants.CanIDs.k_left_front_encoder,
-        Constants.CanOffsets.k_left_front_offset
+    # Creating all modules (in a tuple for organization)
+    modules = (
+        SwerveModule(
+            Constants.CanIDs.k_left_front_drive,
+            Constants.CanIDs.k_left_front_direction,
+            Constants.CanIDs.k_left_front_encoder,
+            Constants.CanOffsets.k_left_front_offset
+        ),
+        SwerveModule(
+            Constants.CanIDs.k_left_rear_drive,
+            Constants.CanIDs.k_left_rear_direction,
+            Constants.CanIDs.k_left_rear_encoder,
+            Constants.CanOffsets.k_left_rear_offset
+        ),
+        SwerveModule(
+            Constants.CanIDs.k_right_front_drive,
+            Constants.CanIDs.k_right_front_direction,
+            Constants.CanIDs.k_right_front_encoder,
+            Constants.CanOffsets.k_right_front_offset
+        ),
+        SwerveModule(
+            Constants.CanIDs.k_right_rear_drive,
+            Constants.CanIDs.k_right_rear_direction,
+            Constants.CanIDs.k_right_rear_encoder,
+            Constants.CanOffsets.k_right_rear_offset
+        )
     )
-    
-    left_rear = SwerveModule(
-        Constants.CanIDs.k_left_rear_drive,
-        Constants.CanIDs.k_left_rear_direction,
-        Constants.CanIDs.k_left_rear_encoder,
-        Constants.CanOffsets.k_left_rear_offset
-    )
-    
-    right_front = SwerveModule(
-        Constants.CanIDs.k_right_front_drive,
-        Constants.CanIDs.k_right_front_direction,
-        Constants.CanIDs.k_right_front_encoder,
-        Constants.CanOffsets.k_right_front_offset
-    )
-    
-    right_rear = SwerveModule(
-        Constants.CanIDs.k_right_rear_drive,
-        Constants.CanIDs.k_right_rear_direction,
-        Constants.CanIDs.k_right_rear_encoder,
-        Constants.CanOffsets.k_right_rear_offset
+
+    # Kinematics
+    kinematics = SwerveDrive4Kinematics(
+        Constants.Drivetrain.k_module_locations[0], 
+        Constants.Drivetrain.k_module_locations[1],
+        Constants.Drivetrain.k_module_locations[2], 
+        Constants.Drivetrain.k_module_locations[3]
     )
     
     # NavX Setup
-    navx = navx.AHRS.create_spi()
-    navx.reset()
-    
-    # Kinematics
-    kinematics = SwerveDrive4Kinematics(
-        Constants.Drivetrain.ModuleLocations.k_left_front_location, 
-        Constants.Drivetrain.ModuleLocations.k_left_rear_location,
-        Constants.Drivetrain.ModuleLocations.k_right_front_location, 
-        Constants.Drivetrain.ModuleLocations.k_right_rear_location
-    )
-    
-    # Odometry
-    odometry = SwerveDrive4PoseEstimator(
-        kinematics, # The wheel locations on the robot
-        navx.getRotation2d(), # The current angle of the robot
-        ( # The current recorded positions of all modules
-            left_front.get_position(),
-            left_rear.get_position(),
-            right_front.get_position(),
-            right_rear.get_position()
-        ),
-        Pose2d()
-    )
-    
-    # Simulated navX angle
-    gyro_sim = 0
-    
-    # Widgets (Gyro widget is done in periodic)
-    field = Field2d()
-    
-    Shuffleboard.getTab("Main").add("Field", field).withWidget(BuiltInWidgets.kField)
+    gyro = navx.AHRS.create_spi()
+    gyro.reset()
 
-    # Tell the limelight what AprilTags we want to read (all of them)
-    """
-    LimelightHelpers.set_fiducial_id_filters_override(
-        Constants.Limelight.k_limelight_name, 
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-    )
-    """
+    gyro_sim = 0 # Simulated angle
+    
+    # Field Widget
+    field = Field2d()
+    Shuffleboard.getTab("Main").add("Field", field).withWidget(BuiltInWidgets.kField)
 
     # PathPlanner Config
     path_follower_config = HolonomicPathFollowerConfig(
@@ -114,8 +90,48 @@ class Drivetrain(Subsystem):
         Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
         ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
     )
+
+
+    @staticmethod
+    def get_module_positions() -> tuple[SwerveModulePosition]:
+        """Returns all reported SwerveModulePositions for every module."""
+
+        positions = []
+        for module in Drivetrain.modules:
+            positions.append(module.get_position())
+
+        return tuple(positions)
     
-    def __init__(self) -> None:
+    @staticmethod
+    def get_module_states() -> tuple[SwerveModuleState]:
+        """Returns all reported SwerveModuleStates for every module."""
+
+        states = []
+        for module in Drivetrain.modules:
+            states.append(module.get_state())
+
+        return tuple(states)
+    
+    @staticmethod
+    def get_module_angles() -> tuple[Rotation2d]:
+        """Returns the angle for every module as a tuple of Rotation2d's."""
+
+        angles = []
+        for module in Drivetrain.modules:
+            angles.append(module.get_angle())
+
+        return tuple(angles)
+
+    
+    def __init__(self, starting_pose: Pose2d = Pose2d()) -> None:
+
+        # Odometry
+        self.odometry = SwerveDrive4PoseEstimator(
+            self.kinematics, # The wheel locations on the robot
+            self.gyro.getRotation2d(), # The current angle of the robot
+            Drivetrain.get_module_positions(),
+            starting_pose
+        )
         
         # Send Reset Yaw command to Shuffleboard
         Shuffleboard.getTab("Main").add(
@@ -145,12 +161,7 @@ class Drivetrain(Subsystem):
         # Update the odometry...
         self.odometry.update(
             self.get_yaw(), 
-            (
-                self.left_front.get_position(),
-                self.left_rear.get_position(),
-                self.right_front.get_position(),
-                self.right_rear.get_position()
-            )
+            Drivetrain.get_module_positions()
         )
 
         ## Vision Odometry ##
@@ -184,7 +195,7 @@ class Drivetrain(Subsystem):
             # Set Robot Orientation
             LimelightHelpers.set_robot_orientation(
                 Constants.Limelight.k_limelight_name,
-                self.navx.getRotation2d().degrees(),
+                self.gyro.getRotation2d().degrees(),
                 0, # Potentially add -self.navx.getRate() here LATER, according to Chief Delphi it's untested
                 0,
                 0,
@@ -195,7 +206,7 @@ class Drivetrain(Subsystem):
             mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
 
             # If we're spinning or we don't see an apriltag, don't add vision measurements
-            if abs(self.navx.getRate()) > 720 or  \
+            if abs(self.gyro.getRate()) > 720 or  \
                 mega_tag2.tag_count == 0:
 
                 add_vision_estimate = False
@@ -212,49 +223,31 @@ class Drivetrain(Subsystem):
         # Update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
 
-        ## Show swerve module direction on robot
-        robot_pose = self.field.getRobotPose()
+        ## Show swerve modules on robot
+        if not DriverStation.isFMSAttached():
+            module_poses = []
+            for i in range(len(self.modules)):
 
-        # Left Front (We subtract the size of the wheel pose on the field widget to make the wheel appear to be inside the robot's frame.)
-        left_front_pose = robot_pose.transformBy(
-            Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_left_front_location - Translation2d(Constants.Drivetrain.ModuleLocations.k_wheel_size, Constants.Drivetrain.ModuleLocations.k_wheel_size), 
-                    self.left_front.get_angle()
-            )
-        )
-        
-        # Left Rear
-        left_rear_pose = robot_pose.transformBy(
-            Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_left_rear_location - Translation2d(-Constants.Drivetrain.ModuleLocations.k_wheel_size, Constants.Drivetrain.ModuleLocations.k_wheel_size), 
-                    self.left_rear.get_angle()
-            )
-        )
+                translation = Constants.Drivetrain.k_module_locations[i]
 
-        # Right Front
-        right_front_pose = robot_pose.transformBy(
-            Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_right_front_location - Translation2d(Constants.Drivetrain.ModuleLocations.k_wheel_size, -Constants.Drivetrain.ModuleLocations.k_wheel_size), 
-                    self.right_front.get_angle()
-            )
-        )
+                sim_offset = Translation2d(
+                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[0], translation.X()), 
+                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[1], translation.Y())
+                )
 
-        # Right Rear
-        right_rear_pose = robot_pose.transformBy(
-            Transform2d(
-                    Constants.Drivetrain.ModuleLocations.k_right_rear_location - Translation2d(-Constants.Drivetrain.ModuleLocations.k_wheel_size, -Constants.Drivetrain.ModuleLocations.k_wheel_size), 
-                    self.right_rear.get_angle()
-            )
-        )
+                module_poses.append(
+                    self.field.getRobotPose().transformBy(
+                        Transform2d(
+                            translation - sim_offset,
+                            Drivetrain.get_module_angles()[i]
+                        )
+                    )
+                )
+            self.field.getObject("modules").setPoses(module_poses)
+        else:
+            self.field.getObject("modules").setPose(-1000, -1000, Rotation2d())
 
-        # Send all the module poses to the field widget
-        self.field.getObject("modules").setPoses(
-            [left_front_pose, left_rear_pose, right_front_pose, right_rear_pose]
-        )
-        
-        
-        # Update Gyro widget (shuffleboard REALLY likes to duplicate widgets, very annoying)
-        # I'll just use SmartDashboard for this instead: Elastic won't auto-populate, so no worries about incorrect tabs or anything
+        # Update Gyro widget
         SmartDashboard.putNumber("Yaw", -self.get_yaw().degrees())
         
     def get_yaw(self) -> Rotation2d:
@@ -263,7 +256,7 @@ class Drivetrain(Subsystem):
         # If we're in simulation, then calculate how much the robot *should* be moving.
         # Otherwise, just read the current NavX heading.
         if RobotBase.isReal():
-            angle = self.navx.getRotation2d()
+            angle = self.gyro.getRotation2d()
         else:
             angle = Rotation2d.fromDegrees(self.gyro_sim)
             
@@ -272,9 +265,8 @@ class Drivetrain(Subsystem):
     def reset_yaw(self) -> None:
         """Resets the navX's angle to 0. Also resets the simulation angle as well."""
         
-        # Do I really need to explain this in-depth?
         self.gyro_sim = 0
-        self.navx.reset()
+        self.gyro.reset()
     
     def simulate_gyro(self, degrees_per_second: float) -> None:
         """Calculates the current angle of the gyro from the degrees per second traveled."""
@@ -286,26 +278,14 @@ class Drivetrain(Subsystem):
         
         self.odometry.resetPosition(
             self.get_yaw(),
-            (
-                self.left_front.get_position(),
-                self.left_rear.get_position(),
-                self.right_front.get_position(),
-                self.right_rear.get_position()
-            ),
+            Drivetrain.get_module_positions(),
             pose
         )
         
     def get_robot_speed(self) -> ChassisSpeeds:
         """Returns the robots current speed (non-field relative)"""
         
-        return self.kinematics.toChassisSpeeds(
-            (
-                self.left_front.get_state(),
-                self.left_rear.get_state(),
-                self.right_front.get_state(),
-                self.right_rear.get_state()
-            ) 
-        )
+        return self.kinematics.toChassisSpeeds(Drivetrain.get_module_states())
         
     def drive_robot_centric(self, speeds: ChassisSpeeds, center_of_rotation: Translation2d = Translation2d(0, 0)) -> None:
         """Drives the robot at the given speeds (from the perspective of the robot)."""
@@ -340,20 +320,18 @@ class Drivetrain(Subsystem):
         """Sends the given module states to each module."""
         
         # Make sure we aren't traveling at unrealistic speeds
-        left_front_state, left_rear_state, right_front_state, right_rear_state = self.kinematics.desaturateWheelSpeeds(
+        states = self.kinematics.desaturateWheelSpeeds(
             states, Constants.Drivetrain.k_max_attainable_speed
         )
         
         # Set each state to the correct module
-        self.left_front.set_desired_state(left_front_state)
-        self.left_rear.set_desired_state(left_rear_state)
-        self.right_front.set_desired_state(right_front_state)
-        self.right_rear.set_desired_state(right_rear_state)
+        for i, module in enumerate(self.modules):
+            module.set_desired_state(states[i])
 
     def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
         """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""
 
-        pathfind_command = AutoBuilder.pathfindToPose(
+        return AutoBuilder.pathfindToPose(
             end_pose, 
             PathConstraints(
                 Constants.Drivetrain.k_max_attainable_speed, 
@@ -361,23 +339,6 @@ class Drivetrain(Subsystem):
                 Constants.Drivetrain.k_max_rot_rate,
                 Constants.Drivetrain.k_max_rot_rate
             ),
-        )
-
-        return pathfind_command
-    
-    def pathfind_to_flipped_pose(self, end_pose: Pose2d, path_constraints: PathConstraints = PathConstraints(3.5, 3.5, 7.85398, 7.85398)) -> Command:
-        """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field.
-        If we're on the red alliance, the end_pose will be flipped to the opposite side of the field."""
-
-        return PathfindHolonomic(
-            path_constraints, # Constraints while pathfinding (max velocity, max rotation, etc)
-            self.odometry.getEstimatedPosition, # Pose supplier
-            self.get_robot_speed, # Speed Supplier
-            self.drive_robot_centric, # Speed Consumer
-            self.path_follower_config,
-            lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "hey caden when do we invert the path"
-            self, # We ARE a DRIVE-TEAM!!!!!!
-            target_pose=end_pose # End Pose
         )
     
     def pathfind_to_path(self, path_name: str, path_constraints: PathConstraints = PathConstraints(3.5, 3.5, 7.85398, 7.85398), rotation_delay_distance = 0) -> Command:
