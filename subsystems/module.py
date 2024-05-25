@@ -7,7 +7,6 @@ from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTo
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
-from wpilib import RobotBase, RobotController
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 
