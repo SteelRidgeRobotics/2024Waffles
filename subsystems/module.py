@@ -7,7 +7,7 @@ from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTo
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
-from wpilib import SmartDashboard
+from wpilib import RobotBase, RobotController
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 
@@ -138,6 +138,11 @@ class SwerveModule(Subsystem):
         self.drive_sim = self.drive_talon.sim_state
         self.steer_sim = self.steer_talon.sim_state
         self.encoder_sim = self.encoder.sim_state
+
+        # Set Supply Voltages
+        self.drive_sim.set_supply_voltage(12)
+        self.steer_sim.set_supply_voltage(12)
+        self.encoder_sim.set_supply_voltage(12)
         
         # Remove encoder offset if we're in simulation
         # Rotate wheel 90 degrees as well since they initialize facing the wrong way
@@ -163,7 +168,6 @@ class SwerveModule(Subsystem):
         
         # Create variables to keep track of our modules "state"
         self.previous_desired_angle = 0
-        self.speed_multiplier = 1
         
     def simulationPeriodic(self) -> None:
         # Position encoders don't update in sim, 
@@ -238,13 +242,13 @@ class SwerveModule(Subsystem):
 
         # Update control requests
         self.steer_request.position += degs_to_rots(angle_diff)
-        self.drive_request.velocity = meters_to_rots(state.speed) * self.speed_multiplier
+        self.drive_request.velocity = meters_to_rots(state.speed)
 
         self.steer_talon.set_control(self.steer_request)
         self.drive_talon.set_control(self.drive_request)
         
         # Update sim states
-        self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * self.speed_multiplier * Constants.DriveConfig.k_gear_ratio)
+        self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.DriveConfig.k_gear_ratio)
         
         self.steer_sim.add_rotor_position(degs_to_rots(angle_diff) * Constants.SteerConfig.k_gear_ratio)
         self.encoder_sim.add_position(degs_to_rots(angle_diff))
