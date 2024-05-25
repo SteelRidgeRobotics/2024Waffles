@@ -33,14 +33,16 @@ class Constants:
         k_right_rear_offset = -0.41845703125
         
     class Drivetrain:
+        k_sim_wheel_size = (0.25, 0.25) # Size of the wheel poses on the Field2d widget (length, width) (both in meters)
+
         k_wheel_size = 0.1 # Diameter of wheels in meters
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
         
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
         k_max_rot_rate = 10.472 # Max chassis rotation rate (rad/s)
-        
-        class ModuleLocations:
-            # To find Translation2d amount:
+
+
+        # To find Translation2d amount:
             # a^2 + b^2 = c^2
             # x^2 + y^2 = k_drive_base_radius
             # 2x^2 = 0.83^2 (square drivetrain, so x = y)
@@ -51,13 +53,12 @@ class Constants:
             
             # +x is the front of the robot
             # +y is the left of the robot
-            
-            k_left_front_location = Translation2d(0.587, 0.587)
-            k_left_rear_location = Translation2d(-0.587, 0.587)
-            k_right_front_location = Translation2d(0.587, -0.587)
-            k_right_rear_location = Translation2d(-0.587, -0.587)
-
-            k_wheel_size = 0.25
+        k_module_locations = (
+            Translation2d(0.587, 0.587), # Left front
+            Translation2d(-0.587, 0.587), # Left rear
+            Translation2d(0.587, -0.587), # Right front
+            Translation2d(-0.587, -0.587) # Right rear
+        )
     
     class DriveConfig:
         # PID and Feedforward
