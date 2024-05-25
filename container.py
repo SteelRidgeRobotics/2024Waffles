@@ -74,7 +74,7 @@ class RobotContainer:
         # Switch to robot-centric
         JoystickButton(self.driver_controller, XboxController.Button.kRightBumper).onTrue(self.robot_centric_command)
 
-        # Drive to amp (blue alliance)
+        # Drive to amp
         JoystickButton(self.driver_controller, XboxController.Button.kA).whileTrue(
             self.drivetrain.pathfind_to_path(
                 "AlignToAmp", 
