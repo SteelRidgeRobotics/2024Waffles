@@ -225,6 +225,8 @@ class Drivetrain(Subsystem):
 
         ## Show swerve modules on robot
         if not DriverStation.isFMSAttached():
+            module_angles = Drivetrain.get_module_angles()
+
             module_poses = []
             for i in range(len(self.modules)):
 
@@ -239,7 +241,7 @@ class Drivetrain(Subsystem):
                     self.field.getRobotPose().transformBy(
                         Transform2d(
                             translation - sim_offset,
-                            Drivetrain.get_module_angles()[i]
+                            module_angles[i]
                         )
                     )
                 )
