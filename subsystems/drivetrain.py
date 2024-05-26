@@ -12,6 +12,8 @@ from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
+from phoenix6.signal_logger import SignalLogger
+
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
@@ -222,6 +224,19 @@ class Drivetrain(Subsystem):
             
         # Update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
+
+        # Log odometry
+        current_pose = self.odometry.getEstimatedPosition()
+        SignalLogger.write_double_array("odometry", [current_pose.X(), current_pose.Y(), current_pose.rotation().degrees()])
+
+        # Log module positions
+        modules = []
+        for module in self.modules:
+            modules.append(module.get_angle().degrees())
+            modules.append(module.get_speed())
+
+            
+        SignalLogger.write_double_array("modules", modules)
 
         ## Show swerve modules on robot
         if not DriverStation.isFMSAttached():

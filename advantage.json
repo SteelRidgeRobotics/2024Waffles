@@ -1,0 +1,86 @@
+{
+  "hubs": [
+    {
+      "x": 285,
+      "y": 136,
+      "width": 1101,
+      "height": 651,
+      "state": {
+        "sidebar": {
+          "width": 271,
+          "expanded": [
+            "/modules"
+          ]
+        },
+        "tabs": {
+          "selected": 1,
+          "tabs": [
+            {
+              "type": 0,
+              "path": "../docs/tabs/ODOMETRY.md"
+            },
+            {
+              "type": 5,
+              "uuid": "ddc0rdyj6bepe81cq6it4io2v2xm7j8a",
+              "fields": [],
+              "listFields": [
+                [
+                  {
+                    "type": "Robot",
+                    "key": "odometry",
+                    "sourceTypeIndex": 0,
+                    "sourceType": 5
+                  }
+                ]
+              ],
+              "options": {
+                "game": "2024 Field",
+                "unitDistance": "meters",
+                "unitRotation": "degrees",
+                "origin": "right",
+                "size": 0.91,
+                "allianceBumpers": "auto",
+                "allianceOrigin": "blue",
+                "orientation": "blue left, red right"
+              },
+              "configHidden": false,
+              "visualizer": null,
+              "title": "Odometry"
+            },
+            {
+              "type": 9,
+              "uuid": "giuxchspx5rykyclrxvy45at3xgub0k8",
+              "fields": [
+                {
+                  "key": "modules",
+                  "sourceTypeIndex": 0,
+                  "sourceType": 5
+                },
+                null,
+                {
+                  "key": "odometry/2",
+                  "sourceTypeIndex": 0,
+                  "sourceType": 2
+                }
+              ],
+              "listFields": [],
+              "options": {
+                "maxSpeed": 4.654,
+                "rotationUnits": "degrees",
+                "arrangement": "0,3,1,2",
+                "sizeLeftRight": 0.91,
+                "sizeFrontBack": 0.91,
+                "forwardDirection": "right"
+              },
+              "configHidden": false,
+              "visualizer": null,
+              "title": "Swerve"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "satellites": [],
+  "version": "3.2.1"
+}

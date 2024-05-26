@@ -1,6 +1,8 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
 
+from phoenix6.signal_logger import SignalLogger
+
 from wpilib import DriverStation
 from wpimath.geometry import Pose2d, Rotation2d
 
@@ -11,8 +13,10 @@ class Waffles(TimedCommandRobot):
         
     def robotInit(self) -> None:
         self.container = RobotContainer()
-
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
+
+        SignalLogger.set_path("/ctre-logs/")
+        SignalLogger.start()
     
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
