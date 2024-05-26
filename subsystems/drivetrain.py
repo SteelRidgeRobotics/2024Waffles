@@ -6,6 +6,7 @@ import navx
 
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
 from pathplannerlib.commands import PathfindThenFollowPathHolonomic
+from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
@@ -149,6 +150,8 @@ class Drivetrain(Subsystem):
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "Hey Caden, when do we flip the path?"
             self # "Yes, this is the drivetrain. Why would I configure an AutoBuilder for an intake, pathplannerlib?"
         )
+
+        PPHolonomicDriveController.setRotationTargetOverride(self.get_rotation_override)
 
         # Shows the target pose in the field widget
         PathPlannerLogging.setLogTargetPoseCallback(lambda pose: self.field.getObject("target").setPose(pose))
@@ -359,3 +362,20 @@ class Drivetrain(Subsystem):
             self, # We ARE a DRIVE-TEAM!!!!!!
             rotation_delay_distance # Amount the robot needs to move before it rotates (when pathfinding)
         )
+    
+    def get_rotation_override(self) -> Rotation2d:
+        """Rotation override for PathPlanner.
+        See https://pathplanner.dev/pplib-override-target-rotation.html"""
+
+        # Look at note if we're in autonomous
+        if DriverStation.isAutonomous():
+            
+            # Look at center of field (broken, but a good example)
+            translation = Transform2d(self.odometry.getEstimatedPosition(), Pose2d(8.321, 4.092, self.odometry.getEstimatedPosition().rotation())).translation()
+            x, y = translation.X(), translation.Y()
+
+            return Rotation2d(math.atan2(y, x))
+        
+        else:
+            return None
+
