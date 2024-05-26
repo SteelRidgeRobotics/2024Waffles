@@ -164,9 +164,8 @@ class SwerveModule(Subsystem):
         
         # Disable all unset status signals for all devices in this module
         #ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
-        
-        # Create variables to keep track of our modules "state"
-        self.previous_desired_angle = 0
+
+        self.previous_desired_angle = Rotation2d() # For angle optimizations
         
     def simulationPeriodic(self) -> None:
         # Position encoders don't update in sim, 
@@ -217,39 +216,28 @@ class SwerveModule(Subsystem):
     
     def get_state(self) -> SwerveModuleState:
         """Returns the module's current state; current speed (m/s) and current angle."""
-        
-        return SwerveModuleState(
-            self.get_speed(),
-            self.get_angle()
-        )
-    
-    def stop(self) -> None:
-        """Stops the module from moving."""
-        self.steer_talon.set_control(NeutralOut())
-        self.drive_talon.set_control(NeutralOut())
 
-        self.drive_sim.set_rotor_velocity(0)
+        return SwerveModuleState(self.get_speed(), self.get_angle())
         
     def set_desired_state(self, state: SwerveModuleState) -> None:
         """Sets the motor control requests to the desired state."""
 
-        if state.speed == 0:
-            self.stop()
-            return
-
         # Angle optimizations and reverse velocity if needed
-        state = SwerveModuleState.optimize(state, self.get_angle())
+        state = SwerveModuleState.optimize(state, self.previous_desired_angle)
 
-        # Update control requests
-        self.steer_request.position = degs_to_rots(state.angle.degrees())
-        self.drive_request.velocity = meters_to_rots(state.speed)
-
-        self.steer_talon.set_control(self.steer_request)
-        self.drive_talon.set_control(self.drive_request)
+        self.steer_talon.set_control(
+            self.steer_request.with_position(degs_to_rots(state.angle.degrees()))
+        )
+        
+        self.drive_talon.set_control(
+            self.drive_request.with_velocity(meters_to_rots(state.speed))
+        )
         
         # Update sim states
         self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.DriveConfig.k_gear_ratio)
         
         self.steer_sim.set_raw_rotor_position(degs_to_rots(state.angle.degrees()) * Constants.SteerConfig.k_gear_ratio)
         self.encoder_sim.set_raw_position(degs_to_rots(state.angle.degrees()))
+
+        self.previous_desired_angle = state.angle
         
