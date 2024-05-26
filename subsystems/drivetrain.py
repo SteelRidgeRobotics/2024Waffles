@@ -365,7 +365,7 @@ class Drivetrain(Subsystem):
         See https://pathplanner.dev/pplib-override-target-rotation.html"""
 
         # Look at note if we're in autonomous
-        if DriverStation.isAutonomous():
+        if False:
             
             # Look at center of field (broken, but a good example)
             translation = Transform2d(self.odometry.getEstimatedPosition(), Pose2d(8.321, 4.092, self.odometry.getEstimatedPosition().rotation())).translation()
