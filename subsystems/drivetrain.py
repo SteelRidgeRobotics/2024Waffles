@@ -153,9 +153,6 @@ class Drivetrain(Subsystem):
 
         PPHolonomicDriveController.setRotationTargetOverride(self.get_rotation_override)
 
-        # Shows the target pose in the field widget
-        PathPlannerLogging.setLogTargetPoseCallback(lambda pose: self.field.getObject("target").setPose(pose))
-
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
         
