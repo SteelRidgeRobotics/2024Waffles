@@ -3,10 +3,11 @@ from commands2 import Subsystem
 from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
-from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC
+from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC, NeutralOut
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
+from wpilib import RobotBase
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 
@@ -86,7 +87,7 @@ class SwerveModule(Subsystem):
     # Sensors and Feedback
     steer_config.feedback.feedback_sensor_source = Constants.SteerConfig.k_remote_sensor_source
 
-    steer_config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
+    steer_config.motor_output.inverted = InvertedValue.COUNTER_CLOCKWISE_POSITIVE
     
     steer_config.closed_loop_general.continuous_wrap = True # This does our angle optimizations for us (yay)
     
@@ -112,7 +113,10 @@ class SwerveModule(Subsystem):
 
         # Encoder configs (set magnet offset)
         module_encoder_config = self.encoder_config
-        module_encoder_config.magnet_sensor.magnet_offset = encoder_offset
+        if RobotBase.isReal():
+            module_encoder_config.magnet_sensor.magnet_offset = encoder_offset
+        else:
+            module_encoder_config.magnet_sensor.magnet_offset = 0.25
         
         
         # Create CAN devices and apply the new configs
@@ -142,10 +146,6 @@ class SwerveModule(Subsystem):
         self.drive_sim.set_supply_voltage(12)
         self.steer_sim.set_supply_voltage(12)
         self.encoder_sim.set_supply_voltage(12)
-        
-        # Remove encoder offset if we're in simulation
-        # Rotate wheel 90 degrees as well since they initialize facing the wrong way
-        self.encoder_sim.set_raw_position(-encoder_offset + 0.25)
         
         ## Set StatusSignal update frequencies ##
         # Drive Motor
@@ -178,21 +178,14 @@ class SwerveModule(Subsystem):
         
     def get_angle(self) -> Rotation2d:
         """Returns the current angle of the wheel by converting the steer motor position into degrees."""
-        
-        # Get compensated velocity for compensating for compensated position
-        # "Do you think he's compensating for something?"
-        compensated_velocity = BaseStatusSignal.get_latency_compensated_value(
-            self.steer_talon.get_velocity().refresh(), # This function doesn't refresh the status signals, so we do it here
-            self.steer_talon.get_acceleration().refresh(), # Same for this signal
-            0.06
+
+        compensated_position = BaseStatusSignal.get_latency_compensated_value(
+            self.steer_talon.get_position().refresh(), # This function doesn't refresh the status signals, so we do it here
+            self.steer_talon.get_velocity().refresh(), # Same for this signal
+            0.02
         )
-        
-        # Do our own latency compression because BaseStatusSignal doesn't allow compensation-inversion madness (smh)
-        latency = self.steer_talon.get_position().timestamp.get_latency()
-        compensated_position = self.steer_talon.get_position().refresh().value + (compensated_velocity * latency)
-        
-        degrees = rots_to_degs(compensated_position)
-        return Rotation2d.fromDegrees(degrees)
+
+        return Rotation2d.fromDegrees(rots_to_degs(compensated_position))
     
     def get_speed(self) -> float:
         """Returns the module's current driving speed (m/s)."""
@@ -229,18 +222,26 @@ class SwerveModule(Subsystem):
             self.get_speed(),
             self.get_angle()
         )
+    
+    def stop(self) -> None:
+        """Stops the module from moving."""
+        self.steer_talon.set_control(NeutralOut())
+        self.drive_talon.set_control(NeutralOut())
+
+        self.drive_sim.set_rotor_velocity(0)
         
     def set_desired_state(self, state: SwerveModuleState) -> None:
         """Sets the motor control requests to the desired state."""
 
+        if state.speed == 0:
+            self.stop()
+            return
+
         # Angle optimizations and reverse velocity if needed
-        state = SwerveModuleState.optimize(state, Rotation2d.fromDegrees(self.previous_desired_angle))
-        
-        # Calculate the angle difference
-        angle_diff = state.angle.degrees() - self.previous_desired_angle
+        state = SwerveModuleState.optimize(state, self.get_angle())
 
         # Update control requests
-        self.steer_request.position += degs_to_rots(angle_diff)
+        self.steer_request.position = degs_to_rots(state.angle.degrees())
         self.drive_request.velocity = meters_to_rots(state.speed)
 
         self.steer_talon.set_control(self.steer_request)
@@ -249,9 +250,6 @@ class SwerveModule(Subsystem):
         # Update sim states
         self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.DriveConfig.k_gear_ratio)
         
-        self.steer_sim.add_rotor_position(degs_to_rots(angle_diff) * Constants.SteerConfig.k_gear_ratio)
-        self.encoder_sim.add_position(degs_to_rots(angle_diff))
-        
-        # This current angle will be the previous one in the next update, so update it here.        
-        self.previous_desired_angle = state.angle.degrees()
+        self.steer_sim.set_raw_rotor_position(degs_to_rots(state.angle.degrees()) * Constants.SteerConfig.k_gear_ratio)
+        self.encoder_sim.set_raw_position(degs_to_rots(state.angle.degrees()))
         
