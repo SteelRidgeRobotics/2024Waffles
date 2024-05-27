@@ -165,7 +165,9 @@ class SwerveModule(Subsystem):
         # Disable all unset status signals for all devices in this module
         #ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
 
-        self.previous_desired_angle = Rotation2d() # For angle optimizations
+        self.previous_desired_angle = Rotation2d()
+
+        self.desired_state = SwerveModuleState()
         
     def simulationPeriodic(self) -> None:
         # Position encoders don't update in sim, 
@@ -218,12 +220,18 @@ class SwerveModule(Subsystem):
         """Returns the module's current state; current speed (m/s) and current angle."""
 
         return SwerveModuleState(self.get_speed(), self.get_angle())
+    
+    def get_target(self) -> SwerveModuleState:
+        """Returns the module's desired state."""
+
+        return self.desired_state
         
     def set_desired_state(self, state: SwerveModuleState) -> None:
         """Sets the motor control requests to the desired state."""
 
         # Angle optimizations and reverse velocity if needed
         state = SwerveModuleState.optimize(state, self.previous_desired_angle)
+        self.desired_state = state
 
         self.steer_talon.set_control(
             self.steer_request.with_position(degs_to_rots(state.angle.degrees()))

@@ -1,15 +1,16 @@
 {
   "hubs": [
     {
-      "x": 285,
-      "y": 136,
-      "width": 1101,
-      "height": 651,
+      "x": -8,
+      "y": -8,
+      "width": 1552,
+      "height": 832,
       "state": {
         "sidebar": {
           "width": 271,
           "expanded": [
-            "/modules"
+            "/NT/LiveWindow/.status",
+            "/NT/Shuffleboard/Main/Field/Robot"
           ]
         },
         "tabs": {
@@ -26,10 +27,22 @@
               "listFields": [
                 [
                   {
-                    "type": "Robot",
-                    "key": "odometry",
+                    "type": "Trajectory",
+                    "key": "NT:/Shuffleboard/Main/Field/active_path",
                     "sourceTypeIndex": 0,
                     "sourceType": 5
+                  },
+                  {
+                    "type": "Ghost",
+                    "key": "NT:PPTarget",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
+                  },
+                  {
+                    "type": "Robot",
+                    "key": "NT:RobotPose",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
                   }
                 ]
               ],
@@ -48,25 +61,50 @@
               "title": "Odometry"
             },
             {
+              "type": 8,
+              "uuid": "ylyd5v79qws1fpj0ilxfa7fcsjuk2aof",
+              "fields": [],
+              "listFields": [],
+              "options": {
+                "ids": [
+                  0,
+                  1,
+                  2
+                ],
+                "layouts": [
+                  "Xbox Controller (White)",
+                  "None",
+                  "None"
+                ]
+              },
+              "configHidden": false,
+              "visualizer": null,
+              "title": "Joysticks"
+            },
+            {
               "type": 9,
               "uuid": "giuxchspx5rykyclrxvy45at3xgub0k8",
               "fields": [
                 {
-                  "key": "modules",
-                  "sourceTypeIndex": 0,
-                  "sourceType": 5
+                  "key": "NT:ModuleStates",
+                  "sourceTypeIndex": 1,
+                  "sourceType": "SwerveModuleState[]"
                 },
-                null,
                 {
-                  "key": "odometry/2",
-                  "sourceTypeIndex": 0,
-                  "sourceType": 2
+                  "key": "NT:ModuleTargets",
+                  "sourceTypeIndex": 1,
+                  "sourceType": "SwerveModuleState[]"
+                },
+                {
+                  "key": "NT:RobotPose/rotation",
+                  "sourceTypeIndex": 1,
+                  "sourceType": "Rotation2d"
                 }
               ],
               "listFields": [],
               "options": {
                 "maxSpeed": 4.654,
-                "rotationUnits": "degrees",
+                "rotationUnits": "radians",
                 "arrangement": "0,3,1,2",
                 "sizeLeftRight": 0.91,
                 "sizeFrontBack": 0.91,

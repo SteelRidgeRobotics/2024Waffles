@@ -4,6 +4,8 @@ from limelight import LimelightHelpers
 
 import navx
 
+from ntcore import NetworkTableInstance
+
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
 from pathplannerlib.commands import PathfindThenFollowPathHolonomic
 from pathplannerlib.controller import PPHolonomicDriveController
@@ -11,8 +13,6 @@ from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
-
-from phoenix6.signal_logger import SignalLogger
 
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
@@ -94,6 +94,15 @@ class Drivetrain(Subsystem):
         ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
     )
 
+    ## NetworkTable Publishing (for logging)
+    
+    # PathPlanner
+    target_publisher = NetworkTableInstance.getDefault().getStructTopic("PPTarget", Pose2d).publish()
+
+    module_state_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
+    module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
+
+    robot_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("RobotPose", Pose2d).publish()
 
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
@@ -102,7 +111,6 @@ class Drivetrain(Subsystem):
         positions = []
         for module in Drivetrain.modules:
             positions.append(module.get_position())
-
         return tuple(positions)
     
     @staticmethod
@@ -112,8 +120,16 @@ class Drivetrain(Subsystem):
         states = []
         for module in Drivetrain.modules:
             states.append(module.get_state())
-
         return tuple(states)
+    
+    @staticmethod
+    def get_module_targets() -> tuple[SwerveModuleState]:
+        """Returns all module target states."""
+
+        targets = []
+        for module in Drivetrain.modules:
+            targets.append(module.get_target())
+        return targets
     
     @staticmethod
     def get_module_angles() -> tuple[Rotation2d]:
@@ -122,10 +138,8 @@ class Drivetrain(Subsystem):
         angles = []
         for module in Drivetrain.modules:
             angles.append(module.get_angle())
-
         return tuple(angles)
 
-    
     def __init__(self, starting_pose: Pose2d = Pose2d()) -> None:
 
         # Odometry
@@ -154,6 +168,9 @@ class Drivetrain(Subsystem):
         )
 
         PPHolonomicDriveController.setRotationTargetOverride(self.get_rotation_override)
+
+        # Logs the target pose
+        PathPlannerLogging.setLogTargetPoseCallback(lambda pose: self.target_publisher.set(pose))
 
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
@@ -221,22 +238,16 @@ class Drivetrain(Subsystem):
                     mega_tag2.timestamp_seconds
                 )
 
-            
+        estimated_position = self.odometry.getEstimatedPosition()
+
         # Update the field pose
-        self.field.setRobotPose(self.odometry.getEstimatedPosition())
+        self.field.setRobotPose(estimated_position)
 
-        # Log odometry
-        current_pose = self.odometry.getEstimatedPosition()
-        SignalLogger.write_double_array("odometry", [current_pose.X(), current_pose.Y(), current_pose.rotation().degrees()])
+        # Log modules
+        self.module_state_publisher.set(list(Drivetrain.get_module_states()))
+        self.module_target_publisher.set(list(Drivetrain.get_module_targets()))
 
-        # Log module positions
-        modules = []
-        for module in self.modules:
-            modules.append(module.get_angle().degrees())
-            modules.append(module.get_speed())
-
-            
-        SignalLogger.write_double_array("modules", modules)
+        self.robot_pose_publisher.set(estimated_position)
 
         ## Show swerve modules on robot
         if not DriverStation.isFMSAttached():

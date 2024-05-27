@@ -3,7 +3,7 @@ from container import RobotContainer
 
 from phoenix6.signal_logger import SignalLogger
 
-from wpilib import DriverStation
+from wpilib import DataLogManager, DriverStation
 from wpimath.geometry import Pose2d, Rotation2d
 
 class Waffles(TimedCommandRobot):
@@ -15,8 +15,13 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
-        SignalLogger.set_path("/ctre-logs/")
+        SignalLogger.set_path("/logs/")
         SignalLogger.start()
+
+        DataLogManager.start("logs")
+        DriverStation.startDataLog(DataLogManager.getLog())
+
+        DataLogManager.log("robotInit finished")
     
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
@@ -41,7 +46,7 @@ class Waffles(TimedCommandRobot):
         
         # If it's None, do nothing, otherwise schedule the auto.
         if selected_auto is None:
-            print("No Auto Selected, doing nothing :(")
+            DataLogManager.log("No Auto Selected, doing nothing :(")
         else:
             selected_auto.schedule()
             
