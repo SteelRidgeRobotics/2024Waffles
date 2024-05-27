@@ -1,22 +1,22 @@
 {
   "hubs": [
     {
-      "x": 126,
-      "y": 10,
-      "width": 1110,
-      "height": 740,
+      "x": -7,
+      "y": 79,
+      "width": 1115,
+      "height": 745,
       "state": {
         "sidebar": {
           "width": 271,
           "expanded": [
             "/NT/LiveWindow/.status",
             "/NT/Shuffleboard/Main/Field/Robot",
-            "/NT",
-            "/NT/FMSInfo"
+            "/NT/FMSInfo",
+            "/NT"
           ]
         },
         "tabs": {
-          "selected": 1,
+          "selected": 2,
           "tabs": [
             {
               "type": 0,
@@ -58,9 +58,54 @@
                 "allianceOrigin": "blue",
                 "orientation": "blue left, red right"
               },
-              "configHidden": false,
+              "configHidden": true,
               "visualizer": null,
               "title": "Odometry"
+            },
+            {
+              "type": 6,
+              "uuid": "39a7dlucxzr00lplgit4osv4n7k8lx6y",
+              "fields": [],
+              "listFields": [
+                [],
+                [
+                  {
+                    "type": "Robot",
+                    "key": "NT:RobotPose",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
+                  },
+                  {
+                    "type": "Green Ghost",
+                    "key": "NT:PPTarget",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
+                  }
+                ]
+              ],
+              "options": {
+                "field": "2024 Field",
+                "alliance": "blue",
+                "robot": "2024 KitBot",
+                "unitDistance": "meters",
+                "unitRotation": "radians"
+              },
+              "configHidden": false,
+              "visualizer": {
+                "cameraIndex": -1,
+                "orbitFov": 50,
+                "cameraPosition": [
+                  0.23700574183598933,
+                  13.962299336474695,
+                  -3.4329458337200274
+                ],
+                "cameraTarget": [
+                  0,
+                  0.5,
+                  0
+                ]
+              },
+              "title": "3D Field"
             },
             {
               "type": 8,
@@ -121,6 +166,29 @@
       }
     }
   ],
-  "satellites": [],
+  "satellites": [
+    {
+      "x": 1156,
+      "y": 440,
+      "width": 367,
+      "height": 266,
+      "state": {
+        "type": 8,
+        "visualizer": null
+      },
+      "uuid": "ylyd5v79qws1fpj0ilxfa7fcsjuk2aof"
+    },
+    {
+      "x": 899,
+      "y": 17,
+      "width": 308,
+      "height": 308,
+      "state": {
+        "type": 9,
+        "visualizer": null
+      },
+      "uuid": "giuxchspx5rykyclrxvy45at3xgub0k8"
+    }
+  ],
   "version": "3.2.1"
 }
