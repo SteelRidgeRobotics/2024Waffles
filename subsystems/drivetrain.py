@@ -96,13 +96,14 @@ class Drivetrain(Subsystem):
 
     ## NetworkTable Publishing (for logging)
     
-    # PathPlanner
-    target_publisher = NetworkTableInstance.getDefault().getStructTopic("PPTarget", Pose2d).publish()
+    # Odometry
+    robot_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("RobotPose", Pose2d).publish()
+    target_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("PPTarget", Pose2d).publish()
+    vision_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("VisionPose", Pose2d).publish()
 
+    # Swerve
     module_state_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
     module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
-
-    robot_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("RobotPose", Pose2d).publish()
 
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
@@ -170,7 +171,7 @@ class Drivetrain(Subsystem):
         PPHolonomicDriveController.setRotationTargetOverride(self.get_rotation_override)
 
         # Logs the target pose
-        PathPlannerLogging.setLogTargetPoseCallback(lambda pose: self.target_publisher.set(pose))
+        PathPlannerLogging.setLogTargetPoseCallback(lambda pose: self.target_pose_publisher.set(pose))
 
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
@@ -208,6 +209,8 @@ class Drivetrain(Subsystem):
                     mega_tag1.pose,
                     mega_tag1.timestamp_seconds
                 )
+
+                self.vision_pose_publisher.set(mega_tag1.pose, mega_tag1.timestamp_seconds)
         
         else: # Mega Tag 2
 
@@ -238,19 +241,21 @@ class Drivetrain(Subsystem):
                     mega_tag2.timestamp_seconds
                 )
 
+                self.vision_pose_publisher.set(mega_tag2.pose, mega_tag2.timestamp_seconds)
+
         estimated_position = self.odometry.getEstimatedPosition()
 
         # Update the field pose
         self.field.setRobotPose(estimated_position)
 
-        # Log modules
+        # Log everything
         self.module_state_publisher.set(list(Drivetrain.get_module_states()))
         self.module_target_publisher.set(list(Drivetrain.get_module_targets()))
 
         self.robot_pose_publisher.set(estimated_position)
 
         ## Show swerve modules on robot
-        if not DriverStation.isFMSAttached():
+        if not DriverStation.isFMSAttached() and not RobotBase.isReal():
             module_angles = Drivetrain.get_module_angles()
 
             module_poses = []

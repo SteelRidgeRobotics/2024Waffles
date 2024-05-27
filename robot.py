@@ -15,9 +15,6 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
-        SignalLogger.set_path("/logs/")
-        SignalLogger.start()
-
         DataLogManager.start("logs")
         DriverStation.startDataLog(DataLogManager.getLog())
 

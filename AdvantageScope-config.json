@@ -1,16 +1,18 @@
 {
   "hubs": [
     {
-      "x": -8,
-      "y": -8,
-      "width": 1552,
-      "height": 832,
+      "x": 126,
+      "y": 10,
+      "width": 1110,
+      "height": 740,
       "state": {
         "sidebar": {
           "width": 271,
           "expanded": [
             "/NT/LiveWindow/.status",
-            "/NT/Shuffleboard/Main/Field/Robot"
+            "/NT/Shuffleboard/Main/Field/Robot",
+            "/NT",
+            "/NT/FMSInfo"
           ]
         },
         "tabs": {
@@ -110,7 +112,7 @@
                 "sizeFrontBack": 0.91,
                 "forwardDirection": "right"
               },
-              "configHidden": false,
+              "configHidden": true,
               "visualizer": null,
               "title": "Swerve"
             }
