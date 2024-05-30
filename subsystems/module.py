@@ -87,7 +87,7 @@ class SwerveModule(Subsystem):
     # Sensors and Feedback
     steer_config.feedback.feedback_sensor_source = Constants.SteerConfig.k_remote_sensor_source
 
-    steer_config.motor_output.inverted = InvertedValue.COUNTER_CLOCKWISE_POSITIVE
+    steer_config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
     
     steer_config.closed_loop_general.continuous_wrap = True # This does our angle optimizations for us (yay)
     

@@ -15,10 +15,10 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
-        DataLogManager.start("logs")
-        DriverStation.startDataLog(DataLogManager.getLog())
+        #DataLogManager.start("logs")
+        #DriverStation.startDataLog(DataLogManager.getLog())
 
-        DataLogManager.log("robotInit finished")
+        #DataLogManager.log("robotInit finished")
     
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
