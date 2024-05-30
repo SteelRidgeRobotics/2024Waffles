@@ -117,9 +117,9 @@ class Constants:
         k_stator_limit = 0
         
         # Motion Magic
-        k_cruise_velocity = 75
-        k_cruise_acceleration = 100
-        k_jerk = 0
+        k_cruise_velocity = 4
+        k_cruise_acceleration = 8
+        k_jerk = 75
         
         # Sensors (in case we switch it to a synced cancoder later on)
         k_remote_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
