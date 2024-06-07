@@ -1,8 +1,6 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
 
-from phoenix6.signal_logger import SignalLogger
-
 from wpilib import DataLogManager, DriverStation
 from wpimath.geometry import Pose2d, Rotation2d
 
@@ -19,6 +17,8 @@ class Waffles(TimedCommandRobot):
         #DriverStation.startDataLog(DataLogManager.getLog())
 
         #DataLogManager.log("robotInit finished")
+
+    
     
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
