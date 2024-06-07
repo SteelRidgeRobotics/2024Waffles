@@ -14,6 +14,8 @@ from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
+import threading
+
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
@@ -55,6 +57,9 @@ class Drivetrain(Subsystem):
             Constants.CanOffsets.k_right_rear_offset
         )
     )
+
+    # Odometry Thread
+    run_odometry = True
 
     # Kinematics
     kinematics = SwerveDrive4Kinematics(
@@ -105,6 +110,8 @@ class Drivetrain(Subsystem):
     module_state_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
     module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
 
+    
+
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
         """Returns all reported SwerveModulePositions for every module."""
@@ -150,6 +157,9 @@ class Drivetrain(Subsystem):
             Drivetrain.get_module_positions(),
             starting_pose
         )
+
+        self.odometry_thread = threading.Thread(name="Odometry Thread", target=self.odometry_loop)
+        self.odometry_thread.start()
         
         # Send Reset Yaw command to Shuffleboard
         Shuffleboard.getTab("Main").add(
@@ -175,16 +185,21 @@ class Drivetrain(Subsystem):
 
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
-        
-    def periodic(self) -> None:
-        
-        # Update the odometry...
+
+    def odometry_loop(self) -> None:
+
+        while self.run_odometry:
+            self.update_odometry()
+
+    def stop_odometry_updates(self) -> None:
+        self.run_odometry = False
+
+    def update_odometry(self) -> None:
+
         self.odometry.update(
             self.get_yaw(), 
             Drivetrain.get_module_positions()
         )
-
-        ## Vision Odometry ##
 
         add_vision_estimate = Constants.Limelight.k_enable_vision_odometry
         if not Constants.Limelight.k_use_mega_tag_2: # Mega Tag 1
@@ -242,6 +257,8 @@ class Drivetrain(Subsystem):
                 )
 
                 self.vision_pose_publisher.set(mega_tag2.pose, mega_tag2.timestamp_seconds)
+
+    def periodic(self) -> None:
 
         estimated_position = self.odometry.getEstimatedPosition()
 
