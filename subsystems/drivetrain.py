@@ -193,7 +193,6 @@ class Drivetrain(Subsystem):
 
     def stop_odometry_updates(self) -> None:
         self.run_odometry = False
-        print("pee pee poo poo")
 
     def update_odometry(self) -> None:
 
