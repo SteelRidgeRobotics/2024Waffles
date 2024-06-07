@@ -38,8 +38,8 @@ class Constants:
         k_wheel_size = 0.1 # Diameter of wheels in meters
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
         
-        k_max_attainable_speed = 4.654 # Max speed of modules in m/s
-        k_max_rot_rate = 10.472 # Max chassis rotation rate (rad/s)
+        k_max_attainable_speed = 4.654 / 2 # Max speed of modules in m/s
+        k_max_rot_rate = 10.472 / 2 # Max chassis rotation rate (rad/s)
 
 
         # To find Translation2d amount:
@@ -66,7 +66,7 @@ class Constants:
         k_i = 0
         k_d = 0
         
-        k_s = 0
+        k_s = 14.9
         k_v = 0
         k_a = 0
         
@@ -98,7 +98,7 @@ class Constants:
         k_i = 2
         k_d = 20
         
-        k_s = 0
+        k_s = 4.6
         k_v = 0
         k_a = 0
         
