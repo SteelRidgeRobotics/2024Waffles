@@ -1,10 +1,10 @@
 {
   "hubs": [
     {
-      "x": -7,
-      "y": 79,
-      "width": 1115,
-      "height": 745,
+      "x": 120,
+      "y": 103,
+      "width": 1110,
+      "height": 659,
       "state": {
         "sidebar": {
           "width": 271,
@@ -21,46 +21,6 @@
             {
               "type": 0,
               "path": "../docs/tabs/ODOMETRY.md"
-            },
-            {
-              "type": 5,
-              "uuid": "ddc0rdyj6bepe81cq6it4io2v2xm7j8a",
-              "fields": [],
-              "listFields": [
-                [
-                  {
-                    "type": "Trajectory",
-                    "key": "NT:/Shuffleboard/Main/Field/active_path",
-                    "sourceTypeIndex": 0,
-                    "sourceType": 5
-                  },
-                  {
-                    "type": "Ghost",
-                    "key": "NT:PPTarget",
-                    "sourceTypeIndex": 1,
-                    "sourceType": "Pose2d"
-                  },
-                  {
-                    "type": "Robot",
-                    "key": "NT:RobotPose",
-                    "sourceTypeIndex": 1,
-                    "sourceType": "Pose2d"
-                  }
-                ]
-              ],
-              "options": {
-                "game": "2024 Field",
-                "unitDistance": "meters",
-                "unitRotation": "degrees",
-                "origin": "right",
-                "size": 0.91,
-                "allianceBumpers": "auto",
-                "allianceOrigin": "blue",
-                "orientation": "blue left, red right"
-              },
-              "configHidden": true,
-              "visualizer": null,
-              "title": "Odometry"
             },
             {
               "type": 6,
@@ -86,26 +46,71 @@
               "options": {
                 "field": "2024 Field",
                 "alliance": "blue",
-                "robot": "2024 KitBot",
+                "robot": "Larry",
                 "unitDistance": "meters",
                 "unitRotation": "radians"
               },
               "configHidden": false,
               "visualizer": {
                 "cameraIndex": -1,
-                "orbitFov": 50,
+                "orbitFov": 60,
                 "cameraPosition": [
-                  0.23700574183598933,
-                  13.962299336474695,
-                  -3.4329458337200274
+                  -0.9221492017347866,
+                  12.475486460195508,
+                  -1.6573882895892906
                 ],
                 "cameraTarget": [
-                  0,
-                  0.5,
-                  0
+                  -1.0481494501417727,
+                  2.9328170241184592,
+                  0.09741347880969282
                 ]
               },
               "title": "3D Field"
+            },
+            {
+              "type": 5,
+              "uuid": "ddc0rdyj6bepe81cq6it4io2v2xm7j8a",
+              "fields": [],
+              "listFields": [
+                [
+                  {
+                    "type": "Heatmap",
+                    "key": "NT:RobotPose",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
+                  },
+                  {
+                    "type": "Robot",
+                    "key": "NT:RobotPose",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
+                  },
+                  {
+                    "type": "Ghost",
+                    "key": "NT:PPTarget",
+                    "sourceTypeIndex": 1,
+                    "sourceType": "Pose2d"
+                  }
+                ]
+              ],
+              "options": {
+                "game": "2024 Field",
+                "unitDistance": "meters",
+                "unitRotation": "degrees",
+                "origin": "right",
+                "size": 0.91,
+                "allianceBumpers": "auto",
+                "allianceOrigin": "blue",
+                "orientation": "blue left, red right"
+              },
+              "configHidden": false,
+              "visualizer": null,
+              "title": "Odometry"
+            },
+            {
+              "type": 3,
+              "field": "messages",
+              "title": "Console"
             },
             {
               "type": 8,
@@ -168,21 +173,10 @@
   ],
   "satellites": [
     {
-      "x": 1156,
-      "y": 440,
-      "width": 367,
-      "height": 266,
-      "state": {
-        "type": 8,
-        "visualizer": null
-      },
-      "uuid": "ylyd5v79qws1fpj0ilxfa7fcsjuk2aof"
-    },
-    {
-      "x": 899,
-      "y": 17,
-      "width": 308,
-      "height": 308,
+      "x": 871,
+      "y": 92,
+      "width": 659,
+      "height": 682,
       "state": {
         "type": 9,
         "visualizer": null

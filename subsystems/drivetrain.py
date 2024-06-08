@@ -111,7 +111,6 @@ class Drivetrain(Subsystem):
     module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
 
     
-
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
         """Returns all reported SwerveModulePositions for every module."""
@@ -225,7 +224,7 @@ class Drivetrain(Subsystem):
                     mega_tag1.timestamp_seconds
                 )
 
-                self.vision_pose_publisher.set(mega_tag1.pose, mega_tag1.timestamp_seconds)
+                self.vision_pose_publisher.set(mega_tag1.pose)
         
         else: # Mega Tag 2
 
@@ -256,7 +255,7 @@ class Drivetrain(Subsystem):
                     mega_tag2.timestamp_seconds
                 )
 
-                self.vision_pose_publisher.set(mega_tag2.pose, mega_tag2.timestamp_seconds)
+                self.vision_pose_publisher.set(mega_tag2.pose)
 
     def periodic(self) -> None:
 
