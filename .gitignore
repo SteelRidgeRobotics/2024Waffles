@@ -165,3 +165,4 @@ networktables.json
 ctre_sim/
 tests/ctre_sim/
 logs/*
+*.wpilog
