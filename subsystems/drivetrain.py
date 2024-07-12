@@ -14,7 +14,7 @@ from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
-import threading
+from threading import Thread
 
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
@@ -157,7 +157,7 @@ class Drivetrain(Subsystem):
             starting_pose
         )
 
-        self.odometry_thread = threading.Thread(name="Odometry Thread", target=self.odometry_loop, daemon=True)
+        self.odometry_thread = Thread(name="Odometry Thread", target=self.odometry_loop, daemon=True)
         self.odometry_thread.start()
         
         # Send Reset Yaw command to Shuffleboard
