@@ -372,6 +372,8 @@ class Drivetrain(Subsystem):
         states = self.kinematics.desaturateWheelSpeeds(
             states, Constants.Drivetrain.k_max_attainable_speed
         )
+
+        SmartDashboard.putNumber("e", states[0].speed)
         
         # Set each state to the correct module
         for i, module in enumerate(self.modules):

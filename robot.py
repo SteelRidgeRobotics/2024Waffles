@@ -1,7 +1,9 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
 
-from wpilib import CameraServer, DataLogManager, DriverStation
+import math
+
+from wpilib import CameraServer, DataLogManager, DriverStation, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d
 
 class Waffles(TimedCommandRobot):
@@ -22,7 +24,14 @@ class Waffles(TimedCommandRobot):
 
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
-        pass
+        controller = self.container.driver_controller
+        x = controller.getLeftX()
+        y = controller.getLeftY()
+
+        SmartDashboard.putNumber("Controller X", x)
+        SmartDashboard.putNumber("Controller Y", y)
+
+        SmartDashboard.putNumber("Controller Angle", math.degrees(math.atan2(y, x)) + 90)
     
     def _simulationPeriodic(self) -> None:
         pass

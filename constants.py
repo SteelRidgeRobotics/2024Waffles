@@ -39,7 +39,7 @@ class Constants:
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
         
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
-        k_max_rot_rate = 10.472 # Max chassis rotation rate (rad/s)
+        k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
 
 
         # To find Translation2d amount:

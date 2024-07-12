@@ -41,7 +41,7 @@ class RobotContainer:
                    -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
                    -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
                    -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
-                ) 
+                )
             )
         ).repeatedly() # Tells it to run the command forever until we tell it not to.
         
