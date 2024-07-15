@@ -58,9 +58,6 @@ class Drivetrain(Subsystem):
         )
     )
 
-    # Odometry Thread
-    run_odometry = True
-
     # Kinematics
     kinematics = SwerveDrive4Kinematics(
         Constants.Drivetrain.k_module_locations[0], 
@@ -186,12 +183,9 @@ class Drivetrain(Subsystem):
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
 
     def odometry_loop(self) -> None:
-
-        while self.run_odometry:
+        """Updates odometry until interrupted. This should only be ran in a seperate thread to prevent program lockup."""
+        while True:
             self.update_odometry()
-
-    def stop_odometry_updates(self) -> None:
-        self.run_odometry = False
 
     def update_odometry(self) -> None:
 
