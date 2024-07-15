@@ -292,6 +292,50 @@ class Drivetrain(Subsystem):
 
         # Update Gyro widget
         SmartDashboard.putNumber("Yaw", -self.get_yaw().degrees())
+
+        # Update Skid Ratio
+        SmartDashboard.putNumber("Skidding Ratio", Drivetrain.get_skidding_ratio())
+
+    @staticmethod
+    def get_skidding_ratio() -> float:
+        """
+        Translated from https://www.chiefdelphi.com/t/has-anyone-successfully-implemented-orbits-odometry-skid-detection/468257/3
+        Built from concepts mentioned in 1690's Software Session, https://youtu.be/N6ogT5DjGOk?feature=shared&t=1674
+
+        Returns the skidding ratio to determine how much the chassis is skidding.
+        The skidding ratio is the ratio between the maximum and minimum magnitude of the translational speed of the modules.
+        """
+
+        module_states = Drivetrain.get_module_states()
+
+        measured_angular_velocity = Drivetrain.kinematics.toChassisSpeeds(module_states).omega
+
+        state_rotation = Drivetrain.kinematics.toSwerveModuleStates(ChassisSpeeds(0, 0, measured_angular_velocity))
+
+        module_translation_magnitudes = []
+
+        for i in range(len(module_states)):
+            module_state_vector = Drivetrain._module_state_to_velocity_vector(module_states[i])
+
+            module_rotation_vector = Drivetrain._module_state_to_velocity_vector(state_rotation[i])
+            module_translation_vector = module_state_vector - module_rotation_vector
+
+            module_translation_magnitudes.append(module_translation_vector.norm())
+
+        max_translation = 0
+        min_translation = math.inf
+        for mag in module_translation_magnitudes:
+            max_translation = max(max_translation, mag)
+            min_translation = min(min_translation, mag)
+        
+        try:
+            return max_translation / min_translation
+        except ZeroDivisionError:
+            return 1
+
+    @staticmethod
+    def _module_state_to_velocity_vector(module_state: SwerveModuleState) -> Translation2d:
+        return Translation2d(module_state.speed, module_state.angle)
         
     def get_yaw(self) -> Rotation2d:
         """Gets the rotation of the robot."""
