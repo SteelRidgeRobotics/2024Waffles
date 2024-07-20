@@ -94,7 +94,7 @@ class RobotContainer:
         joystickmag = math.sqrt(x ** 2 + y ** 2)
         
         # Normalize X and Y values and multiply normalized values by the magnitude
-        newX, newY = x/max(x, y)*joystickmag, y/max(x, y)*joystickmag
+        newX, newY = x/max(abs(x), abs(y))*joystickmag, y/max(abs(x), abs(y))*joystickmag
 
         # return new values
         return (newX, newY)
