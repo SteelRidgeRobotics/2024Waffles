@@ -14,8 +14,8 @@ This gives us unique advantages over other drive trains:
 Waffles contains the following:
 - Fused CANcoders for precise steering
 - Continuous wrap for optimized steering
-- Motion Magic combined with [field-orientated control](https://en.m.wikipedia.org/wiki/Vector_control_(motor)) to reduce skidding and improve handling.
-- Ability to switch between robot-centric (forward is the direction the robot faces) and field-relative (forward is across the field from the driver) modes.
+- Motion profiling combined with [field-orientated control](https://en.m.wikipedia.org/wiki/Vector_control_(motor)) to reduce skidding and improve handling.
+- Ability to switch between robot-centric and field-relative modes.
 - Skidding and collision detection, to compensate for errors in autonomous driving.
 - Advanced joystick mapping to ensure maximum speed.
 - PathPlanner support (includes Choreo configuration)
