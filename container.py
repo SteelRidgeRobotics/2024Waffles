@@ -5,12 +5,12 @@ from pathplannerlib.path import PathConstraints
 
 from wpilib import SendableChooser, XboxController
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
-from wpimath.geometry import Pose2d, Rotation2d
 from wpimath.kinematics import ChassisSpeeds
 
 from constants import Constants
 from subsystems.drivetrain import Drivetrain
 
+import math
 
 class RobotContainer:
     # Controllers
@@ -32,15 +32,15 @@ class RobotContainer:
     
     
     def __init__(self) -> None:
-        
+
         # Create both commands for the drivetrain, one for robot-centric, one for field-relative
         # (both snazzy lambdas)
         self.robot_centric_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_robot_centric(
                 ChassisSpeeds(
-                   -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[1]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[0]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -(self.driver_controller.getRightX()) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 )
             )
         ).repeatedly() # Tells it to run the command forever until we tell it not to.
@@ -48,16 +48,16 @@ class RobotContainer:
         self.field_relative_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_field_relative(
                 ChassisSpeeds(
-                   -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[1]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[0]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -(self.driver_controller.getRightX()) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 ) 
             )
         ).repeatedly()
         
         # Field-relative by default
         self.drivetrain.setDefaultCommand(self.field_relative_command)
-
+        
         self.configure_button_bindings()
         
     def get_selected_auto(self) -> PathPlannerAuto | None:
@@ -82,4 +82,15 @@ class RobotContainer:
                 rotation_delay_distance=5
             )
         )
+    
+    def normalize_joystick_input(self, x, y):
+        """
+        Change the maximum diagonal value of the joystick to 1
+        """
+        
+        # Normalize X and Y and multiply by the magnitude
+        mag = math.sqrt(x ** 2 + y ** 2)
+        x, y = x / max(abs(x), abs(y)) * mag, y / max(abs(x), abs(y)) * mag
+
+        return (x, y)
     
