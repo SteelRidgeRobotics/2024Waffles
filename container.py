@@ -3,9 +3,8 @@ from commands2.button import JoystickButton
 from pathplannerlib.auto import PathPlannerAuto
 from pathplannerlib.path import PathConstraints
 
-from wpilib import SendableChooser, XboxController, SmartDashboard
+from wpilib import SendableChooser, XboxController
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
-from wpimath.geometry import Pose2d, Rotation2d
 from wpimath.kinematics import ChassisSpeeds
 
 from constants import Constants
