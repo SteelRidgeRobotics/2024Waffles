@@ -39,9 +39,9 @@ class RobotContainer:
         self.robot_centric_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_robot_centric(
                 ChassisSpeeds(
-                   -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[1]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[0]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -(self.driver_controller.getRightX()) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 )
             )
         ).repeatedly() # Tells it to run the command forever until we tell it not to.
@@ -49,8 +49,8 @@ class RobotContainer:
         self.field_relative_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_field_relative(
                 ChassisSpeeds(
-                   -(self.diag_stick_fix(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[1]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.diag_stick_fix(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[0]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[1]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -(self.normalize_joystick_input(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[0]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
                    -(self.driver_controller.getRightX()) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 ) 
             )
@@ -84,7 +84,7 @@ class RobotContainer:
             )
         )
     
-    def diag_stick_fix(self, x, y):
+    def normalize_joystick_input(self, x, y):
         """
         Change the maximum diagonal value of the joystick to 1
         """
