@@ -85,8 +85,8 @@ class Constants:
         k_stator_limit = 0
         
         # Motion Magic
-        k_cruise_velocity = 12.5
-        k_cruise_acceleration = 24
+        k_cruise_velocity = 12
+        k_cruise_acceleration = 52
         k_jerk = 0
         
         # Physical Properties
