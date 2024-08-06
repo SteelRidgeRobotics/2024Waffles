@@ -7,6 +7,8 @@ class Constants:
     
     class Controller:
         k_driver_controller_port = 0
+
+        k_fully_field_relative = True
     
     class CanIDs:
         # TalonFXs
@@ -41,6 +43,9 @@ class Constants:
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
         k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
 
+        # These are used for the PID controller for fully field-relative rotating.
+        k_turn_p = 0.6
+        k_turn_d = 0.02
 
         # To find Translation2d amount:
             # a^2 + b^2 = c^2
@@ -85,8 +90,8 @@ class Constants:
         k_stator_limit = 0
         
         # Motion Magic
-        k_cruise_velocity = 12.5
-        k_cruise_acceleration = 24
+        k_cruise_velocity = 12
+        k_cruise_acceleration = 52
         k_jerk = 0
         
         # Physical Properties

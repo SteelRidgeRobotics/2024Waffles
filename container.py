@@ -1,5 +1,7 @@
 from commands2.button import JoystickButton
 
+import math
+
 from pathplannerlib.auto import PathPlannerAuto
 from pathplannerlib.path import PathConstraints
 
@@ -39,23 +41,34 @@ class RobotContainer:
         self.robot_centric_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_robot_centric(
                 ChassisSpeeds(
-                   -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                   -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 )
             )
         ).repeatedly() # Tells it to run the command forever until we tell it not to.
         
-        self.field_relative_command = self.drivetrain.runOnce(
-            lambda: self.drivetrain.drive_field_relative(
-                ChassisSpeeds(
-                   -(self.diag_stick_fix(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[1]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.diag_stick_fix(self.driver_controller.getLeftX(), self.driver_controller.getLeftY())[0]) ** 3 * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX()) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
-                   
-                ) 
+        if Constants.Controller.k_fully_field_relative:
+            self.field_relative_command = self.drivetrain.runOnce(
+                lambda: self.drivetrain.drive_fully_field_relative(
+                    ChassisSpeeds(
+                        -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed,
+                        -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed,
+                    ),
+                    self.joystick_to_angle(self.driver_controller.getRightY(), -self.driver_controller.getRightX())
+                )
             )
-        ).repeatedly()
+
+        else:
+            self.field_relative_command = self.drivetrain.runOnce(
+                lambda: self.drivetrain.drive_field_relative(
+                    ChassisSpeeds(
+                        -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                        -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                        -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                    ) 
+                )
+            ).repeatedly()
         
         # Field-relative by default
         self.drivetrain.setDefaultCommand(self.field_relative_command)
@@ -84,18 +97,9 @@ class RobotContainer:
                 rotation_delay_distance=5
             )
         )
-    
-    def diag_stick_fix(self, x, y):
-        """
-        Change the maximum diagonal value of the joystick to 1
-        """
 
-        # Find magnitude of joystick
-        joystickmag = math.sqrt(x ** 2 + y ** 2)
-        
-        # Normalize X and Y values and multiply normalized values by the magnitude
-        newX, newY = x/max(abs(x), abs(y))*joystickmag, y/max(abs(x), abs(y))*joystickmag
-
-        # return new values
-        return (newX, newY)
-    
+    @staticmethod
+    def joystick_to_angle(y, x) -> Rotation2d | None:
+        if y == x == 0:
+            return None
+        return Rotation2d(math.atan2(y, x) + (math.pi / 2))
