@@ -20,6 +20,7 @@ from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Transform2d, Translation2d
+from wpimath.controller import PIDController
 from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModulePosition, SwerveModuleState
 
 from constants import Constants
@@ -107,6 +108,10 @@ class Drivetrain(Subsystem):
     module_state_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
     module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
 
+    # Turn PID for Fully Field-Relative driving
+    turn_PID = PIDController(Constants.Drivetrain.k_turn_p, 0, Constants.Drivetrain.k_turn_d)
+    turn_PID.enableContinuousInput(-math.pi, math.pi)
+
     
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
@@ -181,6 +186,9 @@ class Drivetrain(Subsystem):
 
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
+
+        self.prev_target_angle = Rotation2d()
+        self.prev_turn = 0
 
     def odometry_loop(self) -> None:
         """Updates odometry until interrupted. This should only be ran in a seperate thread to prevent program lockup."""
@@ -402,6 +410,20 @@ class Drivetrain(Subsystem):
         
         # Set the navX to what the angle should be in simulation
         self.simulate_gyro(speeds.omega_dps)
+
+    def drive_fully_field_relative(self, speeds: ChassisSpeeds, target_angle: Rotation2d | None) -> None:
+        """Drives the robot at the given speeds (from the perspective of the driver/field) and rotates to the target angle."""
+
+        if target_angle is None:
+            target_angle = self.prev_target_angle
+
+        rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians())
+
+        robo_centric = ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vx, speeds.vy, rotational_speed, self.get_yaw())
+
+        self.set_desired_module_states(self.kinematics.toSwerveModuleStates(robo_centric))
+
+        self.prev_target_angle = target_angle
         
     def set_desired_module_states(self, states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
         """Sends the given module states to each module."""

@@ -1,5 +1,7 @@
 from commands2.button import JoystickButton
 
+import math
+
 from pathplannerlib.auto import PathPlannerAuto
 from pathplannerlib.path import PathConstraints
 
@@ -45,15 +47,27 @@ class RobotContainer:
             )
         ).repeatedly() # Tells it to run the command forever until we tell it not to.
         
-        self.field_relative_command = self.drivetrain.runOnce(
-            lambda: self.drivetrain.drive_field_relative(
-                ChassisSpeeds(
-                   -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
-                ) 
+        if Constants.Controller.k_fully_field_relative:
+            self.field_relative_command = self.drivetrain.runOnce(
+                lambda: self.drivetrain.drive_fully_field_relative(
+                    ChassisSpeeds(
+                        -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed,
+                        -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed,
+                    ),
+                    self.joystick_to_angle(self.driver_controller.getRightY(), -self.driver_controller.getRightX())
+                )
             )
-        ).repeatedly()
+
+        else:
+            self.field_relative_command = self.drivetrain.runOnce(
+                lambda: self.drivetrain.drive_field_relative(
+                    ChassisSpeeds(
+                        -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                        -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                        -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                    ) 
+                )
+            ).repeatedly()
         
         # Field-relative by default
         self.drivetrain.setDefaultCommand(self.field_relative_command)
@@ -82,3 +96,9 @@ class RobotContainer:
                 rotation_delay_distance=5
             )
         )
+
+    @staticmethod
+    def joystick_to_angle(y, x) -> Rotation2d | None:
+        if y == x == 0:
+            return None
+        return Rotation2d(math.atan2(y, x) + (math.pi / 2))
