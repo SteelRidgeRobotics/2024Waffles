@@ -38,9 +38,9 @@ class RobotContainer:
         self.robot_centric_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_robot_centric(
                 ChassisSpeeds(
-                   -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                   -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 )
             )
         ).repeatedly() # Tells it to run the command forever until we tell it not to.
@@ -48,9 +48,9 @@ class RobotContainer:
         self.field_relative_command = self.drivetrain.runOnce(
             lambda: self.drivetrain.drive_field_relative(
                 ChassisSpeeds(
-                   -(self.driver_controller.getLeftY() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
-                   -(self.driver_controller.getLeftX() ** 3) * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
-                   -(self.driver_controller.getRightX() ** 3) * Constants.Drivetrain.k_max_rot_rate # Rotation speed
+                   -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed, # Speed forward and backward 
+                   -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed, # Speed Left and right
+                   -self.driver_controller.getRightX() * Constants.Drivetrain.k_max_rot_rate # Rotation speed
                 ) 
             )
         ).repeatedly()
@@ -82,4 +82,3 @@ class RobotContainer:
                 rotation_delay_distance=5
             )
         )
-    
