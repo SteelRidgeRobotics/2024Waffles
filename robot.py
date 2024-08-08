@@ -1,9 +1,6 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
-
-import math
-
-from wpilib import CameraServer, DataLogManager, DriverStation, SmartDashboard
+from wpilib import CameraServer, DataLogManager, DriverStation
 from wpimath.geometry import Pose2d, Rotation2d
 
 class Waffles(TimedCommandRobot):
@@ -30,6 +27,7 @@ class Waffles(TimedCommandRobot):
         pass
 
     def autonomousInit(self) -> None:
+        DataLogManager.log("Autonomous period started")
         
         # Reset gyro
         self.container.drivetrain.reset_yaw()
@@ -48,15 +46,19 @@ class Waffles(TimedCommandRobot):
             DataLogManager.log("No Auto Selected, doing nothing :(")
         else:
             selected_auto.schedule()
+            DataLogManager.log(f"Scheduled selected auto: {selected_auto.getName()}")
             
     def autonomousPeriodic(self) -> None:
         pass
     
     def autonomousExit(self) -> None:
-        pass
+        DataLogManager.log("Autonomous period ended")
             
     def teleopInit(self) -> None:
-        pass
+        DataLogManager.log("Teleoperated period started")
+
+    def teleopExit(self) -> None:
+        DataLogManager.log("Teleoperated period ended")
     
     def disabledPeriodic(self) -> None:
         pass
