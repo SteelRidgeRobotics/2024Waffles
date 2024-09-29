@@ -29,6 +29,7 @@ class RobotContainer:
     auto_chooser.addOption("Move Forward", PathPlannerAuto("MoveForward"))
     auto_chooser.addOption("Under, Around, and Forward", PathPlannerAuto("UnderAroundAndForward"))
     auto_chooser.addOption("Speaker To Speaker", PathPlannerAuto("SpeakerToSpeaker"))
+    auto_chooser.addOption("4 Amp Auto", PathPlannerAuto("4AmpAuto"))
     
     # Send to Shuffleboard
     Shuffleboard.getTab("Main").add("Auto Selector", auto_chooser).withWidget(BuiltInWidgets.kComboBoxChooser)
