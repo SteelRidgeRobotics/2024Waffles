@@ -8,7 +8,7 @@ class Constants:
     class Controller:
         k_driver_controller_port = 0
 
-        k_fully_field_relative = True
+        k_fully_field_relative = False
     
     class CanIDs:
         # TalonFXs
