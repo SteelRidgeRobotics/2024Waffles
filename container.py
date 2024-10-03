@@ -55,10 +55,15 @@ class RobotContainer:
                     ChassisSpeeds(
                         -self.driver_controller.getLeftY() * Constants.Drivetrain.k_max_attainable_speed,
                         -self.driver_controller.getLeftX() * Constants.Drivetrain.k_max_attainable_speed,
+                        (self.driver_controller.getLeftTriggerAxis() - self.driver_controller.getRightTriggerAxis()) * Constants.Drivetrain.k_max_rot_rate
                     ),
-                    self.joystick_to_angle(self.driver_controller.getRightY(), -self.driver_controller.getRightX())
+                    self.get_desired_angle(
+                        self.driver_controller.getRightY(), 
+                        -self.driver_controller.getRightX(), 
+                        Rotation2d.fromDegrees(-self.driver_controller.getPOV())
+                    )
                 )
-            )
+            ).repeatedly()
 
         else:
             self.field_relative_command = self.drivetrain.runOnce(
@@ -100,7 +105,17 @@ class RobotContainer:
         )
 
     @staticmethod
-    def joystick_to_angle(y, x) -> Rotation2d | None:
+    def get_desired_angle(y: float, x: float, fallback: Rotation2d = None) -> Rotation2d | None:
+        """For fully-field relative drive. Converts from joystick axes into Rotation2d.
+
+        Args:
+            y (float): Joystick Y axis. For Xbox Controllers, this value is inverted.
+            x (float): Joystick X axis. For Xbox Controllers, this value is inverted.
+            fallback (Rotation2d, optional): Rotation2d to return if y + x == 0, useful if wanting to use the POV wheel. Defaults to None.
+
+        Returns:
+            Rotation2d | None: The converted Rotation2d if the joystick is "under use", otherwise returns the fallback.
+        """
         if y == x == 0:
-            return None
+            return fallback
         return Rotation2d(math.atan2(y, x) + (math.pi / 2))

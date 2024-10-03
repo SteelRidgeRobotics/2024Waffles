@@ -112,7 +112,6 @@ class Drivetrain(Subsystem):
     turn_PID = PIDController(Constants.Drivetrain.k_turn_p, 0, Constants.Drivetrain.k_turn_d)
     turn_PID.enableContinuousInput(-math.pi, math.pi)
 
-    
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
         """Returns all reported SwerveModulePositions for every module."""
@@ -235,18 +234,13 @@ class Drivetrain(Subsystem):
                 Constants.Limelight.k_limelight_name,
                 self.gyro.getRotation2d().degrees(),
                 0, # Potentially add -self.navx.getRate() here LATER, according to Chief Delphi it's untested
-                0,
-                0,
-                0,
-                0
+                0, 0, 0, 0
             )
 
             mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
 
             # If we're spinning or we don't see an apriltag, don't add vision measurements
-            if abs(self.gyro.getRate()) > 720 or  \
-                mega_tag2.tag_count == 0:
-
+            if abs(self.gyro.getRate()) > 720 or mega_tag2.tag_count == 0:
                 add_vision_estimate = False
 
             # Add Vision Measurement
@@ -407,23 +401,34 @@ class Drivetrain(Subsystem):
         module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
         
         self.set_desired_module_states(module_speeds)
+
+        self.prev_target_angle = self.gyro.getRotation2d()
         
         # Set the navX to what the angle should be in simulation
         self.simulate_gyro(speeds.omega_dps)
 
     def drive_fully_field_relative(self, speeds: ChassisSpeeds, target_angle: Rotation2d | None) -> None:
-        """Drives the robot at the given speeds (from the perspective of the driver/field) and rotates to the target angle."""
+        """Drives the robot at the given speeds (from the perspective of the driver/field) and rotates to the target angle.\n
+        If the ChassisSpeeds rotational velocity does not equal 0, we ignore the target angle and instead rotate at the desired velocity."""
+
+        if speeds.omega != 0: # If speeds has a rotational velocity, that should override the desired direction.
+            self.drive_field_relative(speeds)
 
         if target_angle is None:
             target_angle = self.prev_target_angle
 
-        rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians())
+        rotational_speed = Drivetrain._optimize_desired_chassis_angular_speed(
+            Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians()),
+            self.get_robot_speed().omega
+        )
 
         robo_centric = ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vx, speeds.vy, rotational_speed, self.get_yaw())
 
         self.set_desired_module_states(self.kinematics.toSwerveModuleStates(robo_centric))
 
         self.prev_target_angle = target_angle
+
+        self.simulate_gyro(robo_centric.omega_dps)
         
     def set_desired_module_states(self, states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
         """Sends the given module states to each module."""
@@ -438,6 +443,31 @@ class Drivetrain(Subsystem):
         # Set each state to the correct module
         for i, module in enumerate(self.modules):
             module.set_desired_state(states[i])
+
+    @staticmethod
+    def _optimize_desired_chassis_angular_speed(desired_angular_speed: float, current_angular_speed: float) -> float:
+        """"Inspired" by https://www.chiefdelphi.com/t/best-pid-profile-for-in-place-turns/472069/20.\n
+            Used in combination with the turn_PID to allow for high and low acceleration for turning.
+        Args:
+            desired_angular_speed (float): The desired angular speed for the robot (wow)
+            current_desired_angular_speed (float): The current angular speed for the robot
+
+        Returns:
+            float: Optimized desired_angular_speed (I'm getting tired of these docstrings man ;-;)
+        """
+        delta_omega = desired_angular_speed - current_angular_speed
+
+        if math.fabs(desired_angular_speed) > math.fabs(current_angular_speed):
+            angular_acceleration = Constants.Drivetrain.k_max_rot_acceleration
+        else:
+            angular_acceleration = Constants.Drivetrain.k_max_rot_deceleration
+
+        change_speed = angular_acceleration * 0.02 * (-1 if delta_omega>0 else 1)
+
+        if math.fabs(change_speed) < math.fabs(delta_omega):
+            desired_angular_speed = current_angular_speed + change_speed
+        
+        return desired_angular_speed
 
     def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
         """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""
@@ -484,4 +514,3 @@ class Drivetrain(Subsystem):
         
         else:
             return None
-

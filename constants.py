@@ -2,6 +2,8 @@ from phoenix6.configs.talon_fx_configs import *
 from wpilib import RobotBase
 from wpimath.geometry import Translation2d
 
+from math import pi
+
 
 class Constants:
     
@@ -42,6 +44,8 @@ class Constants:
         
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
         k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
+        k_max_rot_acceleration = 2 * pi
+        k_max_rot_deceleration = 4 * pi
 
         # These are used for the PID controller for fully field-relative rotating.
         k_turn_p = 0.6
