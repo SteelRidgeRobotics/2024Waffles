@@ -116,6 +116,7 @@ class RobotContainer:
         Returns:
             Rotation2d | None: The converted Rotation2d if the joystick is "under use", otherwise returns the fallback.
         """
+        return fallback
         if y == x == 0:
             return fallback
         return Rotation2d(math.atan2(y, x) + (math.pi / 2))

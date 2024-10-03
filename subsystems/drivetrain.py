@@ -417,10 +417,12 @@ class Drivetrain(Subsystem):
         if target_angle is None:
             target_angle = self.prev_target_angle
 
-        rotational_speed = Drivetrain._optimize_desired_chassis_angular_speed(
-            Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians()),
-            self.get_robot_speed().omega
-        )
+        rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians())
+
+        #rotational_speed = Drivetrain._optimize_desired_chassis_angular_speed(
+            #rotational_speed,
+            #rotational_speed
+        #)
 
         robo_centric = ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vx, speeds.vy, rotational_speed, self.get_yaw())
 
@@ -445,27 +447,29 @@ class Drivetrain(Subsystem):
             module.set_desired_state(states[i])
 
     @staticmethod
-    def _optimize_desired_chassis_angular_speed(desired_angular_speed: float, current_angular_speed: float) -> float:
+    def _optimize_desired_chassis_angular_speed(desired_angular_speed: float, current_desired_angular_speed: float) -> float:
         """"Inspired" by https://www.chiefdelphi.com/t/best-pid-profile-for-in-place-turns/472069/20.\n
             Used in combination with the turn_PID to allow for high and low acceleration for turning.
         Args:
             desired_angular_speed (float): The desired angular speed for the robot (wow)
-            current_desired_angular_speed (float): The current angular speed for the robot
+            current_desired_angular_speed (float): The current desired angular speed for the robot
 
         Returns:
             float: Optimized desired_angular_speed (I'm getting tired of these docstrings man ;-;)
         """
-        delta_omega = desired_angular_speed - current_angular_speed
+        delta_omega = desired_angular_speed - current_desired_angular_speed
 
-        if math.fabs(desired_angular_speed) > math.fabs(current_angular_speed):
+        if math.fabs(desired_angular_speed) > math.fabs(current_desired_angular_speed):
             angular_acceleration = Constants.Drivetrain.k_max_rot_acceleration
         else:
             angular_acceleration = Constants.Drivetrain.k_max_rot_deceleration
 
-        change_speed = angular_acceleration * 0.02 * (-1 if delta_omega>0 else 1)
+        change_speed = angular_acceleration * 0.02
+        if delta_omega > 0:
+            change_speed *= -1
 
         if math.fabs(change_speed) < math.fabs(delta_omega):
-            desired_angular_speed = current_angular_speed + change_speed
+            desired_angular_speed = current_desired_angular_speed + change_speed
         
         return desired_angular_speed
 
