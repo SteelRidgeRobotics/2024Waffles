@@ -60,7 +60,7 @@ class RobotContainer:
                     self.get_desired_angle(
                         self.driver_controller.getRightY(), 
                         -self.driver_controller.getRightX(), 
-                        Rotation2d.fromDegrees(-self.driver_controller.getPOV())
+                        Rotation2d.fromDegrees(-self.driver_controller.getPOV()) if self.driver_controller.getPOV() != -1 else None
                     )
                 )
             ).repeatedly()
@@ -116,7 +116,6 @@ class RobotContainer:
         Returns:
             Rotation2d | None: The converted Rotation2d if the joystick is "under use", otherwise returns the fallback.
         """
-        return fallback
-        if y == x == 0:
+        if y**2 + x**2 <= math.sqrt(2)/2:
             return fallback
         return Rotation2d(math.atan2(y, x) + (math.pi / 2))

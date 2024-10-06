@@ -18,9 +18,10 @@ from threading import Thread
 
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
+from wpimath.trajectory import TrapezoidProfile
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Transform2d, Translation2d
-from wpimath.controller import PIDController
+from wpimath.controller import ProfiledPIDController
 from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModulePosition, SwerveModuleState
 
 from constants import Constants
@@ -109,7 +110,12 @@ class Drivetrain(Subsystem):
     module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
 
     # Turn PID for Fully Field-Relative driving
-    turn_PID = PIDController(Constants.Drivetrain.k_turn_p, 0, Constants.Drivetrain.k_turn_d)
+    turn_PID = ProfiledPIDController(
+        Constants.Drivetrain.k_turn_p, 
+        0,
+        Constants.Drivetrain.k_turn_d,
+        TrapezoidProfile.Constraints(Constants.Drivetrain.k_max_rot_rate - 0.1, 5)
+    )
     turn_PID.enableContinuousInput(-math.pi, math.pi)
 
     @staticmethod
@@ -413,6 +419,7 @@ class Drivetrain(Subsystem):
 
         if speeds.omega != 0: # If speeds has a rotational velocity, that should override the desired direction.
             self.drive_field_relative(speeds)
+            return
 
         if target_angle is None:
             target_angle = self.prev_target_angle
