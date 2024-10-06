@@ -408,7 +408,8 @@ class Drivetrain(Subsystem):
         
         self.set_desired_module_states(module_speeds)
 
-        self.prev_target_angle = self.gyro.getRotation2d()
+        self.prev_target_angle = self.get_yaw()
+        self.turn_PID.reset(self.prev_target_angle.radians())
         
         # Set the navX to what the angle should be in simulation
         self.simulate_gyro(speeds.omega_dps)
@@ -425,6 +426,9 @@ class Drivetrain(Subsystem):
             target_angle = self.prev_target_angle
 
         rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians())
+
+        field_speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
+        field_speeds = ChassisSpeeds.discretize(field_speeds, 0.02)
 
         #rotational_speed = Drivetrain._optimize_desired_chassis_angular_speed(
             #rotational_speed,
