@@ -129,5 +129,5 @@ def get_desired_angle(y: float, x: float, fallback: Rotation2d = None) -> Rotati
     return Rotation2d(math.atan2(y, x) + (math.pi / 2))
 
 @staticmethod
-def deadband(requested_value: float, deadband: float):
+def deadband(requested_value: float, deadband: float) -> float:
     return requested_value if abs(requested_value) > deadband or not Constants.Controller.k_deadband_enabled else 0
