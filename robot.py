@@ -1,6 +1,6 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
-from wpilib import CameraServer, DataLogManager, DriverStation
+from wpilib import CameraServer, DataLogManager, DriverStation, RobotBase
 from wpimath.geometry import Pose2d, Rotation2d
 
 class Waffles(TimedCommandRobot):
@@ -12,10 +12,11 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
-        DataLogManager.start("/home/lvuser/logs")
-        DriverStation.startDataLog(DataLogManager.getLog())
+        #DataLogManager.start("/home/lvuser/logs")
+        #DriverStation.startDataLog(DataLogManager.getLog())
 
-        CameraServer.launch()
+        if RobotBase.isReal():
+            CameraServer.launch()
 
         DataLogManager.log("robotInit finished")
 
