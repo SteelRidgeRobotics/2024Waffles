@@ -1,5 +1,6 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
+from elastic import *
 from wpilib import CameraServer, DataLogManager, DriverStation, RobotBase
 from wpimath.geometry import Pose2d, Rotation2d
 
@@ -45,15 +46,20 @@ class Waffles(TimedCommandRobot):
         # If it's None, do nothing, otherwise schedule the auto.
         if selected_auto is None:
             DataLogManager.log("No Auto Selected, doing nothing :(")
+            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous Start", "Scheduled selected auto: Nothing :("))
         else:
             selected_auto.schedule()
             DataLogManager.log(f"Scheduled selected auto: {selected_auto.getName()}")
+            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous Start", f"Scheduled selected auto: {selected_auto.getName()}"))
             
     def autonomousPeriodic(self) -> None:
         pass
     
     def autonomousExit(self) -> None:
         DataLogManager.log("Autonomous period ended")
+
+        if DriverStation.isFMSAttached():
+            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous End", "Good luck!"))
             
     def teleopInit(self) -> None:
         DataLogManager.log("Teleoperated period started")
