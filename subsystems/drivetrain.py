@@ -114,7 +114,7 @@ class Drivetrain(Subsystem):
         Constants.Drivetrain.k_turn_p, 
         0,
         Constants.Drivetrain.k_turn_d,
-        TrapezoidProfile.Constraints(Constants.Drivetrain.k_max_rot_rate - 0.1, 5)
+        TrapezoidProfile.Constraints(Constants.Drivetrain.k_max_rot_rate, 30)
     )
     turn_PID.enableContinuousInput(-math.pi, math.pi)
 
@@ -391,6 +391,10 @@ class Drivetrain(Subsystem):
         module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
         
         self.set_desired_module_states(module_speeds)
+
+        # Since PathPlanner pathfinding uses robot-centric, we need to 
+        self.prev_target_angle = self.get_yaw()
+        self.turn_PID.reset(self.prev_target_angle.radians())
         
         # Set the navX to what the angle should be in simulation
         self.simulate_gyro(speeds.omega_dps)
@@ -450,8 +454,6 @@ class Drivetrain(Subsystem):
         states = self.kinematics.desaturateWheelSpeeds(
             states, Constants.Drivetrain.k_max_attainable_speed
         )
-
-        SmartDashboard.putNumber("e", states[0].speed)
         
         # Set each state to the correct module
         for i, module in enumerate(self.modules):
