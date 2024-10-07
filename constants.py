@@ -2,22 +2,11 @@ from phoenix6.configs.talon_fx_configs import *
 from wpilib import RobotBase
 from wpimath.geometry import Translation2d
 
-from math import pi
-
 
 class Constants:
     
     class Controller:
         k_driver_controller_port = 0
-
-        k_fully_field_relative = True
-
-        k_deadband_enabled = True # Enable to tweak values if testing with personal controllers.
-
-        k_left_deadband_x = 0.03
-        k_left_deadband_y = 0.02
-        k_right_deadband_x = 0.05
-        k_right_deadband_y = 0.02
     
     class CanIDs:
         # TalonFXs
@@ -50,13 +39,8 @@ class Constants:
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
         
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
-        k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
-        k_max_rot_acceleration = 1 * pi
-        k_max_rot_deceleration = 1 * pi
+        k_max_rot_rate = 10.472 # Max chassis rotation rate (rad/s)
 
-        # These are used for the PID controller for fully field-relative rotating.
-        k_turn_p = 10
-        k_turn_d = 0
 
         # To find Translation2d amount:
             # a^2 + b^2 = c^2
@@ -82,7 +66,7 @@ class Constants:
         k_i = 0
         k_d = 0
         
-        k_s = 14.9
+        k_s = 0
         k_v = 0
         k_a = 0
         
@@ -101,8 +85,8 @@ class Constants:
         k_stator_limit = 0
         
         # Motion Magic
-        k_cruise_velocity = 12
-        k_cruise_acceleration = 52
+        k_cruise_velocity = 12.5
+        k_cruise_acceleration = 24
         k_jerk = 0
         
         # Physical Properties
@@ -114,7 +98,7 @@ class Constants:
         k_i = 2
         k_d = 20
         
-        k_s = 4.6
+        k_s = 0
         k_v = 0
         k_a = 0
         
@@ -166,4 +150,6 @@ class Constants:
 
         k_use_mega_tag_2 = False # If False, uses MegaTag 1.
         
-        k_standard_deviations = [0.3, 0.3, 0.3] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.
+        k_standard_deviations = [0.3, 0.3, 999999] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.
+
+        k_auto_align_kp = 0.04

@@ -1,7 +1,9 @@
 from commands2 import TimedCommandRobot
 from container import RobotContainer
-from elastic import *
-from wpilib import CameraServer, DataLogManager, DriverStation, RobotBase
+
+from phoenix6.signal_logger import SignalLogger
+
+from wpilib import DataLogManager, DriverStation
 from wpimath.geometry import Pose2d, Rotation2d
 
 class Waffles(TimedCommandRobot):
@@ -13,14 +15,13 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
-        #DataLogManager.start("/home/lvuser/logs")
-        #DriverStation.startDataLog(DataLogManager.getLog())
+        SignalLogger.enable_auto_logging(False)
 
-        if RobotBase.isReal():
-            CameraServer.launch()
+        DataLogManager.start()
+        DriverStation.startDataLog(DataLogManager.getLog())
 
         DataLogManager.log("robotInit finished")
-
+    
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
         pass
@@ -29,7 +30,6 @@ class Waffles(TimedCommandRobot):
         pass
 
     def autonomousInit(self) -> None:
-        DataLogManager.log("Autonomous period started")
         
         # Reset gyro
         self.container.drivetrain.reset_yaw()
@@ -46,26 +46,17 @@ class Waffles(TimedCommandRobot):
         # If it's None, do nothing, otherwise schedule the auto.
         if selected_auto is None:
             DataLogManager.log("No Auto Selected, doing nothing :(")
-            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous Start", "Scheduled selected auto: Nothing :("))
         else:
             selected_auto.schedule()
-            DataLogManager.log(f"Scheduled selected auto: {selected_auto.getName()}")
-            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous Start", f"Scheduled selected auto: {selected_auto.getName()}"))
             
     def autonomousPeriodic(self) -> None:
         pass
     
     def autonomousExit(self) -> None:
-        DataLogManager.log("Autonomous period ended")
-
-        if DriverStation.isFMSAttached():
-            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous End", "Good luck!"))
+        pass
             
     def teleopInit(self) -> None:
-        DataLogManager.log("Teleoperated period started")
-
-    def teleopExit(self) -> None:
-        DataLogManager.log("Teleoperated period ended")
+        pass
     
     def disabledPeriodic(self) -> None:
         pass
