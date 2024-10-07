@@ -11,6 +11,13 @@ class Constants:
         k_driver_controller_port = 0
 
         k_fully_field_relative = True
+
+        k_deadband_enabled = True # Enable to tweak values if testing with personal controllers.
+        
+        k_left_deadband_x = 0.03
+        k_left_deadband_y = 0.018
+        k_right_deadband_x = 0.05
+        k_right_deadband_y = 0.02
     
     class CanIDs:
         # TalonFXs
