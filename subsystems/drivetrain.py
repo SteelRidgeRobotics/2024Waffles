@@ -193,7 +193,6 @@ class Drivetrain(Subsystem):
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
 
         self.prev_target_angle = Rotation2d()
-        self.prev_turn = 0
 
     def odometry_loop(self) -> None:
         """Updates odometry until interrupted. This should only be ran in a seperate thread to prevent program lockup."""
@@ -434,11 +433,6 @@ class Drivetrain(Subsystem):
         field_speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
         field_speeds = ChassisSpeeds.discretize(field_speeds, 0.02)
 
-        #rotational_speed = Drivetrain._optimize_desired_chassis_angular_speed(
-            #rotational_speed,
-            #rotational_speed
-        #)
-
         robo_centric = ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vx, speeds.vy, rotational_speed, self.get_yaw())
 
         self.set_desired_module_states(self.kinematics.toSwerveModuleStates(robo_centric))
@@ -458,33 +452,6 @@ class Drivetrain(Subsystem):
         # Set each state to the correct module
         for i, module in enumerate(self.modules):
             module.set_desired_state(states[i])
-
-    @staticmethod
-    def _optimize_desired_chassis_angular_speed(desired_angular_speed: float, current_desired_angular_speed: float) -> float:
-        """"Inspired" by https://www.chiefdelphi.com/t/best-pid-profile-for-in-place-turns/472069/20.\n
-            Used in combination with the turn_PID to allow for high and low acceleration for turning.
-        Args:
-            desired_angular_speed (float): The desired angular speed for the robot (wow)
-            current_desired_angular_speed (float): The current desired angular speed for the robot
-
-        Returns:
-            float: Optimized desired_angular_speed (I'm getting tired of these docstrings man ;-;)
-        """
-        delta_omega = desired_angular_speed - current_desired_angular_speed
-
-        if math.fabs(desired_angular_speed) > math.fabs(current_desired_angular_speed):
-            angular_acceleration = Constants.Drivetrain.k_max_rot_acceleration
-        else:
-            angular_acceleration = Constants.Drivetrain.k_max_rot_deceleration
-
-        change_speed = angular_acceleration * 0.02
-        if delta_omega > 0:
-            change_speed *= -1
-
-        if math.fabs(change_speed) < math.fabs(delta_omega):
-            desired_angular_speed = current_desired_angular_speed + change_speed
-        
-        return desired_angular_speed
 
     def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
         """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""
