@@ -13,8 +13,11 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
-        #DataLogManager.start("/home/lvuser/logs")
-        #DriverStation.startDataLog(DataLogManager.getLog())
+        if RobotBase.isReal():
+            DataLogManager.start("/home/lvuser/logs")
+        else:
+            DataLogManager.start()
+        DriverStation.startDataLog(DataLogManager.getLog())
 
         if RobotBase.isReal():
             CameraServer.launch()
