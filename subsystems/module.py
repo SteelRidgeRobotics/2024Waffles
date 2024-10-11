@@ -1,9 +1,9 @@
 from commands2 import Subsystem
 
-from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
+from phoenix6.configs import CANcoderConfiguration, TalonFXConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
-from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC, NeutralOut
+from phoenix6.controls import MotionMagicTorqueCurrentFOC, MotionMagicVelocityTorqueCurrentFOC
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
@@ -163,11 +163,10 @@ class SwerveModule(Subsystem):
         self.encoder.get_velocity().set_update_frequency(100)
         
         # Disable all unset status signals for all devices in this module
-        #ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
+        ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
 
-        self.previous_desired_angle = Rotation2d()
-
-        self.desired_state = SwerveModuleState()
+        self.internal_posititon = SwerveModulePosition()
+        self.target_state = SwerveModuleState()
         
     def simulationPeriodic(self) -> None:
         # Position encoders don't update in sim, 
@@ -183,7 +182,6 @@ class SwerveModule(Subsystem):
         compensated_position = BaseStatusSignal.get_latency_compensated_value(
             self.steer_talon.get_position().refresh(), # This function doesn't refresh the status signals, so we do it here
             self.steer_talon.get_velocity().refresh(), # Same for this signal
-            0.02
         )
 
         return Rotation2d.fromDegrees(rots_to_degs(compensated_position))
@@ -194,8 +192,7 @@ class SwerveModule(Subsystem):
         # Compensate for acceleration
         compensated_speed = BaseStatusSignal.get_latency_compensated_value(
             self.drive_talon.get_velocity().refresh(),
-            self.drive_talon.get_acceleration().refresh(),
-            0.06
+            self.drive_talon.get_acceleration().refresh()
         )
         
         return rot_to_meters(compensated_speed)
@@ -210,11 +207,11 @@ class SwerveModule(Subsystem):
         )
         
         distance = rot_to_meters(compensated_position)
+
+        self.internal_posititon.distance = distance
+        self.internal_posititon.angle = self.get_angle()
         
-        return SwerveModulePosition(
-            distance, 
-            self.get_angle()
-        )
+        return self.internal_posititon
     
     def get_state(self) -> SwerveModuleState:
         """Returns the module's current state; current speed (m/s) and current angle."""
@@ -224,28 +221,25 @@ class SwerveModule(Subsystem):
     def get_target(self) -> SwerveModuleState:
         """Returns the module's desired state."""
 
-        return self.desired_state
+        return self.target_state
         
     def set_desired_state(self, state: SwerveModuleState) -> None:
         """Sets the motor control requests to the desired state."""
 
         # Angle optimizations and reverse velocity if needed
-        state = SwerveModuleState.optimize(state, self.previous_desired_angle)
-        self.desired_state = state
+        self.target_state = SwerveModuleState.optimize(state, self.internal_posititon.angle)
 
         self.steer_talon.set_control(
-            self.steer_request.with_position(degs_to_rots(state.angle.degrees()))
+            self.steer_request.with_position(degs_to_rots(self.target_state.angle.degrees()))
         )
         
         self.drive_talon.set_control(
-            self.drive_request.with_velocity(meters_to_rots(state.speed))
+            self.drive_request.with_velocity(meters_to_rots(self.target_state.speed))
         )
         
         # Update sim states
-        self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.DriveConfig.k_gear_ratio)
+        self.drive_sim.set_rotor_velocity(meters_to_rots(self.target_state.speed) * Constants.DriveConfig.k_gear_ratio)
         
-        self.steer_sim.set_raw_rotor_position(degs_to_rots(state.angle.degrees()) * Constants.SteerConfig.k_gear_ratio)
-        self.encoder_sim.set_raw_position(degs_to_rots(state.angle.degrees()))
-
-        self.previous_desired_angle = state.angle
+        self.steer_sim.set_raw_rotor_position(degs_to_rots(self.target_state.angle.degrees()) * Constants.SteerConfig.k_gear_ratio)
+        self.encoder_sim.set_raw_position(degs_to_rots(self.target_state.angle.degrees()))
         
