@@ -9,9 +9,8 @@ import wpilib
 
 class AutoAlign(Subsystem):
 
-    def __init__(self, drivetrain: Drivetrain):
+    def __init__(self):
 
-        self.drivetrain = drivetrain
         self.ntInstance = ntcore.NetworkTableInstance.getDefault()
         # self.addRequirements(self.drivetrain)
 
@@ -33,19 +32,20 @@ class AutoAlign(Subsystem):
 
         """
         table = self.ntInstance.getTable("limelight")
-        # NetworkTables.getTable("limelight").putNumber('priorityid',4) I have a topic on this pending in Chief Delphi so I'll know how to write this.
+        # NetworkTables.getTable("LimeLight").putNumber('priorityid',4) I have a topic on this pending in Chief Delphi so I'll know how to write this.
         targetOffsetAngle = table.getNumber("ty",0.0)
         tagId = table.getNumber("tid", 0)
+        wpilib.SmartDashboard.putNumber("ID", tagId)
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-            self.ntInstance.getTable("limelight").putNumber('priorityid', Constants.LimeLight.REDSPEAKERID)
+            self.ntInstance.getTable("LimeLight").putNumber('priorityid', Constants.LimeLight.REDSPEAKERID)
 
             wpilib.SmartDashboard.putString("ID Priority", "Red (4)")
             if tagId != Constants.LimeLight.REDSPEAKERID: #need ids for blue or red and also check that
-                return 0
+                return 0 
             
 
-        if DriverStation.getAlliance() == DriverStation.Alliance.kBlue:
-            self.ntInstance.getTable("limelight").putNumber('priorityid', Constants.LimeLight.BLUESPEAKERID)
+        elif DriverStation.getAlliance() == DriverStation.Alliance.kBlue:
+            self.ntInstance.getTable("LimeLight").putNumber('priorityid', Constants.LimeLight.BLUESPEAKERID)
             wpilib.SmartDashboard.putString("ID Priority", "Blue (7)")
 
             if tagId != Constants.LimeLight.BLUESPEAKERID: #need ids for blue or red and also check that
@@ -59,7 +59,7 @@ class AutoAlign(Subsystem):
         rotations = (degrees * Constants.Swivel.GEAR_RATIO) / 360
 
         wpilib.SmartDashboard.putNumber("rotations", rotations)
-        return rotations
+        #return rotations
 
     def getAngleToTargetInRadians(self, targetOffsetAngle):
         angleToGoalDegrees = Constants.LimeLight.k_mount_angle  + targetOffsetAngle

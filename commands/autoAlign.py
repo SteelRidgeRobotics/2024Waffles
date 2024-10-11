@@ -5,7 +5,7 @@ import ntcore
 from subsystems.drivetrain import Drivetrain
 from wpimath.kinematics import ChassisSpeeds
 
-class AutoAlign(commands2.Command):
+class AutoAlignCommand(commands2.Command):
 
     def __init__(self, drivetrain: Drivetrain):
 

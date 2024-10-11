@@ -3,7 +3,7 @@ from container import RobotContainer
 
 from phoenix6.signal_logger import SignalLogger
 
-from wpilib import DataLogManager, DriverStation
+from wpilib import CameraServer, DataLogManager, DriverStation, RobotBase
 from wpimath.geometry import Pose2d, Rotation2d
 
 class Waffles(TimedCommandRobot):
@@ -16,6 +16,9 @@ class Waffles(TimedCommandRobot):
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 
         SignalLogger.enable_auto_logging(False)
+
+        #if RobotBase.isReal():
+            #CameraServer.launch()
 
         DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())

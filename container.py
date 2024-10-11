@@ -11,7 +11,8 @@ from wpimath.kinematics import ChassisSpeeds
 from constants import Constants
 from subsystems.drivetrain import Drivetrain
 
-from commands.autoAlign import AutoAlign
+from commands.autoAlign import AutoAlignCommand
+from subsystems.vision import AutoAlign
 
 
 class RobotContainer:
@@ -20,6 +21,8 @@ class RobotContainer:
     
     # Subsystems
     drivetrain = Drivetrain()
+    auto_align = AutoAlign()
+
     
     # Auto Chooser
     auto_chooser = SendableChooser()
@@ -58,7 +61,7 @@ class RobotContainer:
         ).repeatedly()
         
         # Field-relative by default
-        self.drivetrain.setDefaultCommand(AutoAlign(self.drivetrain))
+        self.drivetrain.setDefaultCommand(AutoAlignCommand(self.drivetrain))
 
         self.configure_button_bindings()
         
@@ -75,6 +78,9 @@ class RobotContainer:
         
         # Switch to robot-centric
         JoystickButton(self.driver_controller, XboxController.Button.kRightBumper).onTrue(self.robot_centric_command)
+
+        #Vision stuff
+        JoystickButton(self.driver_controller, XboxController.Button.kY).whileTrue(self.auto_align.run(lambda: self.auto_align.calculateDegrees()))
 
         # Drive to amp
         JoystickButton(self.driver_controller, XboxController.Button.kA).whileTrue(
