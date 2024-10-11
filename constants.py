@@ -1,5 +1,6 @@
 from phoenix6.configs.talon_fx_configs import *
 from wpilib import RobotBase
+from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 from wpimath.geometry import Translation2d
 
 
@@ -175,3 +176,9 @@ class Constants:
 
         REDSPEAKERID = 4
         BLUESPEAKERID = 7
+
+    k_apriltag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2024Crescendo)
+
+    k_field_length = k_apriltag_layout.getFieldLength()  # Distance between driver station walls (16.541m)
+    
+    k_field_width = k_apriltag_layout.getFieldWidth()  # Distance between field walls (8.211m)
