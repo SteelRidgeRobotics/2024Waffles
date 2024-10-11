@@ -266,8 +266,8 @@ class Drivetrain(Subsystem):
         self.field.setRobotPose(estimated_position)
 
         # Log everything
-        self.module_state_publisher.set(list(Drivetrain.get_module_states()))
         self.module_target_publisher.set(list(Drivetrain.get_module_targets()))
+        self.module_state_publisher.set(list(Drivetrain.get_module_states()))
 
         self.robot_pose_publisher.set(estimated_position)
 
@@ -400,6 +400,9 @@ class Drivetrain(Subsystem):
             
     def drive_field_relative(self, speeds: ChassisSpeeds, center_of_rotation: Translation2d = Translation2d(0, 0)) -> None:
         """Drives the robot at the given speeds (from the perspective of the driver/field)"""
+
+        if speeds == ChassisSpeeds():
+            return
         
         speeds = ChassisSpeeds.discretize(speeds, 0.02)
         
