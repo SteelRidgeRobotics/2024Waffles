@@ -33,7 +33,9 @@ class AutoAlign(Subsystem):
         """
         table = self.ntInstance.getTable("limelight")
         # NetworkTables.getTable("LimeLight").putNumber('priorityid',4) I have a topic on this pending in Chief Delphi so I'll know how to write this.
-        targetOffsetAngle = table.getNumber("ty",0.0)
+        #targetOffsetAngle = table.getNumber("ty",0.0)
+        array = self.ntInstance.getTable("limelight").getNumberArray("camerapose_targetspace", [4, 4, 4, 4, 4, 4])
+        targetOffsetAngle= array[4]
         tagId = table.getNumber("tid", 0)
         wpilib.SmartDashboard.putNumber("ID", tagId)
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
