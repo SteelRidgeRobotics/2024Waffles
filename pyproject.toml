@@ -7,8 +7,7 @@ robotpy_extras = [
     "navx",
     "pathplannerlib",
     "phoenix6",
-    "cscore",
-    "apriltag"
+    "cscore"
 ]
 
 # Other pip packages to install
