@@ -16,7 +16,7 @@ from pathplannerlib.controller import PIDConstants
 
 from threading import Thread
 
-from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard
+from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.trajectory import TrapezoidProfile
 from wpimath.estimator import SwerveDrive4PoseEstimator
@@ -194,7 +194,8 @@ class Drivetrain(Subsystem):
     def update_odometry(self) -> None:
         """Reads module positions to update odometry (wow)."""
 
-        self.odometry.update(
+        self.odometry.updateWithTime(
+            Timer.getFPGATimestamp(),
             self.get_yaw(), 
             Drivetrain.get_module_positions()
         )
