@@ -163,9 +163,6 @@ class Drivetrain(Subsystem):
             Drivetrain.get_module_positions(),
             starting_pose
         )
-
-        self.odometry_thread = Thread(name="Odometry Thread", target=self.odometry_loop, daemon=True)
-        self.odometry_thread.start()
         
         # Send Reset Yaw command to Shuffleboard
         Shuffleboard.getTab("Main").add(
@@ -193,11 +190,6 @@ class Drivetrain(Subsystem):
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
 
         self.prev_target_angle = Rotation2d()
-
-    def odometry_loop(self) -> None:
-        """Updates odometry until interrupted. This should only be ran in a seperate thread to prevent program lockup."""
-        while True:
-            self.update_odometry()
 
     def update_odometry(self) -> None:
 
