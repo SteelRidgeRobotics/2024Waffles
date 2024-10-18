@@ -149,21 +149,21 @@ class SwerveModule(Subsystem):
         
         ## Set StatusSignal update frequencies ##
         # Drive Motor
-        self.drive_talon.get_acceleration().set_update_frequency(50)
-        self.drive_talon.get_position().set_update_frequency(50)
-        self.drive_talon.get_velocity().set_update_frequency(50)
+        self.drive_talon.get_acceleration().set_update_frequency(200)
+        self.drive_talon.get_position().set_update_frequency(200)
+        self.drive_talon.get_velocity().set_update_frequency(200)
         
         # Steer Motor
-        self.steer_talon.get_acceleration().set_update_frequency(50)
-        self.steer_talon.get_position().set_update_frequency(50)
-        self.steer_talon.get_velocity().set_update_frequency(50)
+        self.steer_talon.get_acceleration().set_update_frequency(200)
+        self.steer_talon.get_position().set_update_frequency(200)
+        self.steer_talon.get_velocity().set_update_frequency(200)
         
         # CANcoder
-        self.encoder.get_position().set_update_frequency(100)
-        self.encoder.get_velocity().set_update_frequency(100)
+        self.encoder.get_position().set_update_frequency(200)
+        self.encoder.get_velocity().set_update_frequency(200)
         
         # Disable all unset status signals for all devices in this module
-        #ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
+        ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
 
         self.previous_desired_angle = Rotation2d()
 
