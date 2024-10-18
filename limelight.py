@@ -56,7 +56,7 @@ class PoseEstimate:
 class LimelightHelpers:
 
 	@staticmethod
-	def _sanitize_name(name: str) -> str:
+	def _sanitize_name(name: str | None) -> str:
 		if name == "" or name is None:
 			return "limelight"
 		else:
