@@ -13,6 +13,7 @@ class Waffles(TimedCommandRobot):
         self.container = RobotContainer()
 
         self.addPeriodic(self.container.drivetrain.update_odometry, 0.001)
+        self.addPeriodic(self.container.drivetrain.update_vision_estimates, 0.1, 0.01)
 
         DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
 

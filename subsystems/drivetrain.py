@@ -192,11 +192,15 @@ class Drivetrain(Subsystem):
         self.prev_target_angle = Rotation2d()
 
     def update_odometry(self) -> None:
+        """Reads module positions to update odometry (wow)."""
 
         self.odometry.update(
             self.get_yaw(), 
             Drivetrain.get_module_positions()
         )
+
+    def update_vision_estimates(self) -> None:
+        """Uses Limelight MegaTag to help prevent pose drift."""
 
         add_vision_estimate = Constants.Limelight.k_enable_vision_odometry
         if not Constants.Limelight.k_use_mega_tag_2: # Mega Tag 1
