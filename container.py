@@ -24,11 +24,11 @@ class RobotContainer:
     
     # Auto Chooser
     auto_chooser = SendableChooser()
-    auto_chooser.setDefaultOption("Do Nothing :(", None)
+    auto_chooser.setDefaultOption("Speaker To Speaker", PathPlannerAuto("SpeakerToSpeaker"))
+    auto_chooser.addOption("Do Nothing :(", None)
     auto_chooser.addOption("Under The Stage", PathPlannerAuto("UnderTheStage"))
     auto_chooser.addOption("Move Forward", PathPlannerAuto("MoveForward"))
     auto_chooser.addOption("Under, Around, and Forward", PathPlannerAuto("UnderAroundAndForward"))
-    auto_chooser.addOption("Speaker To Speaker", PathPlannerAuto("SpeakerToSpeaker"))
     auto_chooser.addOption("4 Amp Auto", PathPlannerAuto("4AmpAuto"))
     
     # Send to Shuffleboard
