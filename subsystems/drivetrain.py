@@ -398,9 +398,6 @@ class Drivetrain(Subsystem):
     def drive_field_relative(self, speeds: ChassisSpeeds, center_of_rotation: Translation2d = Translation2d(0, 0)) -> None:
         """Drives the robot at the given speeds (from the perspective of the driver/field)"""
 
-        if speeds == ChassisSpeeds():
-            return
-        
         speeds = ChassisSpeeds.discretize(speeds, 0.02)
         
         # Convert to robot-centric
@@ -451,7 +448,11 @@ class Drivetrain(Subsystem):
         
         # Set each state to the correct module
         for i, module in enumerate(self.modules):
-            module.set_desired_state(states[i])
+
+            if states[i].speed == 0:
+                module.stop()
+            else:
+                module.set_desired_state(states[i])
 
     def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
         """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""
