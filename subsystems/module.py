@@ -165,9 +165,17 @@ class SwerveModule(Subsystem):
         # Disable all unset status signals for all devices in this module
         ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
 
-        self.previous_desired_angle = Rotation2d()
+        if RobotBase.isReal():
+            self.desired_state = self.get_state()
+        else:
+            from random import randint
+            random_state = SwerveModuleState(angle=Rotation2d.fromDegrees(randint(0, 359)))
 
-        self.desired_state = SwerveModuleState()
+            self.desired_state = random_state
+        
+        self.previous_desired_angle = self.desired_state.angle
+
+        self.set_desired_state(self.desired_state)
         
     def simulationPeriodic(self) -> None:
         # Position encoders don't update in sim, 
@@ -248,4 +256,11 @@ class SwerveModule(Subsystem):
         self.encoder_sim.set_raw_position(degs_to_rots(state.angle.degrees()))
 
         self.previous_desired_angle = state.angle
+
+    def stop(self) -> None:
+        """Stops the module from moving."""
+
+        self.set_desired_state(
+            SwerveModuleState(0, self.get_angle())
+        )
         
