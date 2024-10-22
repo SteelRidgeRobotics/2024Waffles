@@ -3,7 +3,7 @@ from commands2 import Subsystem
 from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
-from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC, NeutralOut
+from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 

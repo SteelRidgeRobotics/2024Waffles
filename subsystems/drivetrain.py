@@ -14,8 +14,6 @@ from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
-from threading import Thread
-
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.trajectory import TrapezoidProfile
