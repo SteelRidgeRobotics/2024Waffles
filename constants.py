@@ -166,4 +166,4 @@ class Constants:
 
         k_use_mega_tag_2 = True # If False, uses MegaTag 1.
         
-        k_standard_deviations = [0.3, 0.3, 0.3] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.
+        k_standard_deviations = [0.3, 0.3, 99999] # (x, y, radians) Basically how confident we are with our vision, lower = more confident. Angle is set really high because we have a gyro.
