@@ -97,15 +97,17 @@ class Drivetrain(Subsystem):
     )
 
     ## NetworkTable Publishing (for logging)
-    
+    drivetrain_nt = NetworkTableInstance.getDefault().getTable("Drivetrain")
+
     # Odometry
-    robot_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("RobotPose", Pose2d).publish()
-    target_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("PPTarget", Pose2d).publish()
-    vision_pose_publisher = NetworkTableInstance.getDefault().getStructTopic("VisionPose", Pose2d).publish()
+    robot_pose_publisher = drivetrain_nt.getStructTopic("RobotPose", Pose2d).publish()
+    target_pose_publisher = drivetrain_nt.getStructTopic("PPTarget", Pose2d).publish()
+    vision_pose_publisher = drivetrain_nt.getStructTopic("VisionPose", Pose2d).publish()
 
     # Swerve
-    module_state_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
-    module_target_publisher = NetworkTableInstance.getDefault().getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
+    module_state_publisher = drivetrain_nt.getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
+    module_target_publisher = drivetrain_nt.getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
+    skid_ratio_publisher = drivetrain_nt.getFloatArrayTopic("SkidRatio").publish()
 
     # Turn PID for Fully Field-Relative driving
     turn_PID = ProfiledPIDController(
@@ -265,6 +267,7 @@ class Drivetrain(Subsystem):
         self.module_state_publisher.set(list(Drivetrain.get_module_states()))
 
         self.robot_pose_publisher.set(estimated_position)
+        self.skid_ratio_publisher.set([self.get_skidding_ratio()])
 
         ## Show swerve modules on robot
         if not DriverStation.isFMSAttached() and not RobotBase.isReal():
@@ -333,7 +336,7 @@ class Drivetrain(Subsystem):
         try:
             return max_translation / min_translation
         except ZeroDivisionError:
-            return 1
+            return 1.0
 
     @staticmethod
     def _module_state_to_velocity_vector(module_state: SwerveModuleState) -> Translation2d:
