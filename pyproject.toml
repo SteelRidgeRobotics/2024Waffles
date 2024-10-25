@@ -10,4 +10,7 @@ robotpy_extras = [
 ]
 
 # Other pip packages to install
-requires = []
+requires = [
+    "robotpy-opencv; platform_machine == 'roborio'",
+    "opencv-python; platform_machine != 'roborio'"
+]
