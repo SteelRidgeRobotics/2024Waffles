@@ -101,6 +101,7 @@ class Drivetrain(Subsystem):
 
     # Odometry
     robot_pose_publisher = drivetrain_nt.getStructTopic("RobotPose", Pose2d).publish()
+    latency_compensated_pose_publisher = drivetrain_nt.getStructTopic("LatencyCompPose", Pose2d).publish()
     target_pose_publisher = drivetrain_nt.getStructTopic("PPTarget", Pose2d).publish()
     vision_pose_publisher = drivetrain_nt.getStructTopic("VisionPose", Pose2d).publish()
 
@@ -172,7 +173,7 @@ class Drivetrain(Subsystem):
         
         # Configure PathPlanner
         AutoBuilder.configureHolonomic(
-            self.odometry.getEstimatedPosition,
+            self.get_latency_compensated_position,
             lambda pose: self.reset_pose(pose),
             self.get_robot_speed,
             lambda speeds: self.drive_robot_centric(speeds),
@@ -191,11 +192,15 @@ class Drivetrain(Subsystem):
 
         self.prev_target_angle = Rotation2d()
 
+        self.last_odometry_update = Timer.getFPGATimestamp()
+
     def update_odometry(self) -> None:
         """Reads module positions to update odometry (wow)."""
 
+        timestamp = Timer.getFPGATimestamp()
+
         self.odometry.updateWithTime(
-            Timer.getFPGATimestamp(),
+            timestamp,
             self.get_yaw(), 
             Drivetrain.get_module_positions()
         )
@@ -205,6 +210,21 @@ class Drivetrain(Subsystem):
         self.module_state_publisher.set(list(Drivetrain.get_module_states()))
 
         self.robot_pose_publisher.set(self.odometry.getEstimatedPosition())
+        self.latency_compensated_pose_publisher.set(self.get_latency_compensated_position())
+
+        self.last_odometry_update = timestamp
+
+    def get_latency_compensated_position(self) -> Pose2d:
+        """Interpolates the current pose of the robot by transforming the estimated position by the velocity."""
+        estimated_position = self.odometry.getEstimatedPosition()
+
+        estimated_velocity = self.get_robot_speed()
+
+        latency = Timer.getFPGATimestamp() - self.last_odometry_update
+
+        velocity_transform = Transform2d(estimated_velocity.vx*latency, estimated_velocity.vy*latency, Rotation2d(estimated_velocity.omega*latency))
+
+        return estimated_position.transformBy(velocity_transform)
 
     def update_vision_estimates(self) -> None:
         """Uses Limelight MegaTag to help prevent pose drift."""
@@ -263,7 +283,7 @@ class Drivetrain(Subsystem):
 
     def periodic(self) -> None:
 
-        estimated_position = self.odometry.getEstimatedPosition()
+        estimated_position = self.get_latency_compensated_position()
 
         # Update the field pose
         self.field.setRobotPose(estimated_position)
