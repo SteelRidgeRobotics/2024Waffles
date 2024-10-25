@@ -261,6 +261,6 @@ class SwerveModule(Subsystem):
         """Stops the module from moving."""
 
         self.set_desired_state(
-            SwerveModuleState(0, self.get_angle())
+            SwerveModuleState(0, self.previous_desired_angle)
         )
         
