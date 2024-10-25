@@ -200,6 +200,12 @@ class Drivetrain(Subsystem):
             Drivetrain.get_module_positions()
         )
 
+        # Log Everything
+        self.module_target_publisher.set(list(Drivetrain.get_module_targets()))
+        self.module_state_publisher.set(list(Drivetrain.get_module_states()))
+
+        self.robot_pose_publisher.set(self.odometry.getEstimatedPosition())
+
     def update_vision_estimates(self) -> None:
         """Uses Limelight MegaTag to help prevent pose drift."""
 
@@ -263,10 +269,6 @@ class Drivetrain(Subsystem):
         self.field.setRobotPose(estimated_position)
 
         # Log everything
-        self.module_target_publisher.set(list(Drivetrain.get_module_targets()))
-        self.module_state_publisher.set(list(Drivetrain.get_module_states()))
-
-        self.robot_pose_publisher.set(estimated_position)
         self.skid_ratio_publisher.set([self.get_skidding_ratio()])
 
         ## Show swerve modules on robot
