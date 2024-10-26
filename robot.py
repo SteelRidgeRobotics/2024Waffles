@@ -1,4 +1,4 @@
-from commands2 import TimedCommandRobot
+from commands2 import CommandScheduler, TimedCommandRobot
 from container import RobotContainer
 from elastic import *
 from wpilib import CameraServer, DataLogManager, DriverStation, RobotBase
@@ -73,6 +73,15 @@ class Waffles(TimedCommandRobot):
 
     def teleopExit(self) -> None:
         DataLogManager.log("Teleoperated period ended")
+
+    def testInit(self):
+        DataLogManager.log("Test period started")
+        CommandScheduler.getInstance().cancelAll()
+        CommandScheduler.getInstance().disable()
+
+    def testExit(self):
+        DataLogManager.log("Test period ended")
+        CommandScheduler.getInstance().enable()
     
     def disabledPeriodic(self) -> None:
         pass
