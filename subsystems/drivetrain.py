@@ -426,6 +426,13 @@ class Drivetrain(Subsystem):
         """Drives the robot at the given speeds (from the perspective of the driver/field)"""
 
         speeds = ChassisSpeeds.discretize(speeds, 0.02)
+
+        if speeds.omega == 0: # If we don't want to rotate, use the rotation PID.
+            rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), self.prev_target_angle.radians())
+            speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
+        else:
+            self.prev_target_angle = self.get_yaw()
+            self.turn_PID.reset(self.prev_target_angle.radians())
         
         # Convert to robot-centric
         speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, self.get_yaw())
@@ -434,9 +441,6 @@ class Drivetrain(Subsystem):
         module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
         
         self.set_desired_module_states(module_speeds)
-
-        self.prev_target_angle = self.get_yaw()
-        self.turn_PID.reset(self.prev_target_angle.radians())
         
         # Set the navX to what the angle should be in simulation
         self.simulate_gyro(speeds.omega_dps)
