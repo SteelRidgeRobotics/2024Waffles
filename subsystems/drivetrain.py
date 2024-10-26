@@ -108,7 +108,7 @@ class Drivetrain(Subsystem):
     # Swerve
     module_state_publisher = drivetrain_nt.getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
     module_target_publisher = drivetrain_nt.getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
-    skid_ratio_publisher = drivetrain_nt.getFloatArrayTopic("SkidRatio").publish()
+    skid_ratio_publisher = drivetrain_nt.getFloatTopic("SkidRatio").publish()
 
     # Turn PID for Fully Field-Relative driving
     turn_PID = ProfiledPIDController(
@@ -192,7 +192,7 @@ class Drivetrain(Subsystem):
 
         self.prev_target_angle = Rotation2d()
 
-        self.last_odometry_update = Timer.getFPGATimestamp()
+        self.last_odometry_update = 0
 
     def update_odometry(self) -> None:
         """Reads module positions to update odometry (wow)."""
@@ -214,13 +214,17 @@ class Drivetrain(Subsystem):
 
         self.last_odometry_update = timestamp
 
+    def get_odometry_latency(self) -> float:
+        """Returns the time since the last odometry update, in seconds."""
+        return Timer.getFPGATimestamp() - self.last_odometry_update
+
     def get_latency_compensated_position(self) -> Pose2d:
         """Interpolates the current pose of the robot by transforming the estimated position by the velocity."""
         estimated_position = self.odometry.getEstimatedPosition()
 
         estimated_velocity = self.get_robot_speed()
 
-        latency = Timer.getFPGATimestamp() - self.last_odometry_update
+        latency = self.get_odometry_latency()
 
         velocity_transform = Transform2d(estimated_velocity.vx*latency, estimated_velocity.vy*latency, Rotation2d(estimated_velocity.omega*latency))
 
@@ -289,7 +293,7 @@ class Drivetrain(Subsystem):
         self.field.setRobotPose(estimated_position)
 
         # Log everything
-        self.skid_ratio_publisher.set([self.get_skidding_ratio()])
+        self.skid_ratio_publisher.set(self.get_skidding_ratio())
 
         ## Show swerve modules on robot
         if not DriverStation.isFMSAttached() and not RobotBase.isReal():
