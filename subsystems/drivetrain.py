@@ -14,7 +14,7 @@ from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
-from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer
+from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer, DataLogManager
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.trajectory import TrapezoidProfile
 from wpimath.estimator import SwerveDrive4PoseEstimator
@@ -191,6 +191,7 @@ class Drivetrain(Subsystem):
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
 
         self.prev_target_angle = Rotation2d()
+        self.prev_rotational_speed = 0
 
         self.last_odometry_update = 0
 
@@ -286,7 +287,7 @@ class Drivetrain(Subsystem):
                 self.vision_pose_publisher.set(mega_tag2.pose)
 
     def periodic(self) -> None:
-        
+
         self.update_odometry()
         self.update_vision_estimates()
 
@@ -383,6 +384,10 @@ class Drivetrain(Subsystem):
             
         return angle
     
+    def get_yaw_rate(self) -> float:
+        """Gets the rate of change for the gyro's yaw."""
+        return self.gyro.getRate()
+    
     def reset_yaw(self) -> None:
         """Resets the navX's angle to 0. Also resets the simulation angle as well."""
         
@@ -431,7 +436,7 @@ class Drivetrain(Subsystem):
         speeds = ChassisSpeeds.discretize(speeds, 0.02)
 
         if speeds.omega == 0: # If we don't want to rotate, use the rotation PID.
-            rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), self.prev_target_angle.radians())
+            rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), self.prev_target_angle.radians()) if not Drivetrain.turn_PID.atSetpoint() else 0
             speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
         else:
             self.prev_target_angle = self.get_yaw()
@@ -459,7 +464,7 @@ class Drivetrain(Subsystem):
         if target_angle is None:
             target_angle = self.prev_target_angle
 
-        rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), target_angle.radians())
+        rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians() + self.get_yaw_rate() * 0.02, target_angle.radians())
 
         field_speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
         field_speeds = ChassisSpeeds.discretize(field_speeds, 0.02)

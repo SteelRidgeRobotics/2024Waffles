@@ -55,7 +55,7 @@ class Constants:
         k_max_rot_deceleration = 1 * pi
 
         # These are used for the PID controller for fully field-relative rotating.
-        k_turn_p = 10
+        k_turn_p = 1
         k_turn_d = 0
 
         # To find Translation2d amount:
