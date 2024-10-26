@@ -286,6 +286,9 @@ class Drivetrain(Subsystem):
                 self.vision_pose_publisher.set(mega_tag2.pose)
 
     def periodic(self) -> None:
+        
+        self.update_odometry()
+        self.update_vision_estimates()
 
         estimated_position = self.get_latency_compensated_position()
 
