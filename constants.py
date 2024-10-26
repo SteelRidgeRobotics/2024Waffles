@@ -83,7 +83,7 @@ class Constants:
         k_d = 0
         
         k_s = 14.9
-        k_v = 0
+        k_v = 0.12
         k_a = 0
         
         k_neutral_mode = NeutralModeValue.BRAKE
@@ -101,7 +101,7 @@ class Constants:
         k_stator_limit = 0
         
         # Motion Magic
-        k_cruise_velocity = 12
+        k_cruise_velocity = 14
         k_cruise_acceleration = 52
         k_jerk = 0
         
@@ -110,13 +110,13 @@ class Constants:
         
     class SteerConfig:
         # PID and Feedforward
-        k_p = 350
-        k_i = 2
-        k_d = 20
+        k_p = 250
+        k_i = 0
+        k_d = 40
         
         k_s = 4.6
-        k_v = 0
-        k_a = 0
+        k_v = 0.12
+        k_a = 0.8
         
         k_neutral_mode = NeutralModeValue.BRAKE
         
