@@ -118,6 +118,7 @@ class Drivetrain(Subsystem):
         TrapezoidProfile.Constraints(Constants.Drivetrain.k_max_rot_rate, 30)
     )
     turn_PID.enableContinuousInput(-math.pi, math.pi)
+    turn_PID.setTolerance(Constants.Drivetrain.k_angle_tolerance * (math.pi / 180), Constants.Drivetrain.k_angle_tolerance * (math.pi / 180) * 2)
 
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
@@ -436,8 +437,11 @@ class Drivetrain(Subsystem):
         speeds = ChassisSpeeds.discretize(speeds, 0.02)
 
         if speeds.omega == 0: # If we don't want to rotate, use the rotation PID.
-            rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), self.prev_target_angle.radians()) if not Drivetrain.turn_PID.atSetpoint() else 0
-            speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
+            rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), self.prev_target_angle.radians())
+            if not Drivetrain.turn_PID.atSetpoint():
+                speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
+            else:
+                speeds = ChassisSpeeds(speeds.vx, speeds.vy, 0)
         else:
             self.prev_target_angle = self.get_yaw()
             self.turn_PID.reset(self.prev_target_angle.radians())
@@ -465,6 +469,9 @@ class Drivetrain(Subsystem):
             target_angle = self.prev_target_angle
 
         rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians() + self.get_yaw_rate() * 0.02, target_angle.radians())
+
+        if Drivetrain.turn_PID.atSetpoint():
+            rotational_speed = 0
 
         field_speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
         field_speeds = ChassisSpeeds.discretize(field_speeds, 0.02)
