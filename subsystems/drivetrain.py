@@ -120,6 +120,13 @@ class Drivetrain(Subsystem):
     turn_PID.enableContinuousInput(-math.pi, math.pi)
     turn_PID.setTolerance(degs_to_rads(Constants.Drivetrain.k_angle_tolerance), degs_to_rads(Constants.Drivetrain.k_angle_tolerance) * 2)
 
+    # Create a widget in the tab "Tuning". The widget data is the turn_PID variable and the widget should be a kPIDController.
+
+    Shuffleboard.getTab("Tuning").add(
+        "Turn PID",
+        turn_PID
+    ).withWidget(BuiltInWidgets.kPIDController)
+
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
         """Returns all reported SwerveModulePositions for every module."""
