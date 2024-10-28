@@ -44,15 +44,13 @@ class Constants:
         k_right_rear_offset = -0.41845703125
         
     class Drivetrain:
-        k_sim_wheel_size = (0.25, 0.25) # Size of the wheel poses on the Field2d widget (length, width) (both in meters)
+        k_sim_wheel_size = (0.25, 0.25) # Size of the wheel poses on the Field2d widget (length, width)
 
         k_wheel_size = 0.1 # Diameter of wheels in meters
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
         
         k_max_attainable_speed = 4.654 # Max speed of modules in m/s
         k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
-        k_max_rot_acceleration = 1 * pi
-        k_max_rot_deceleration = 1 * pi
 
         # These are used for the PID controller for fully field-relative rotating.
         k_turn_p = 10
@@ -87,7 +85,7 @@ class Constants:
         k_v = 0.12
         k_a = 0
         
-        k_neutral_mode = NeutralModeValue.BRAKE
+        k_neutral_mode = NeutralModeValue.COAST
         
         # Torque limits
         k_torque_neutral_deadband = 0 # Default: 0A
@@ -138,9 +136,6 @@ class Constants:
         k_cruise_acceleration = 8
         k_jerk = 75
         
-        # Sensors (in case we switch it to a synced cancoder later on)
-        k_remote_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
-        
         # Physical Properties
         k_gear_ratio = 150 / 7
         
@@ -151,7 +146,7 @@ class Constants:
         k_translation_p = 5
         k_translation_i = 0
         k_translation_d = 0
-        k_translation_i_zone = 0 # This basically means "how powerful can k_i be at any given time"
+        k_translation_i_zone = 0 # This basically means "only use i if we're this close to the setpoint"
         
         # Rotation
         k_rotation_p = 5
