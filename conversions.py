@@ -26,3 +26,8 @@ def degs_to_rots(degrees: float) -> float:
     """Converts degrees to rotations."""
     
     return degrees / 360
+
+def degs_to_rads(degrees: float) -> float:
+    """Converts degrees to radians."""
+
+    return degrees * (math.pi/180)

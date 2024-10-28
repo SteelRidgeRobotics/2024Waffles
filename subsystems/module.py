@@ -85,7 +85,7 @@ class SwerveModule(Subsystem):
     steer_config.motion_magic.motion_magic_jerk = Constants.SteerConfig.k_jerk
     
     # Sensors and Feedback
-    steer_config.feedback.feedback_sensor_source = Constants.SteerConfig.k_remote_sensor_source
+    steer_config.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
 
     steer_config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
     

@@ -118,7 +118,7 @@ class Drivetrain(Subsystem):
         TrapezoidProfile.Constraints(Constants.Drivetrain.k_max_rot_rate, 30)
     )
     turn_PID.enableContinuousInput(-math.pi, math.pi)
-    turn_PID.setTolerance(Constants.Drivetrain.k_angle_tolerance * (math.pi / 180), Constants.Drivetrain.k_angle_tolerance * (math.pi / 180) * 2)
+    turn_PID.setTolerance(degs_to_rads(Constants.Drivetrain.k_angle_tolerance), degs_to_rads(Constants.Drivetrain.k_angle_tolerance) * 2)
 
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
