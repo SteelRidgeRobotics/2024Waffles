@@ -267,7 +267,7 @@ class Drivetrain(Subsystem):
             LimelightHelpers.set_robot_orientation(
                 Constants.Limelight.k_limelight_name,
                 self.gyro.getRotation2d().degrees(),
-                0, # Potentially add -self.navx.getRate() here LATER, according to Chief Delphi it's untested
+                -self.gyro.getRate(), # Potentially add -self.navx.getRate() here LATER, according to Chief Delphi it's untested
                 0, 0, 0, 0
             )
 
