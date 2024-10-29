@@ -53,9 +53,9 @@ class Constants:
         k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
 
         # These are used for the PID controller for fully field-relative rotating.
-        k_turn_p = 10
-        k_turn_d = 0.4 # 10-4 REFERENCE!!!
-        k_angle_tolerance = 5.0
+        k_turn_p = 2.5
+        k_turn_d = 0.1 # 10-4 REFERENCE!!!
+        k_angle_tolerance = 1
 
         # To find Translation2d amount:
             # a^2 + b^2 = c^2
