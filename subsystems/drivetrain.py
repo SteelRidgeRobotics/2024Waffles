@@ -175,9 +175,6 @@ class Drivetrain(Subsystem):
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
 
-        self.prev_target_angle = Rotation2d()
-        self.prev_rotational_speed = 0
-
         self.last_odometry_update = 0
 
     def update_odometry(self) -> None:
