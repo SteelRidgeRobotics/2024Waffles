@@ -110,23 +110,6 @@ class Drivetrain(Subsystem):
     module_target_publisher = drivetrain_nt.getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
     skid_ratio_publisher = drivetrain_nt.getFloatTopic("SkidRatio").publish()
 
-    # Turn PID for Fully Field-Relative driving
-    turn_PID = ProfiledPIDController(
-        Constants.Drivetrain.k_turn_p, 
-        0,
-        Constants.Drivetrain.k_turn_d,
-        TrapezoidProfile.Constraints(Constants.Drivetrain.k_max_rot_rate, Constants.Drivetrain.k_max_rot_rate * 5)
-    )
-    turn_PID.enableContinuousInput(-math.pi, math.pi)
-    turn_PID.setTolerance(degs_to_rads(Constants.Drivetrain.k_angle_tolerance))
-
-    # Create a widget in the tab "Tuning". The widget data is the turn_PID variable and the widget should be a kPIDController.
-
-    Shuffleboard.getTab("Tuning").add(
-        "Turn PID",
-        turn_PID
-    ).withWidget(BuiltInWidgets.kPIDController)
-
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
         """Returns all reported SwerveModulePositions for every module."""
@@ -184,7 +167,7 @@ class Drivetrain(Subsystem):
             self.get_latency_compensated_position,
             lambda pose: self.reset_pose(pose),
             self.get_robot_speed,
-            lambda speeds: self.drive_robot_centric(speeds),
+            lambda speeds: self.drive(speeds.vx, speeds.vy, speeds.omega, is_field_relative=False),
             self.path_follower_config,
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "Hey Caden, when do we flip the path?"
             self # "Yes, this is the drivetrain. Why would I configure an AutoBuilder for an intake, pathplannerlib?"
@@ -420,78 +403,37 @@ class Drivetrain(Subsystem):
         """Returns the robots current speed (non-field relative)"""
         
         return self.kinematics.toChassisSpeeds(Drivetrain.get_module_states())
-        
-    def drive_robot_centric(self, speeds: ChassisSpeeds, center_of_rotation: Translation2d = Translation2d(0, 0)) -> None:
-        """Drives the robot at the given speeds (from the perspective of the robot)."""
-        
-        speeds = ChassisSpeeds.discretize(speeds, 0.02) # Make spinning and moving drift less
-        
-        # Calculate each module's state
+    
+    def drive(self, velocity_x: float, velocity_y: float, velocity_rot: float, center_of_rotation: Translation2d = Translation2d(), is_field_relative = True) -> None:
+        """Converts from robot speeds into module states, then updates all module target states.
+
+        Args:
+            velocity_x (float): Forward speed in m/s.
+            strafe (float): Sideways speed in m/s, positive values strafe to the left.
+            turn (float): Rotation speed in rad/s, CCW+.
+            center_of_rotation (Translation2d, optional): Center of rotation for rotating around an object. Defaults to Translation2d(), the center of the robot.
+            is_field_relative (bool, optional): Converts speeds into robot-centric speeds. Set to False if passing in robot-centric speeds already. Defaults to True.
+        """
+
+        # Create ChassisSpeeds, then discretize
+        speeds = ChassisSpeeds.discretize(
+            ChassisSpeeds(
+                velocity_x,
+                velocity_y,
+                velocity_rot
+            ), 
+            0.02
+        )
+
+        if is_field_relative:
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, self.get_yaw())
+
         module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
-        
-        self.set_desired_module_states(module_speeds)
+        self.apply_module_targets(module_speeds)
 
-        # Since PathPlanner pathfinding uses robot-centric, we need to 
-        self.prev_target_angle = self.get_yaw()
-        self.turn_PID.reset(self.prev_target_angle.radians())
-        
-        # Set the navX to what the angle should be in simulation
         self.simulate_gyro(speeds.omega_dps)
-            
-    def drive_field_relative(self, speeds: ChassisSpeeds, center_of_rotation: Translation2d = Translation2d(0, 0)) -> None:
-        """Drives the robot at the given speeds (from the perspective of the driver/field)"""
-
-        speeds = ChassisSpeeds.discretize(speeds, 0.02)
-
-        if speeds.omega == 0: # If we don't want to rotate, use the rotation PID.
-            rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians(), self.prev_target_angle.radians())
-            if not Drivetrain.turn_PID.atSetpoint():
-                speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
-            else:
-                speeds = ChassisSpeeds(speeds.vx, speeds.vy, 0)
-        else:
-            self.prev_target_angle = self.get_yaw()
-            self.turn_PID.reset(self.prev_target_angle.radians())
         
-        # Convert to robot-centric
-        speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, self.get_yaw())
-        
-        # Calculate each module's state
-        module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
-        
-        self.set_desired_module_states(module_speeds)
-        
-        # Set the navX to what the angle should be in simulation
-        self.simulate_gyro(speeds.omega_dps)
-
-    def drive_fully_field_relative(self, speeds: ChassisSpeeds, target_angle: Rotation2d | None) -> None:
-        """Drives the robot at the given speeds (from the perspective of the driver/field) and rotates to the target angle.\n
-        If the ChassisSpeeds rotational velocity does not equal 0, we ignore the target angle and instead rotate at the desired velocity."""
-
-        if speeds.omega != 0: # If speeds has a rotational velocity, that should override the desired direction.
-            self.drive_field_relative(speeds)
-            return
-
-        if target_angle is None:
-            target_angle = self.prev_target_angle
-
-        rotational_speed = Drivetrain.turn_PID.calculate(self.get_yaw().radians() + self.get_yaw_rate() * 0.02, target_angle.radians())
-
-        if Drivetrain.turn_PID.atSetpoint():
-            rotational_speed = 0
-
-        field_speeds = ChassisSpeeds(speeds.vx, speeds.vy, rotational_speed)
-        field_speeds = ChassisSpeeds.discretize(field_speeds, 0.02)
-
-        robo_centric = ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vx, speeds.vy, rotational_speed, self.get_yaw())
-
-        self.set_desired_module_states(self.kinematics.toSwerveModuleStates(robo_centric))
-
-        self.prev_target_angle = target_angle
-
-        self.simulate_gyro(robo_centric.omega_dps)
-        
-    def set_desired_module_states(self, states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
+    def apply_module_targets(self, states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
         """Sends the given module states to each module."""
         
         # Make sure we aren't traveling at unrealistic speeds
@@ -530,7 +472,7 @@ class Drivetrain(Subsystem):
             path_constraints, # Constraints while pathfinding (max velocity, max rotation, etc)
             self.odometry.getEstimatedPosition, # Pose supplier
             self.get_robot_speed, # Speed Supplier
-            self.drive_robot_centric, # Speed Consumer
+            lambda speeds: self.drive(speeds.vx, speeds.vy, speeds.omega, is_field_relative=False), # Speed Consumer
             self.path_follower_config,
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "hey caden when do we invert the path"
             self, # We ARE a DRIVE-TEAM!!!!!!

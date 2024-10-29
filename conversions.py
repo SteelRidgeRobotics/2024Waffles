@@ -31,3 +31,11 @@ def degs_to_rads(degrees: float) -> float:
     """Converts degrees to radians."""
 
     return degrees * (math.pi/180)
+
+def rads_to_degs(radians: float) -> float:
+    """Converts radians to degrees."""
+    return radians * (180/math.pi)
+
+def clamp(value: float, min_value: float, max_value: float) -> float:
+    """Clamps value to be between the minimum and maximum value."""
+    return max(min_value, min(value, max_value))
