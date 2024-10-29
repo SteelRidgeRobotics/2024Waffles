@@ -7,7 +7,6 @@ import navx
 from ntcore import NetworkTableInstance
 
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
-from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.controller import PIDConstants
