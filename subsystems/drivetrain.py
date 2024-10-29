@@ -400,8 +400,8 @@ class Drivetrain(Subsystem):
 
         Args:
             velocity_x (float): Forward speed in m/s.
-            strafe (float): Sideways speed in m/s, positive values strafe to the left.
-            turn (float): Rotation speed in rad/s, CCW+.
+            velocity_y (float): Sideways speed in m/s, positive values strafe to the left.
+            velocity_rot (float): Rotation speed in rad/s, CCW+.
             center_of_rotation (Translation2d, optional): Center of rotation for rotating around an object. Defaults to Translation2d(), the center of the robot.
             is_field_relative (bool, optional): Converts speeds into robot-centric speeds. Set to False if passing in robot-centric speeds already. Defaults to True.
         """
