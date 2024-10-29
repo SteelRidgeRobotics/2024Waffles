@@ -3,11 +3,11 @@ from commands2.button import JoystickButton
 import math
 
 from pathplannerlib.auto import PathPlannerAuto
-from pathplannerlib.path import PathConstraints
+from pathplannerlib.commands import PathfindThenFollowPathHolonomic
+from pathplannerlib.path import PathConstraints, PathPlannerPath
 
-from wpilib import SendableChooser, XboxController
+from wpilib import DriverStation, SendableChooser, XboxController
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
-from wpimath.geometry import Rotation2d
 
 from commands.drive_maintain_heading import DriveMaintainHeadingCommand
 from constants import Constants
@@ -52,11 +52,16 @@ class RobotContainer:
     def configure_button_bindings(self) -> None:
         """Setup all button bindings."""
 
-        # Drive to amp
         JoystickButton(self.driver_controller, XboxController.Button.kA).whileTrue(
-            self.drivetrain.pathfind_to_path(
-                "AlignToAmp", 
-                path_constraints=PathConstraints(4.5, 4.5, 3.14, 3.14),
-                rotation_delay_distance=5
+            PathfindThenFollowPathHolonomic(
+                PathPlannerPath.fromPathFile("AlignToAmp"), # The path to pathfind to
+                PathConstraints(4.5, 4.5, 3.14, 3.14), # Constraints while pathfinding (max velocity, max rotation, etc)
+                self.drivetrain.odometry.getEstimatedPosition, # Pose supplier
+                self.drivetrain.get_robot_speed, # Speed Supplier
+                lambda speeds: self.drivetrain.drive(speeds.vx, speeds.vy, speeds.omega, is_field_relative=False), # Speed Consumer
+                self.drivetrain.path_follower_config,
+                lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "hey caden when do we invert the path"
+                self.drivetrain, # We ARE a DRIVE-TEAM!!!!!!
+                5 # Amount the robot needs to move before it rotates (when pathfinding, in meters)
             )
         )

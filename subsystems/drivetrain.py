@@ -1,4 +1,4 @@
-from commands2 import Command, Subsystem
+from commands2 import Subsystem
 
 from limelight import LimelightHelpers
 
@@ -7,19 +7,15 @@ import navx
 from ntcore import NetworkTableInstance
 
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
-from pathplannerlib.commands import PathfindThenFollowPathHolonomic
 from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import HolonomicPathFollowerConfig
 from pathplannerlib.logging import PathPlannerLogging
-from pathplannerlib.path import PathConstraints, PathPlannerPath
 from pathplannerlib.controller import PIDConstants
 
-from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer, DataLogManager
+from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
-from wpimath.trajectory import TrapezoidProfile
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Transform2d, Translation2d
-from wpimath.controller import ProfiledPIDController
 from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModulePosition, SwerveModuleState
 
 from constants import Constants
@@ -448,49 +444,3 @@ class Drivetrain(Subsystem):
                 module.stop()
             else:
                 module.set_desired_state(states[i])
-
-    def pathfind_to_pose(self, end_pose: Pose2d) -> Command:
-        """Uses Pathplanner's on-the-fly path generation to drive to a given point on the field."""
-
-        return AutoBuilder.pathfindToPose(
-            end_pose, 
-            PathConstraints(
-                Constants.Drivetrain.k_max_attainable_speed, 
-                rot_to_meters(12),
-                Constants.Drivetrain.k_max_rot_rate,
-                Constants.Drivetrain.k_max_rot_rate
-            ),
-        )
-    
-    def pathfind_to_path(self, path_name: str, path_constraints: PathConstraints = PathConstraints(3.5, 3.5, 7.85398, 7.85398), rotation_delay_distance = 0) -> Command:
-        """Uses Pathplanner's on-the-fly path generation to drive to and executes the given PathPlannerPath"""
-
-        path = PathPlannerPath.fromPathFile(path_name)
-
-        return PathfindThenFollowPathHolonomic(
-            path, # The path to pathfind to
-            path_constraints, # Constraints while pathfinding (max velocity, max rotation, etc)
-            self.odometry.getEstimatedPosition, # Pose supplier
-            self.get_robot_speed, # Speed Supplier
-            lambda speeds: self.drive(speeds.vx, speeds.vy, speeds.omega, is_field_relative=False), # Speed Consumer
-            self.path_follower_config,
-            lambda: DriverStation.getAlliance() == DriverStation.Alliance.kRed, # "hey caden when do we invert the path"
-            self, # We ARE a DRIVE-TEAM!!!!!!
-            rotation_delay_distance # Amount the robot needs to move before it rotates (when pathfinding)
-        )
-    
-    def get_rotation_override(self) -> Rotation2d:
-        """Rotation override for PathPlanner.
-        See https://pathplanner.dev/pplib-override-target-rotation.html"""
-
-        # Look at note if we're in autonomous
-        if False:
-            
-            # Look at center of field (broken, but a good example)
-            translation = Transform2d(self.odometry.getEstimatedPosition(), Pose2d(8.321, 4.092, self.odometry.getEstimatedPosition().rotation())).translation()
-            x, y = translation.X(), translation.Y()
-
-            return Rotation2d(math.atan2(y, x))
-        
-        else:
-            return None
