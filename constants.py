@@ -11,13 +11,6 @@ class Constants:
         k_driver_controller_port = 0
 
         k_fully_field_relative = True
-
-        k_deadband_enabled = True # Enable to tweak values if testing with personal controllers.
-
-        k_left_deadband_x = 0.1
-        k_left_deadband_y = 0.1
-        k_right_deadband_x = 0.1
-        k_right_deadband_y = 0.1
     
     class CanIDs:
         # TalonFXs
@@ -53,8 +46,9 @@ class Constants:
         k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
 
         # These are used for the PID controller for fully field-relative rotating.
-        k_turn_p = 2.5
-        k_turn_d = 0.1 # 10-4 REFERENCE!!!
+        k_heading_p = 2.5
+        k_heading_i = 0.0
+        k_heading_d = 0.1
         k_angle_tolerance = 1
 
         # To find Translation2d amount:
@@ -85,8 +79,6 @@ class Constants:
         k_v = 0.12
         k_a = 0
         
-        k_neutral_mode = NeutralModeValue.COAST
-        
         # Torque limits
         k_torque_neutral_deadband = 0 # Default: 0A
         k_peak_forward_torque_current = 800 # Default: 800A
@@ -116,8 +108,6 @@ class Constants:
         k_s = 4.6
         k_v = 0.12
         k_a = 0.8
-        
-        k_neutral_mode = NeutralModeValue.BRAKE
         
         # Torque limits
         k_torque_neutral_deadband = 0 # Default: 0A

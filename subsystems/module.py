@@ -49,7 +49,7 @@ class SwerveModule(Subsystem):
     drive_config.motion_magic.motion_magic_jerk = Constants.DriveConfig.k_jerk
     
     # Neutral Mode
-    drive_config.motor_output.neutral_mode = Constants.DriveConfig.k_neutral_mode
+    drive_config.motor_output.neutral_mode = NeutralModeValue.COAST
     
     # Feedback
     drive_config.feedback.sensor_to_mechanism_ratio = Constants.DriveConfig.k_gear_ratio
@@ -88,6 +88,7 @@ class SwerveModule(Subsystem):
     steer_config.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
 
     steer_config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
+    steer_config.motor_output.neutral_mode = NeutralModeValue.BRAKE
     
     steer_config.closed_loop_general.continuous_wrap = True # This does our angle optimizations for us (yay)
     
