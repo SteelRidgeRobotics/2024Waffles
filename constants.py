@@ -2,9 +2,6 @@ from phoenix6.configs.talon_fx_configs import *
 from wpilib import RobotBase
 from wpimath.geometry import Translation2d
 
-from math import pi
-
-
 class Constants:
     
     class Controller:
