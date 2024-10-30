@@ -1,16 +1,11 @@
 from commands2 import Subsystem
-
 from limelight import LimelightHelpers
-
-import navx
-
+from navx import AHRS
 from ntcore import NetworkTableInstance
-
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
 from pathplannerlib.config import HolonomicPathFollowerConfig
-from pathplannerlib.logging import PathPlannerLogging
 from pathplannerlib.controller import PIDConstants
-
+from pathplannerlib.logging import PathPlannerLogging
 from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
@@ -60,16 +55,6 @@ class Drivetrain(Subsystem):
         Constants.Drivetrain.k_module_locations[2], 
         Constants.Drivetrain.k_module_locations[3]
     )
-    
-    # NavX Setup
-    gyro = navx.AHRS.create_spi()
-    gyro.reset()
-
-    gyro_sim = 0 # Simulated angle
-    
-    # Field Widget
-    field = Field2d()
-    Shuffleboard.getTab("Main").add("Field", field).withWidget(BuiltInWidgets.kField)
 
     # PathPlanner Config
     path_follower_config = HolonomicPathFollowerConfig(
@@ -90,20 +75,6 @@ class Drivetrain(Subsystem):
         Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
         ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
     )
-
-    ## NetworkTable Publishing (for logging)
-    drivetrain_nt = NetworkTableInstance.getDefault().getTable("Drivetrain")
-
-    # Odometry
-    robot_pose_publisher = drivetrain_nt.getStructTopic("RobotPose", Pose2d).publish()
-    latency_compensated_pose_publisher = drivetrain_nt.getStructTopic("LatencyCompPose", Pose2d).publish()
-    target_pose_publisher = drivetrain_nt.getStructTopic("PPTarget", Pose2d).publish()
-    vision_pose_publisher = drivetrain_nt.getStructTopic("VisionPose", Pose2d).publish()
-
-    # Swerve
-    module_state_publisher = drivetrain_nt.getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
-    module_target_publisher = drivetrain_nt.getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
-    skid_ratio_publisher = drivetrain_nt.getFloatTopic("SkidRatio").publish()
 
     @staticmethod
     def get_module_positions() -> tuple[SwerveModulePosition]:
@@ -143,6 +114,10 @@ class Drivetrain(Subsystem):
 
     def __init__(self, starting_pose: Pose2d = Pose2d()) -> None:
 
+        # NavX Setup
+        self.gyro = AHRS.create_spi(update_rate_hz=200)
+        self.gyro.reset()
+
         # Odometry
         self.odometry = SwerveDrive4PoseEstimator(
             self.kinematics, # The wheel locations on the robot
@@ -156,10 +131,14 @@ class Drivetrain(Subsystem):
             "Reset Yaw",
             self.runOnce(self.reset_yaw) # Simple InstantCommand, nothing crazy
         ).withWidget(BuiltInWidgets.kCommand)
+
+        # Field Widget
+        self.field = Field2d()
+        Shuffleboard.getTab("Main").add("Field", self.field).withWidget(BuiltInWidgets.kField)
         
         # Configure PathPlanner
         AutoBuilder.configureHolonomic(
-            self.get_latency_compensated_position,
+            self.get_accurate_position,
             lambda pose: self.reset_pose(pose),
             self.get_robot_speed,
             lambda speeds: self.drive(speeds.vx, speeds.vy, speeds.omega, is_field_relative=False),
@@ -174,7 +153,23 @@ class Drivetrain(Subsystem):
         # Shows the active path on the field widget
         PathPlannerLogging.setLogActivePathCallback(lambda poses: self.field.getObject("active_path").setPoses(poses))
 
-        self.last_odometry_update = 0
+        ## NetworkTable Publishing (for logging)
+        drivetrain_nt = NetworkTableInstance.getDefault().getTable("Drivetrain")
+
+        # Odometry
+        self.robot_pose_publisher = drivetrain_nt.getStructTopic("RobotPose", Pose2d).publish()
+        self.latency_comp_publisher = drivetrain_nt.getStructTopic("LatencyCompPose", Pose2d).publish()
+        self.target_pose_publisher = drivetrain_nt.getStructTopic("PPTarget", Pose2d).publish()
+        self.vision_pose_publisher = drivetrain_nt.getStructTopic("VisionPose", Pose2d).publish()
+
+        # Swerve
+        self.module_state_publisher = drivetrain_nt.getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
+        self.module_target_publisher = drivetrain_nt.getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
+        self.skid_ratio_publisher = drivetrain_nt.getFloatTopic("SkidRatio").publish()
+
+        self.gyro_sim = 0 # Simulated angle
+        
+        self._last_odometry_update = 0
 
     def update_odometry(self) -> None:
         """Reads module positions to update odometry (wow)."""
@@ -192,21 +187,17 @@ class Drivetrain(Subsystem):
         self.module_state_publisher.set(list(Drivetrain.get_module_states()))
 
         self.robot_pose_publisher.set(self.odometry.getEstimatedPosition())
-        self.latency_compensated_pose_publisher.set(self.get_latency_compensated_position())
+        self.latency_comp_publisher.set(self.get_accurate_position())
 
-        self.last_odometry_update = timestamp
+        self._last_odometry_update = timestamp
 
-    def get_odometry_latency(self) -> float:
-        """Returns the time since the last odometry update, in seconds."""
-        return Timer.getFPGATimestamp() - self.last_odometry_update
-
-    def get_latency_compensated_position(self) -> Pose2d:
+    def get_accurate_position(self) -> Pose2d:
         """Interpolates the current pose of the robot by transforming the estimated position by the velocity."""
         estimated_position = self.odometry.getEstimatedPosition()
 
         estimated_velocity = self.get_robot_speed()
 
-        latency = self.get_odometry_latency()
+        latency = Timer.getFPGATimestamp() - self._last_odometry_update
 
         velocity_transform = Transform2d(estimated_velocity.vx*latency, estimated_velocity.vy*latency, Rotation2d(estimated_velocity.omega*latency))
 
@@ -272,7 +263,7 @@ class Drivetrain(Subsystem):
         self.update_odometry()
         self.update_vision_estimates()
 
-        estimated_position = self.get_latency_compensated_position()
+        estimated_position = self.get_accurate_position()
 
         # Update the field pose
         self.field.setRobotPose(estimated_position)
@@ -321,6 +312,8 @@ class Drivetrain(Subsystem):
         Returns the skidding ratio to determine how much the chassis is skidding.
         The skidding ratio is the ratio between the maximum and minimum magnitude of the translational speed of the modules.
         """
+        def module_state_to_velocity_vector(module_state: SwerveModuleState) -> Translation2d:
+            return Translation2d(module_state.speed, module_state.angle)
 
         module_states = Drivetrain.get_module_states()
 
@@ -331,9 +324,9 @@ class Drivetrain(Subsystem):
         module_translation_magnitudes = []
 
         for i in range(len(module_states)):
-            module_state_vector = Drivetrain._module_state_to_velocity_vector(module_states[i])
+            module_state_vector = module_state_to_velocity_vector(module_states[i])
 
-            module_rotation_vector = Drivetrain._module_state_to_velocity_vector(state_rotation[i])
+            module_rotation_vector = module_state_to_velocity_vector(state_rotation[i])
             module_translation_vector = module_state_vector - module_rotation_vector
 
             module_translation_magnitudes.append(module_translation_vector.norm())
@@ -348,10 +341,6 @@ class Drivetrain(Subsystem):
             return max_translation / min_translation
         except ZeroDivisionError:
             return 1.0
-
-    @staticmethod
-    def _module_state_to_velocity_vector(module_state: SwerveModuleState) -> Translation2d:
-        return Translation2d(module_state.speed, module_state.angle)
         
     def get_yaw(self) -> Rotation2d:
         """Gets the rotation of the robot."""
