@@ -76,42 +76,6 @@ class Drivetrain(Subsystem):
         ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
     )
 
-    @staticmethod
-    def get_module_positions() -> tuple[SwerveModulePosition]:
-        """Returns all reported SwerveModulePositions for every module."""
-
-        positions = []
-        for module in Drivetrain.modules:
-            positions.append(module.get_position())
-        return tuple(positions)
-    
-    @staticmethod
-    def get_module_states() -> tuple[SwerveModuleState]:
-        """Returns all reported SwerveModuleStates for every module."""
-
-        states = []
-        for module in Drivetrain.modules:
-            states.append(module.get_state())
-        return tuple(states)
-    
-    @staticmethod
-    def get_module_targets() -> tuple[SwerveModuleState]:
-        """Returns all module target states."""
-
-        targets = []
-        for module in Drivetrain.modules:
-            targets.append(module.get_target())
-        return targets
-    
-    @staticmethod
-    def get_module_angles() -> tuple[Rotation2d]:
-        """Returns the angle for every module as a tuple of Rotation2d's."""
-
-        angles = []
-        for module in Drivetrain.modules:
-            angles.append(module.get_angle())
-        return tuple(angles)
-
     def __init__(self, starting_pose: Pose2d = Pose2d()) -> None:
 
         # NavX Setup
@@ -138,7 +102,7 @@ class Drivetrain(Subsystem):
         
         # Configure PathPlanner
         AutoBuilder.configureHolonomic(
-            self.get_accurate_position,
+            self.get_pose,
             lambda pose: self.reset_pose(pose),
             self.get_robot_speed,
             lambda speeds: self.drive(speeds.vx, speeds.vy, speeds.omega, is_field_relative=False),
@@ -171,6 +135,101 @@ class Drivetrain(Subsystem):
         
         self._last_odometry_update = 0
 
+    def drive(self, velocity_x: float, velocity_y: float, velocity_rot: float, center_of_rotation: Translation2d = Translation2d(), is_field_relative = True) -> None:
+        """Converts from robot speeds into module states, then updates all module target states.
+
+        Args:
+            velocity_x (float): Forward speed in m/s.
+            velocity_y (float): Sideways speed in m/s, positive values strafe to the left.
+            velocity_rot (float): Rotation speed in rad/s, CCW+.
+            center_of_rotation (Translation2d, optional): Center of rotation for rotating around an object. Defaults to Translation2d(), the center of the robot.
+            is_field_relative (bool, optional): Converts speeds into robot-centric speeds. Set to False if passing in robot-centric speeds already. Defaults to True.
+        """
+
+        # Create ChassisSpeeds, then discretize
+        speeds = ChassisSpeeds.discretize(
+            ChassisSpeeds(
+                velocity_x,
+                velocity_y,
+                velocity_rot
+            ), 
+            0.02
+        )
+
+        if is_field_relative:
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, self.get_yaw())
+
+        module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
+        self.apply_module_targets(module_speeds)
+
+        self.simulate_gyro(speeds.omega_dps)
+
+    def get_pose(self) -> Pose2d:
+        """Interpolates the current pose of the robot by transforming the estimated position by the velocity."""
+        estimated_position = self.odometry.getEstimatedPosition()
+
+        estimated_velocity = self.get_robot_speed()
+
+        latency = Timer.getFPGATimestamp() - self._last_odometry_update
+
+        velocity_transform = Transform2d(estimated_velocity.vx*latency, estimated_velocity.vy*latency, Rotation2d(estimated_velocity.omega*latency))
+
+        return estimated_position.transformBy(velocity_transform)
+
+    def reset_pose(self, pose: Pose2d) -> None:
+        """Resets the robot's recorded position on the field via odometry."""
+        
+        self.odometry.resetPosition(
+            self.get_yaw(),
+            Drivetrain.get_module_positions(),
+            pose
+        )
+
+    def periodic(self) -> None:
+
+        self.update_odometry()
+        self.update_vision_estimates()
+
+        estimated_position = self.get_pose()
+
+        # Update the field pose
+        self.field.setRobotPose(estimated_position)
+
+        # Log everything
+        self.skid_ratio_publisher.set(self.get_skidding_ratio())
+
+        ## Show swerve modules on robot
+        if not DriverStation.isFMSAttached() and not RobotBase.isReal():
+            module_angles = Drivetrain.get_module_angles()
+
+            module_poses = []
+            for i in range(len(self.modules)):
+
+                translation = Constants.Drivetrain.k_module_locations[i]
+
+                sim_offset = Translation2d(
+                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[0], translation.X()), 
+                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[1], translation.Y())
+                )
+
+                module_poses.append(
+                    self.field.getRobotPose().transformBy(
+                        Transform2d(
+                            translation - sim_offset,
+                            module_angles[i]
+                        )
+                    )
+                )
+            self.field.getObject("modules").setPoses(module_poses)
+        elif len(self.field.getObject("modules").getPoses()) > 1:
+            self.field.getObject("modules").setPose(-1000, -1000, Rotation2d())
+
+        # Update Gyro widget
+        SmartDashboard.putNumber("Yaw", -self.get_yaw().degrees())
+
+        # Update Skid Ratio
+        SmartDashboard.putNumber("Skidding Ratio", Drivetrain.get_skidding_ratio())
+
     def update_odometry(self) -> None:
         """Reads module positions to update odometry (wow)."""
 
@@ -187,21 +246,9 @@ class Drivetrain(Subsystem):
         self.module_state_publisher.set(list(Drivetrain.get_module_states()))
 
         self.robot_pose_publisher.set(self.odometry.getEstimatedPosition())
-        self.latency_comp_publisher.set(self.get_accurate_position())
+        self.latency_comp_publisher.set(self.get_pose())
 
         self._last_odometry_update = timestamp
-
-    def get_accurate_position(self) -> Pose2d:
-        """Interpolates the current pose of the robot by transforming the estimated position by the velocity."""
-        estimated_position = self.odometry.getEstimatedPosition()
-
-        estimated_velocity = self.get_robot_speed()
-
-        latency = Timer.getFPGATimestamp() - self._last_odometry_update
-
-        velocity_transform = Transform2d(estimated_velocity.vx*latency, estimated_velocity.vy*latency, Rotation2d(estimated_velocity.omega*latency))
-
-        return estimated_position.transformBy(velocity_transform)
 
     def update_vision_estimates(self) -> None:
         """Uses Limelight MegaTag to help prevent pose drift."""
@@ -258,51 +305,6 @@ class Drivetrain(Subsystem):
 
                 self.vision_pose_publisher.set(mega_tag2.pose)
 
-    def periodic(self) -> None:
-
-        self.update_odometry()
-        self.update_vision_estimates()
-
-        estimated_position = self.get_accurate_position()
-
-        # Update the field pose
-        self.field.setRobotPose(estimated_position)
-
-        # Log everything
-        self.skid_ratio_publisher.set(self.get_skidding_ratio())
-
-        ## Show swerve modules on robot
-        if not DriverStation.isFMSAttached() and not RobotBase.isReal():
-            module_angles = Drivetrain.get_module_angles()
-
-            module_poses = []
-            for i in range(len(self.modules)):
-
-                translation = Constants.Drivetrain.k_module_locations[i]
-
-                sim_offset = Translation2d(
-                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[0], translation.X()), 
-                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[1], translation.Y())
-                )
-
-                module_poses.append(
-                    self.field.getRobotPose().transformBy(
-                        Transform2d(
-                            translation - sim_offset,
-                            module_angles[i]
-                        )
-                    )
-                )
-            self.field.getObject("modules").setPoses(module_poses)
-        elif len(self.field.getObject("modules").getPoses()) > 1:
-            self.field.getObject("modules").setPose(-1000, -1000, Rotation2d())
-
-        # Update Gyro widget
-        SmartDashboard.putNumber("Yaw", -self.get_yaw().degrees())
-
-        # Update Skid Ratio
-        SmartDashboard.putNumber("Skidding Ratio", Drivetrain.get_skidding_ratio())
-
     @staticmethod
     def get_skidding_ratio() -> float:
         """
@@ -317,9 +319,7 @@ class Drivetrain(Subsystem):
 
         module_states = Drivetrain.get_module_states()
 
-        measured_angular_velocity = Drivetrain.kinematics.toChassisSpeeds(module_states).omega
-
-        state_rotation = Drivetrain.kinematics.toSwerveModuleStates(ChassisSpeeds(0, 0, measured_angular_velocity))
+        state_rotation = Drivetrain.kinematics.toSwerveModuleStates(ChassisSpeeds(0, 0, Drivetrain.get_robot_speed().omega))
 
         module_translation_magnitudes = []
 
@@ -341,7 +341,7 @@ class Drivetrain(Subsystem):
             return max_translation / min_translation
         except ZeroDivisionError:
             return 1.0
-        
+
     def get_yaw(self) -> Rotation2d:
         """Gets the rotation of the robot."""
         
@@ -354,74 +354,70 @@ class Drivetrain(Subsystem):
             
         return angle
     
-    def get_yaw_rate(self) -> float:
-        """Gets the rate of change for the gyro's yaw."""
-        return self.gyro.getRate()
-    
     def reset_yaw(self) -> None:
         """Resets the navX's angle to 0. Also resets the simulation angle as well."""
         
         self.gyro_sim = 0
         self.gyro.reset()
+
+    @staticmethod
+    def get_module_angles() -> tuple[Rotation2d]:
+        """Returns the angle for every module as a tuple of Rotation2d."""
+
+        angles = []
+        for module in Drivetrain.modules:
+            angles.append(module.get_angle())
+        return tuple(angles)
+
+    @staticmethod
+    def get_module_positions() -> tuple[SwerveModulePosition]:
+        """Returns all reported SwerveModulePositions for every module."""
+
+        positions = []
+        for module in Drivetrain.modules:
+            positions.append(module.get_position())
+        return tuple(positions)
+    
+    @staticmethod
+    def get_module_states() -> tuple[SwerveModuleState]:
+        """Returns all reported SwerveModuleStates for every module."""
+
+        states = []
+        for module in Drivetrain.modules:
+            states.append(module.get_state())
+        return tuple(states)
+    
+    @staticmethod
+    def get_module_targets() -> tuple[SwerveModuleState]:
+        """Returns all module target states."""
+
+        targets = []
+        for module in Drivetrain.modules:
+            targets.append(module.get_target())
+        return targets
+
+    @staticmethod
+    def get_robot_speed() -> ChassisSpeeds:
+        """Returns the robots current speed (non-field relative)"""
+        
+        return Drivetrain.kinematics.toChassisSpeeds(Drivetrain.get_module_states())
     
     def simulate_gyro(self, degrees_per_second: float) -> None:
         """Calculates the current angle of the gyro from the degrees per second traveled."""
         
         self.gyro_sim += degrees_per_second * 0.02
-        
-    def reset_pose(self, pose: Pose2d) -> None:
-        """Resets the robot's recorded position on the field via odometry."""
-        
-        self.odometry.resetPosition(
-            self.get_yaw(),
-            Drivetrain.get_module_positions(),
-            pose
-        )
-        
-    def get_robot_speed(self) -> ChassisSpeeds:
-        """Returns the robots current speed (non-field relative)"""
-        
-        return self.kinematics.toChassisSpeeds(Drivetrain.get_module_states())
-    
-    def drive(self, velocity_x: float, velocity_y: float, velocity_rot: float, center_of_rotation: Translation2d = Translation2d(), is_field_relative = True) -> None:
-        """Converts from robot speeds into module states, then updates all module target states.
 
-        Args:
-            velocity_x (float): Forward speed in m/s.
-            velocity_y (float): Sideways speed in m/s, positive values strafe to the left.
-            velocity_rot (float): Rotation speed in rad/s, CCW+.
-            center_of_rotation (Translation2d, optional): Center of rotation for rotating around an object. Defaults to Translation2d(), the center of the robot.
-            is_field_relative (bool, optional): Converts speeds into robot-centric speeds. Set to False if passing in robot-centric speeds already. Defaults to True.
-        """
-
-        # Create ChassisSpeeds, then discretize
-        speeds = ChassisSpeeds.discretize(
-            ChassisSpeeds(
-                velocity_x,
-                velocity_y,
-                velocity_rot
-            ), 
-            0.02
-        )
-
-        if is_field_relative:
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, self.get_yaw())
-
-        module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
-        self.apply_module_targets(module_speeds)
-
-        self.simulate_gyro(speeds.omega_dps)
-        
-    def apply_module_targets(self, states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
+    @staticmethod
+    def apply_module_targets(states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:
         """Sends the given module states to each module."""
         
         # Make sure we aren't traveling at unrealistic speeds
-        states = self.kinematics.desaturateWheelSpeeds(
+        states = Drivetrain.kinematics.desaturateWheelSpeeds(
             states, Constants.Drivetrain.k_max_attainable_speed
         )
         
         # Set each state to the correct module
-        for i, module in enumerate(self.modules):
+        for i, module in enumerate(Drivetrain.modules):
 
             if states[i].speed == 0:
                 module.stop()
