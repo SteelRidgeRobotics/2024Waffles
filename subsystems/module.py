@@ -9,9 +9,11 @@ from phoenix6.controls import VelocityVoltage, MotionMagicTorqueCurrentFOC
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
-from wpilib import RobotBase
+from wpilib import RobotBase, RobotController
+from wpilib.simulation import DCMotorSim
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
+from wpimath.system.plant import DCMotor
 
 from constants import Constants
 from conversions import *
@@ -96,16 +98,19 @@ class SwerveModule(Subsystem):
         
         self.steer_talon.set_control(self.steer_request)
         self.drive_talon.set_control(self.drive_request)
-        
-        # Sim states
-        self.drive_sim = self.drive_talon.sim_state
-        self.steer_sim = self.steer_talon.sim_state
-        self.encoder_sim = self.encoder.sim_state
 
-        # Set Supply Voltages
-        self.drive_sim.set_supply_voltage(12)
-        self.steer_sim.set_supply_voltage(12)
-        self.encoder_sim.set_supply_voltage(12)
+        # Simulation Models
+        self.steer_sim_model = DCMotorSim(
+            DCMotor.falcon500FOC(1),
+            Constants.Drivetrain.k_steer_gear_ratio,
+            0.001
+        )
+
+        self.drive_sim_model = DCMotorSim(
+            DCMotor.falcon500FOC(1),
+            Constants.Drivetrain.k_drive_gear_ratio,
+            0.001
+        )
         
         ## Set StatusSignal update frequencies ##
         # Drive Motor
@@ -138,12 +143,24 @@ class SwerveModule(Subsystem):
         self.set_desired_state(self.desired_state)
         
     def simulationPeriodic(self) -> None:
-        # Position encoders don't update in sim, 
-        # so we need to read the current velocity and get an estimate of the distance moved each tick.
-        drive_displacement = self.drive_talon.get_rotor_velocity().value * 0.02
         
-        # Update sim states
-        self.drive_sim.add_rotor_position(drive_displacement)
+        # Steer Model
+        steer_sim = self.steer_talon.sim_state
+        steer_sim.set_supply_voltage(RobotController.getBatteryVoltage())
+        self.steer_sim_model.setInputVoltage(steer_sim.motor_voltage)
+        self.steer_sim_model.update(0.02)
+
+        steer_sim.set_raw_rotor_position(self.steer_sim_model.getAngularPosition() * Constants.Drivetrain.k_steer_gear_ratio)
+        steer_sim.set_rotor_velocity(self.steer_sim_model.getAngularVelocity() * Constants.Drivetrain.k_steer_gear_ratio)
+
+        # Drive Model
+        drive_sim = self.drive_talon.sim_state
+        drive_sim.set_supply_voltage(RobotController.getBatteryVoltage())
+        self.drive_sim_model.setInputVoltage(drive_sim.motor_voltage)
+        self.drive_sim_model.update(0.02)
+
+        drive_sim.set_raw_rotor_position(self.drive_sim_model.getAngularPosition() * Constants.Drivetrain.k_drive_gear_ratio)
+        drive_sim.set_rotor_velocity(self.drive_sim_model.getAngularVelocity() * Constants.Drivetrain.k_drive_gear_ratio)
         
     def get_angle(self) -> Rotation2d:
         """Returns the current angle of the wheel by converting the steer motor position into degrees."""
@@ -208,12 +225,6 @@ class SwerveModule(Subsystem):
         self.drive_talon.set_control(
             self.drive_request.with_velocity(meters_to_rots(state.speed))
         )
-        
-        # Update sim states
-        self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.Drivetrain.k_drive_gear_ratio)
-        
-        self.steer_sim.set_raw_rotor_position(degs_to_rots(state.angle.degrees()) * Constants.Drivetrain.k_steer_gear_ratio)
-        self.encoder_sim.set_raw_position(degs_to_rots(state.angle.degrees()))
 
         self.previous_desired_angle = state.angle
 
