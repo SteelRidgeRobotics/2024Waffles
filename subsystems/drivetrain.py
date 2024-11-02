@@ -26,25 +26,25 @@ class Drivetrain(Subsystem):
             Constants.CanIDs.k_left_front_drive,
             Constants.CanIDs.k_left_front_direction,
             Constants.CanIDs.k_left_front_encoder,
-            Constants.CanOffsets.k_left_front_offset
+            Constants.Drivetrain.k_left_front_offset
         ),
         SwerveModule(
             Constants.CanIDs.k_left_rear_drive,
             Constants.CanIDs.k_left_rear_direction,
             Constants.CanIDs.k_left_rear_encoder,
-            Constants.CanOffsets.k_left_rear_offset
+            Constants.Drivetrain.k_left_rear_offset
         ),
         SwerveModule(
             Constants.CanIDs.k_right_front_drive,
             Constants.CanIDs.k_right_front_direction,
             Constants.CanIDs.k_right_front_encoder,
-            Constants.CanOffsets.k_right_front_offset
+            Constants.Drivetrain.k_right_front_offset
         ),
         SwerveModule(
             Constants.CanIDs.k_right_rear_drive,
             Constants.CanIDs.k_right_rear_direction,
             Constants.CanIDs.k_right_rear_encoder,
-            Constants.CanOffsets.k_right_rear_offset
+            Constants.Drivetrain.k_right_rear_offset
         )
     )
 
@@ -58,22 +58,11 @@ class Drivetrain(Subsystem):
 
     # PathPlanner Config
     path_follower_config = HolonomicPathFollowerConfig(
-        # Holonomic-specific config
-        PIDConstants( # PID for translation
-            Constants.PathPlanner.k_translation_p,
-            Constants.PathPlanner.k_translation_i,
-            Constants.PathPlanner.k_translation_d,
-            Constants.PathPlanner.k_translation_i_zone
-        ), 
-        PIDConstants( # PID for rotation
-            Constants.PathPlanner.k_rotation_p,
-            Constants.PathPlanner.k_rotation_i,
-            Constants.PathPlanner.k_rotation_d,
-            Constants.PathPlanner.k_rotation_i_zone
-        ), 
-        Constants.Drivetrain.k_max_attainable_speed, # Max module speed (matches the one in PathPlanner)
-        Constants.Drivetrain.k_drive_base_radius, # Distance from center of the robot to a swerve module
-        ReplanningConfig() # Replanning Config (check the docs, this is hard to explain)
+        Constants.Auto.k_translation_pid, 
+        Constants.Auto.k_rotation_pid, 
+        Constants.Drivetrain.k_max_drive_speed,
+        Constants.Auto.k_drive_base_radius,
+        ReplanningConfig()
     )
 
     def __init__(self, starting_pose: Pose2d = Pose2d()) -> None:
@@ -208,8 +197,8 @@ class Drivetrain(Subsystem):
                 translation = Constants.Drivetrain.k_module_locations[i]
 
                 sim_offset = Translation2d(
-                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[0], translation.X()), 
-                    math.copysign(Constants.Drivetrain.k_sim_wheel_size[1], translation.Y())
+                    math.copysign(0.25, translation.X()), 
+                    math.copysign(0.25, translation.Y())
                 )
 
                 module_poses.append(
@@ -413,7 +402,7 @@ class Drivetrain(Subsystem):
         
         # Make sure we aren't traveling at unrealistic speeds
         states = Drivetrain.kinematics.desaturateWheelSpeeds(
-            states, Constants.Drivetrain.k_max_attainable_speed
+            states, Constants.Drivetrain.k_max_drive_speed
         )
         
         # Set each state to the correct module

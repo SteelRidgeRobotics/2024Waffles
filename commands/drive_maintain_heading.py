@@ -13,9 +13,9 @@ from subsystems.drivetrain import Drivetrain
 class DriveMaintainHeadingCommand(Command):
 
     heading_controller = ProfiledPIDController(
-        Constants.Drivetrain.k_heading_p,
-        Constants.Drivetrain.k_heading_i,
-        Constants.Drivetrain.k_heading_d,
+        2.5,
+        0.0,
+        0.1,
         TrapezoidProfile.Constraints(
             degs_to_rads(720), 
             degs_to_rads(1440)
@@ -56,14 +56,14 @@ class DriveMaintainHeadingCommand(Command):
         self.heading_controller.reset(self.drivetrain.get_yaw().radians())
 
     def execute(self):
-        throttle = clamp(self.throttle(), -1, 1) * Constants.Drivetrain.k_max_attainable_speed
-        strafe = clamp(self.strafe(), -1, 1) * Constants.Drivetrain.k_max_attainable_speed
+        throttle = clamp(self.throttle(), -1, 1) * Constants.Drivetrain.k_max_drive_speed
+        strafe = clamp(self.strafe(), -1, 1) * Constants.Drivetrain.k_max_drive_speed
         turn = clamp(self.turn(), -1, 1)
 
         if turn != 0:
             self.joystick_last_touched = Timer.getFPGATimestamp()
             
-        if turn != 0 or Timer.getFPGATimestamp() - self.joystick_last_touched <= 0.25 and degs_to_rads(self.drivetrain.get_yaw_rate()) >= degs_to_rads(10):
+        if turn != 0 or Timer.getFPGATimestamp() - self.joystick_last_touched <= 0.25 and math.fabs(degs_to_rads(self.drivetrain.gyro.getRate())) >= degs_to_rads(10):
             turn *= Constants.Drivetrain.k_max_rot_rate
             self.heading_setpoint = None
             self.heading_controller.reset(self.drivetrain.get_yaw().radians())

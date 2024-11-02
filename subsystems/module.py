@@ -1,9 +1,11 @@
 from commands2 import Subsystem
 
+from enum import Enum
+
 from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
-from phoenix6.controls import MotionMagicVelocityTorqueCurrentFOC, MotionMagicTorqueCurrentFOC
+from phoenix6.controls import VelocityVoltage, MotionMagicTorqueCurrentFOC
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.status_signal import BaseStatusSignal
 
@@ -23,66 +25,25 @@ class SwerveModule(Subsystem):
     drive_config = TalonFXConfiguration()
     
     # Tuning
-    drive_config.slot0.k_p = Constants.DriveConfig.k_p
-    drive_config.slot0.k_i = Constants.DriveConfig.k_i
-    drive_config.slot0.k_d = Constants.DriveConfig.k_d
-    drive_config.slot0.k_s = Constants.DriveConfig.k_s
-    drive_config.slot0.k_v = Constants.DriveConfig.k_v
-    drive_config.slot0.k_a = Constants.DriveConfig.k_a
+    drive_config.slot0 = Constants.Drivetrain.k_drive_gains
     
-    # Torque current
-    drive_config.torque_current.torque_neutral_deadband = Constants.DriveConfig.k_torque_neutral_deadband
-    drive_config.torque_current.peak_forward_torque_current = Constants.DriveConfig.k_peak_forward_torque_current
-    drive_config.torque_current.peak_reverse_torque_current = Constants.DriveConfig.k_peak_reverse_torque_current
+    # Slip Current
+    drive_config.current_limits.stator_current_limit_enable = True
+    drive_config.current_limits.stator_current_limit = Constants.Drivetrain.k_slip_current
     
-    # Supply current
-    drive_config.current_limits.supply_current_limit_enable = Constants.DriveConfig.k_enable_supply_limit
-    drive_config.current_limits.supply_current_limit = Constants.DriveConfig.k_supply_limit
-    
-    # Stator current
-    drive_config.current_limits.stator_current_limit_enable = Constants.DriveConfig.k_enable_stator_limit
-    drive_config.current_limits.stator_current_limit = Constants.DriveConfig.k_stator_limit
-    
-    # Motion Magic
-    drive_config.motion_magic.motion_magic_cruise_velocity = Constants.DriveConfig.k_cruise_velocity
-    drive_config.motion_magic.motion_magic_acceleration = Constants.DriveConfig.k_cruise_acceleration
-    drive_config.motion_magic.motion_magic_jerk = Constants.DriveConfig.k_jerk
-    
-    # Neutral Mode
     drive_config.motor_output.neutral_mode = NeutralModeValue.COAST
     
     # Feedback
-    drive_config.feedback.sensor_to_mechanism_ratio = Constants.DriveConfig.k_gear_ratio
-    
+    drive_config.feedback.sensor_to_mechanism_ratio = Constants.Drivetrain.k_drive_gear_ratio
     
     ### Steer motor ###
     steer_config = TalonFXConfiguration()
     
     # Tuning
-    steer_config.slot0.k_p = Constants.SteerConfig.k_p
-    steer_config.slot0.k_i = Constants.SteerConfig.k_i
-    steer_config.slot0.k_d = Constants.SteerConfig.k_d
-    steer_config.slot0.k_s = Constants.SteerConfig.k_s
-    steer_config.slot0.k_v = Constants.SteerConfig.k_v
-    steer_config.slot0.k_a = Constants.SteerConfig.k_a
-    
-    # Torque current
-    steer_config.torque_current.torque_neutral_deadband = Constants.SteerConfig.k_torque_neutral_deadband
-    steer_config.torque_current.peak_forward_torque_current = Constants.SteerConfig.k_peak_forward_torque_current
-    steer_config.torque_current.peak_reverse_torque_current = Constants.SteerConfig.k_peak_reverse_torque_current
-    
-    # Supply current
-    steer_config.current_limits.supply_current_limit_enable = Constants.SteerConfig.k_enable_supply_limit
-    steer_config.current_limits.supply_current_limit = Constants.SteerConfig.k_supply_limit
-    
-    # Stator current
-    steer_config.current_limits.stator_current_limit_enable = Constants.SteerConfig.k_enable_stator_limit
-    steer_config.current_limits.stator_current_limit = Constants.SteerConfig.k_stator_limit
+    steer_config.slot0 = Constants.Drivetrain.k_steer_gains
     
     # Motion Magic
-    steer_config.motion_magic.motion_magic_cruise_velocity = Constants.SteerConfig.k_cruise_velocity
-    steer_config.motion_magic.motion_magic_acceleration = Constants.SteerConfig.k_cruise_acceleration
-    steer_config.motion_magic.motion_magic_jerk = Constants.SteerConfig.k_jerk
+    steer_config.motion_magic = Constants.Drivetrain.k_steer_profile
     
     # Sensors and Feedback
     steer_config.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
@@ -92,9 +53,7 @@ class SwerveModule(Subsystem):
     
     steer_config.closed_loop_general.continuous_wrap = True # This does our angle optimizations for us (yay)
     
-    # With a fused CANcoder, we change the rotor_to_sensor ratio, that way the encoder position tells us the rotations of the wheel itself
-    # (Obviously this will vary from mechanism, but most of the time, if it uses a CANcoder, change this instead)
-    steer_config.feedback.rotor_to_sensor_ratio = Constants.SteerConfig.k_gear_ratio
+    steer_config.feedback.rotor_to_sensor_ratio = Constants.Drivetrain.k_steer_gear_ratio
     
     
     ### Encoder ###
@@ -133,7 +92,7 @@ class SwerveModule(Subsystem):
         
         # Create control requests and set them to the talons
         self.steer_request = MotionMagicTorqueCurrentFOC(0)
-        self.drive_request = MotionMagicVelocityTorqueCurrentFOC(0)
+        self.drive_request = VelocityVoltage(0)
         
         self.steer_talon.set_control(self.steer_request)
         self.drive_talon.set_control(self.drive_request)
@@ -251,9 +210,9 @@ class SwerveModule(Subsystem):
         )
         
         # Update sim states
-        self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.DriveConfig.k_gear_ratio)
+        self.drive_sim.set_rotor_velocity(meters_to_rots(state.speed) * Constants.Drivetrain.k_drive_gear_ratio)
         
-        self.steer_sim.set_raw_rotor_position(degs_to_rots(state.angle.degrees()) * Constants.SteerConfig.k_gear_ratio)
+        self.steer_sim.set_raw_rotor_position(degs_to_rots(state.angle.degrees()) * Constants.Drivetrain.k_steer_gear_ratio)
         self.encoder_sim.set_raw_position(degs_to_rots(state.angle.degrees()))
 
         self.previous_desired_angle = state.angle

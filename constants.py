@@ -1,3 +1,5 @@
+from pathplannerlib.controller import PIDConstants
+from phoenix6.configs import MotionMagicConfigs, Slot0Configs
 from phoenix6.configs.talon_fx_configs import *
 from wpilib import RobotBase
 from wpimath.geometry import Translation2d
@@ -8,6 +10,48 @@ class Constants:
         k_driver_controller_port = 0
 
         k_fully_field_relative = True
+
+    class Drivetrain:
+
+        k_steer_gains = Slot0Configs() \
+        .with_k_p(1).with_k_i(0).with_k_d(0) \
+        .with_k_s(0).with_k_v(0.12).with_k_a(0)
+
+        k_drive_gains = Slot0Configs() \
+        .with_k_p(1).with_k_i(0).with_k_d(0) \
+        .with_k_s(0).with_k_v(0.12).with_k_a(0)
+
+        # Stator current at which the wheels start to slip.
+        k_slip_current = 80
+
+        k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
+        k_max_drive_speed = 4.654 # Max speed of the robot (m/s)
+
+        k_wheel_diameter = 0.1 # meters
+
+        k_drive_gear_ratio = 27 / 4
+        k_steer_gear_ratio = 150 / 7
+
+        k_steer_profile = MotionMagicConfigs() \
+        .with_motion_magic_acceleration(8).with_motion_magic_cruise_velocity(4).with_motion_magic_jerk(0)
+
+        k_module_locations = (
+            Translation2d(0.587, 0.587), # Left front
+            Translation2d(-0.587, 0.587), # Left rear
+            Translation2d(0.587, -0.587), # Right front
+            Translation2d(-0.587, -0.587) # Right rear
+        )
+
+        # Encoder Offsets
+        k_left_front_offset = 0.474853515625
+        k_left_rear_offset = -0.0009765625
+        k_right_front_offset = 0.398681640625
+        k_right_rear_offset = -0.41845703125
+
+    class Auto:
+        k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
+        k_translation_pid = PIDConstants(5, 0, 0, 0)
+        k_rotation_pid = PIDConstants(5, 0, 0, 0)
     
     class CanIDs:
         # TalonFXs
@@ -26,120 +70,6 @@ class Constants:
         k_left_rear_encoder = 6
         k_right_front_encoder = 7
         k_right_rear_encoder = 8
-        
-    class CanOffsets:
-        k_left_front_offset = 0.474853515625
-        k_left_rear_offset = -0.0009765625
-        k_right_front_offset = 0.398681640625
-        k_right_rear_offset = -0.41845703125
-        
-    class Drivetrain:
-        k_sim_wheel_size = (0.25, 0.25) # Size of the wheel poses on the Field2d widget (length, width)
-
-        k_wheel_size = 0.1 # Diameter of wheels in meters
-        k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
-        
-        k_max_attainable_speed = 4.654 # Max speed of modules in m/s
-        k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
-
-        # These are used for the PID controller for fully field-relative rotating.
-        k_heading_p = 2.5
-        k_heading_i = 0.0
-        k_heading_d = 0.1
-        k_angle_tolerance = 1
-
-        # To find Translation2d amount:
-            # a^2 + b^2 = c^2
-            # x^2 + y^2 = k_drive_base_radius
-            # 2x^2 = 0.83^2 (square drivetrain, so x = y)
-            # 2x^2 = 0.6889
-            # x^2 = 0.34445
-            # x = sqrt(0.3445) ~= 0.587
-            # x ~= 0.587
-            
-            # +x is the front of the robot
-            # +y is the left of the robot
-        k_module_locations = (
-            Translation2d(0.587, 0.587), # Left front
-            Translation2d(-0.587, 0.587), # Left rear
-            Translation2d(0.587, -0.587), # Right front
-            Translation2d(-0.587, -0.587) # Right rear
-        )
-    
-    class DriveConfig:
-        # PID and Feedforward
-        k_p = 25
-        k_i = 0
-        k_d = 0
-        
-        k_s = 14.9
-        k_v = 0.12
-        k_a = 0
-        
-        # Torque limits
-        k_torque_neutral_deadband = 0 # Default: 0A
-        k_peak_forward_torque_current = 800 # Default: 800A
-        k_peak_reverse_torque_current = -800 # Default: -800A
-        
-        # Current limits (only needed if using non-torque control)
-        k_enable_supply_limit = False
-        k_supply_limit = 0
-        
-        k_enable_stator_limit = False
-        k_stator_limit = 0
-        
-        # Motion Magic
-        k_cruise_velocity = 14
-        k_cruise_acceleration = 52
-        k_jerk = 0
-        
-        # Physical Properties
-        k_gear_ratio = 27 / 4
-        
-    class SteerConfig:
-        # PID and Feedforward
-        k_p = 250
-        k_i = 0
-        k_d = 40
-        
-        k_s = 4.6
-        k_v = 0.12
-        k_a = 0.8
-        
-        # Torque limits
-        k_torque_neutral_deadband = 0 # Default: 0A
-        k_peak_forward_torque_current = 800 # Default: 800A
-        k_peak_reverse_torque_current = -800 # Default: -800A
-        
-        # Current limits (only needed if using non-torque control)
-        k_enable_supply_limit = False
-        k_supply_limit = 0
-        
-        k_enable_stator_limit = False
-        k_stator_limit = 0
-        
-        # Motion Magic
-        k_cruise_velocity = 4
-        k_cruise_acceleration = 8
-        k_jerk = 75
-        
-        # Physical Properties
-        k_gear_ratio = 150 / 7
-        
-    class PathPlanner:
-        ## PID Constants ##
-        
-        # Translation
-        k_translation_p = 5
-        k_translation_i = 0
-        k_translation_d = 0
-        k_translation_i_zone = 0 # This basically means "only use i if we're this close to the setpoint"
-        
-        # Rotation
-        k_rotation_p = 5
-        k_rotation_i = 0
-        k_rotation_d = 0
-        k_rotation_i_zone = 0
         
     class Limelight:
         

@@ -8,13 +8,13 @@ import math
 def rot_to_meters(rotations: float) -> float:
     """Converts rotations into meters."""
     
-    wheel_circumference = math.pi * Constants.Drivetrain.k_wheel_size
+    wheel_circumference = math.pi * Constants.Drivetrain.k_wheel_diameter
     return rotations * wheel_circumference
 
 def meters_to_rots(meters: float) -> float:
     """Converts meters into rotations."""
     
-    wheel_circumference = math.pi * Constants.Drivetrain.k_wheel_size
+    wheel_circumference = math.pi * Constants.Drivetrain.k_wheel_diameter
     return meters / wheel_circumference
 
 def rots_to_degs(rotation: float) -> float:
