@@ -14,12 +14,12 @@ class Constants:
     class Drivetrain:
 
         k_steer_gains = Slot0Configs() \
-        .with_k_p(10).with_k_i(0).with_k_d(0) \
-        .with_k_s(0).with_k_v(0).with_k_a(0)
+        .with_k_p(100).with_k_i(0).with_k_d(0.2) \
+        .with_k_s(0).with_k_v(1.5).with_k_a(0)
 
         k_drive_gains = Slot0Configs() \
-        .with_k_p(1).with_k_i(0).with_k_d(0) \
-        .with_k_s(0).with_k_v(0).with_k_a(0)
+        .with_k_p(0.35).with_k_i(0).with_k_d(0) \
+        .with_k_s(0).with_k_v(1.5).with_k_a(0)
 
         # Stator current at which the wheels start to slip.
         k_slip_current = 80
@@ -31,9 +31,6 @@ class Constants:
 
         k_drive_gear_ratio = 27 / 4
         k_steer_gear_ratio = 150 / 7
-
-        k_steer_profile = MotionMagicConfigs() \
-        .with_motion_magic_acceleration(8).with_motion_magic_cruise_velocity(4).with_motion_magic_jerk(0)
 
         k_module_locations = (
             Translation2d(0.587, 0.587), # Left front

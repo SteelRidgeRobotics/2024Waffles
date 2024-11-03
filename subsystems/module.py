@@ -5,7 +5,7 @@ from enum import Enum
 from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
-from phoenix6.controls import VelocityVoltage, MotionMagicVoltage
+from phoenix6.controls import VelocityVoltage, PositionVoltage
 from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.sim import ChassisReference
 from phoenix6.status_signal import BaseStatusSignal
@@ -13,7 +13,6 @@ from phoenix6 import unmanaged
 
 from wpilib import DriverStation, RobotBase, RobotController, SmartDashboard
 from wpilib.simulation import DCMotorSim
-from wpimath.filter import LinearFilter
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 from wpimath.system.plant import DCMotor
@@ -46,9 +45,6 @@ class SwerveModule(Subsystem):
     
     # Tuning
     steer_config.slot0 = Constants.Drivetrain.k_steer_gains
-    
-    # Motion Magic
-    steer_config.motion_magic = Constants.Drivetrain.k_steer_profile
     
     # Sensors and Feedback
     steer_config.feedback.feedback_sensor_source = FeedbackSensorSourceValue.FUSED_CANCODER
@@ -94,7 +90,7 @@ class SwerveModule(Subsystem):
         self.encoder.sim_state.orientation = ChassisReference.Clockwise_Positive
         
         # Create control requests and set them to the talons
-        self.steer_request = MotionMagicVoltage(0)
+        self.steer_request = PositionVoltage(0)
         self.drive_request = VelocityVoltage(0)
         
         self.steer_talon.set_control(self.steer_request)
@@ -113,22 +109,18 @@ class SwerveModule(Subsystem):
             0.0001
         )
         
-        ## Set StatusSignal update frequencies ##
-        # Drive Motor
-        self.drive_talon.get_acceleration().set_update_frequency(200)
-        self.drive_talon.get_position().set_update_frequency(200)
-        self.drive_talon.get_velocity().set_update_frequency(200)
+        BaseStatusSignal.set_update_frequency_for_all(
+            100,
+            self.drive_talon.get_acceleration(),
+            self.drive_talon.get_position(),
+            self.drive_talon.get_velocity(),
+            self.steer_talon.get_acceleration(),
+            self.steer_talon.get_position(),
+            self.steer_talon.get_velocity(),
+            self.encoder.get_position(),
+            self.encoder.get_velocity(),
+        )
         
-        # Steer Motor
-        self.steer_talon.get_acceleration().set_update_frequency(200)
-        self.steer_talon.get_position().set_update_frequency(200)
-        self.steer_talon.get_velocity().set_update_frequency(200)
-        
-        # CANcoder
-        self.encoder.get_position().set_update_frequency(200)
-        self.encoder.get_velocity().set_update_frequency(200)
-        
-        # Disable all unset status signals for all devices in this module
         ParentDevice.optimize_bus_utilization_for_all(self.drive_talon, self.steer_talon, self.encoder)
 
         if RobotBase.isReal():
@@ -162,21 +154,17 @@ class SwerveModule(Subsystem):
         encoder_sim.set_raw_position(rads_to_rots(self.steer_sim_model.getAngularPosition()))
         encoder_sim.set_velocity(rads_to_rots(self.steer_sim_model.getAngularVelocity()))
 
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Steer Input Voltage", steer_sim.motor_voltage)
-
         # Drive Model
         drive_sim = self.drive_talon.sim_state
         drive_sim.set_supply_voltage(RobotController.getBatteryVoltage())
         self.drive_sim_model.setInputVoltage(drive_sim.motor_voltage)
         self.drive_sim_model.update(0.02)
 
-        #drive_sim.set_raw_rotor_position(rads_to_rots(self.drive_sim_model.getAngularPosition()) * Constants.Drivetrain.k_drive_gear_ratio)
-        #drive_sim.set_rotor_velocity(rads_to_rots(self.drive_sim_model.getAngularVelocity()) * Constants.Drivetrain.k_drive_gear_ratio)
+        drive_sim.set_raw_rotor_position(rads_to_rots(self.drive_sim_model.getAngularPosition()) * Constants.Drivetrain.k_drive_gear_ratio)
+        drive_sim.set_rotor_velocity(rads_to_rots(self.drive_sim_model.getAngularVelocity()) * Constants.Drivetrain.k_drive_gear_ratio)
 
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Drive Input Voltage", drive_sim.motor_voltage)
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Requested Velocity", meters_to_rots(self.desired_state.speed))
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "End Velocity", self.drive_talon.get_velocity().value)
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Model Velocity", rads_to_rots(self.drive_sim_model.getAngularVelocity()) * Constants.Drivetrain.k_drive_gear_ratio)
+        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Velocity", self.drive_talon.get_velocity().value)
+        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Setpoint", meters_to_rots(self.desired_state.speed))
         
     def get_angle(self) -> Rotation2d:
         """Returns the current angle of the wheel by converting the steer motor position into degrees."""
