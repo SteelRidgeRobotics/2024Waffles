@@ -63,7 +63,7 @@ class DriveMaintainHeadingCommand(Command):
         if turn != 0:
             self.joystick_last_touched = Timer.getFPGATimestamp()
             
-        if turn != 0 or Timer.getFPGATimestamp() - self.joystick_last_touched <= 0.25 and math.fabs(degs_to_rads(self.drivetrain.gyro.getRate())) >= degs_to_rads(10):
+        if turn != 0 or Timer.getFPGATimestamp() - self.joystick_last_touched <= 0.25 and math.fabs(degs_to_rads(self.drivetrain.get_yaw_rate())) >= degs_to_rads(10):
             turn *= Constants.Drivetrain.k_max_rot_rate
             self.heading_setpoint = None
             self.heading_controller.reset(self.drivetrain.get_yaw().radians())

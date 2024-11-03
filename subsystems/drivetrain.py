@@ -4,9 +4,10 @@ from navx import AHRS
 from ntcore import NetworkTableInstance
 from pathplannerlib.auto import AutoBuilder, HolonomicPathFollowerConfig, ReplanningConfig
 from pathplannerlib.config import HolonomicPathFollowerConfig
-from pathplannerlib.controller import PIDConstants
 from pathplannerlib.logging import PathPlannerLogging
-from wpilib import DriverStation, Field2d, RobotBase, SmartDashboard, Timer
+from phoenix6.hardware import Pigeon2
+from phoenix6.status_signal import BaseStatusSignal
+from wpilib import DriverStation, Field2d, RobotBase, RobotController, SmartDashboard, Timer
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d, Transform2d, Translation2d
@@ -66,15 +67,25 @@ class Drivetrain(Subsystem):
     )
 
     def __init__(self, starting_pose: Pose2d = Pose2d()) -> None:
+        
+        self.gyro: Pigeon2 | AHRS = None
+        if Constants.Drivetrain.k_is_pigeon_gyro:
+            # Pigeon 2 setup
+            self.gyro = Pigeon2(Constants.CanIDs.k_pigeon_gyro)
+            BaseStatusSignal.set_update_frequency_for_all(
+                100,
+                self.gyro.get_yaw(),
+                self.gyro.get_angular_velocity_y_device()
+            )
+            self.gyro.optimize_bus_utilization(optimized_freq_hz=20) # Change this to 0 after testing irl
 
-        # NavX Setup
-        self.gyro = AHRS.create_spi(update_rate_hz=200)
-        self.gyro.reset()
+        else:
+            self.gyro = AHRS.create_spi(update_rate_hz=100)
 
         # Odometry
         self.odometry = SwerveDrive4PoseEstimator(
             self.kinematics, # The wheel locations on the robot
-            self.gyro.getRotation2d(), # The current angle of the robot
+            self.get_yaw(), # The current angle of the robot
             Drivetrain.get_module_positions(),
             starting_pose
         )
@@ -119,8 +130,6 @@ class Drivetrain(Subsystem):
         self.module_state_publisher = drivetrain_nt.getStructArrayTopic("ModuleStates", SwerveModuleState).publish()
         self.module_target_publisher = drivetrain_nt.getStructArrayTopic("ModuleTargets", SwerveModuleState).publish()
         self.skid_ratio_publisher = drivetrain_nt.getFloatTopic("SkidRatio").publish()
-
-        self.gyro_sim = 0 # Simulated angle
         
         self._last_odometry_update = 0
 
@@ -151,11 +160,12 @@ class Drivetrain(Subsystem):
         module_speeds = self.kinematics.toSwerveModuleStates(speeds, center_of_rotation)
         self.apply_module_targets(module_speeds)
 
-        self.simulate_gyro(speeds.omega_dps)
-
     def get_pose(self) -> Pose2d:
+        return self.odometry.getEstimatedPosition()
+
+    def get_interpolated_pose(self) -> Pose2d:
         """Interpolates the current pose of the robot by transforming the estimated position by the velocity."""
-        estimated_position = self.odometry.getEstimatedPosition()
+        estimated_position = self.get_pose()
 
         estimated_velocity = self.get_robot_speed()
 
@@ -164,7 +174,7 @@ class Drivetrain(Subsystem):
         velocity_transform = Transform2d(estimated_velocity.vx*latency, estimated_velocity.vy*latency, Rotation2d(estimated_velocity.omega*latency))
 
         return estimated_position.transformBy(velocity_transform)
-
+    
     def reset_pose(self, pose: Pose2d) -> None:
         """Resets the robot's recorded position on the field via odometry."""
         
@@ -178,8 +188,6 @@ class Drivetrain(Subsystem):
 
         self.update_odometry()
         self.update_vision_estimates()
-
-        estimated_position = self.get_pose()
 
         # Update the field pose
         self.field.setRobotPose(self.odometry.getEstimatedPosition())
@@ -235,7 +243,7 @@ class Drivetrain(Subsystem):
         self.module_state_publisher.set(list(Drivetrain.get_module_states()))
 
         self.robot_pose_publisher.set(self.odometry.getEstimatedPosition())
-        self.latency_comp_publisher.set(self.get_pose())
+        self.latency_comp_publisher.set(self.get_interpolated_pose())
 
         self._last_odometry_update = timestamp
 
@@ -273,15 +281,15 @@ class Drivetrain(Subsystem):
             # Set Robot Orientation
             LimelightHelpers.set_robot_orientation(
                 Constants.Limelight.k_limelight_name,
-                self.gyro.getRotation2d().degrees(),
-                -self.gyro.getRate(), # Potentially add -self.navx.getRate() here LATER, according to Chief Delphi it's untested
+                self.get_yaw().degrees(),
+                self.get_yaw_rate(),
                 0, 0, 0, 0
             )
 
             mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
 
             # If we're spinning or we don't see an apriltag, don't add vision measurements
-            if abs(self.gyro.getRate()) > 720 or mega_tag2.tag_count == 0:
+            if abs(self.get_yaw_rate()) > 720 or mega_tag2.tag_count == 0:
                 add_vision_estimate = False
 
             # Add Vision Measurement
@@ -293,6 +301,13 @@ class Drivetrain(Subsystem):
                 )
 
                 self.vision_pose_publisher.set(mega_tag2.pose)
+
+    def simulationPeriodic(self):
+
+        if Constants.Drivetrain.k_is_pigeon_gyro:
+            gyro_sim = self.gyro.sim_state
+            gyro_sim.set_supply_voltage(RobotController.getBatteryVoltage())
+            gyro_sim.add_yaw(self.get_robot_speed().omega_dps * 0.02)
 
     @staticmethod
     def get_skidding_ratio() -> float:
@@ -333,21 +348,13 @@ class Drivetrain(Subsystem):
 
     def get_yaw(self) -> Rotation2d:
         """Gets the rotation of the robot."""
-        
-        # If we're in simulation, then calculate how much the robot *should* be moving.
-        # Otherwise, just read the current NavX heading.
-        if RobotBase.isReal():
-            angle = self.gyro.getRotation2d()
-        else:
-            angle = Rotation2d.fromDegrees(self.gyro_sim)
-            
-        return angle
+        return Rotation2d.fromDegrees(self.gyro.get_yaw().value) if Constants.Drivetrain.k_is_pigeon_gyro else Rotation2d.fromDegrees(-self.gyro.getYaw())
+    
+    def get_yaw_rate(self) -> float:
+        return self.gyro.get_angular_velocity_y_world().value if Constants.Drivetrain.k_is_pigeon_gyro else -self.gyro.getRate()
     
     def reset_yaw(self) -> None:
-        """Resets the navX's angle to 0. Also resets the simulation angle as well."""
-        
-        self.gyro_sim = 0
-        self.gyro.reset()
+        self.gyro.set_yaw(0) if Constants.Drivetrain.k_is_pigeon_gyro else self.gyro.reset()
 
     @staticmethod
     def get_module_angles() -> tuple[Rotation2d]:
@@ -390,11 +397,6 @@ class Drivetrain(Subsystem):
         """Returns the robots current speed (non-field relative)"""
         
         return Drivetrain.kinematics.toChassisSpeeds(Drivetrain.get_module_states())
-    
-    def simulate_gyro(self, degrees_per_second: float) -> None:
-        """Calculates the current angle of the gyro from the degrees per second traveled."""
-        
-        self.gyro_sim += degrees_per_second * 0.02
 
     @staticmethod
     def apply_module_targets(states: tuple[SwerveModuleState, SwerveModuleState, SwerveModuleState, SwerveModuleState]) -> None:

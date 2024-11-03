@@ -25,7 +25,7 @@ class Constants:
         k_slip_current = 80
 
         k_max_rot_rate = 5.607 # Max chassis rotation rate (rad/s)
-        k_max_drive_speed = 4.654 # Max speed of the robot (m/s)
+        k_max_drive_speed = 4.712389 # Max speed of the robot (m/s)
 
         k_wheel_diameter = 0.1 # meters
 
@@ -44,6 +44,8 @@ class Constants:
         k_left_rear_offset = -0.0009765625
         k_right_front_offset = 0.398681640625
         k_right_rear_offset = -0.41845703125
+
+        k_is_pigeon_gyro = True or not RobotBase.isReal() # If False, uses NavX.
 
     class Auto:
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters
@@ -67,6 +69,9 @@ class Constants:
         k_left_rear_encoder = 6
         k_right_front_encoder = 7
         k_right_rear_encoder = 8
+
+        # Pigeon
+        k_pigeon_gyro = 9
         
     class Limelight:
         
