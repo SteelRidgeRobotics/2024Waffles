@@ -1,5 +1,5 @@
 from pathplannerlib.controller import PIDConstants
-from phoenix6.configs import MotionMagicConfigs, Slot0Configs
+from phoenix6.configs import Slot0Configs
 from phoenix6.configs.talon_fx_configs import *
 from wpilib import RobotBase
 from wpimath.geometry import Translation2d
@@ -19,7 +19,7 @@ class Constants:
 
         k_drive_gains = Slot0Configs() \
         .with_k_p(0.35).with_k_i(0).with_k_d(0) \
-        .with_k_s(0).with_k_v(1.5).with_k_a(0)
+        .with_k_s(0).with_k_v(1.2).with_k_a(0)
 
         # Stator current at which the wheels start to slip.
         k_slip_current = 80

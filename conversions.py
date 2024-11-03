@@ -1,7 +1,3 @@
-"""
-Common conversions used throughout the robot.
-"""
-
 from constants import Constants
 import math
 

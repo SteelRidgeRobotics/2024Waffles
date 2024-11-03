@@ -1,7 +1,4 @@
 from commands2 import Subsystem
-
-from enum import Enum
-
 from phoenix6.configs import TalonFXConfiguration, CANcoderConfiguration
 from phoenix6.configs.cancoder_configs import AbsoluteSensorRangeValue
 from phoenix6.configs.config_groups import *
@@ -10,7 +7,6 @@ from phoenix6.hardware import CANcoder, ParentDevice, TalonFX
 from phoenix6.sim import ChassisReference
 from phoenix6.status_signal import BaseStatusSignal
 from phoenix6 import unmanaged
-
 from wpilib import DriverStation, RobotBase, RobotController, SmartDashboard
 from wpilib.simulation import DCMotorSim
 from wpimath.geometry import Rotation2d
@@ -162,9 +158,6 @@ class SwerveModule(Subsystem):
 
         drive_sim.set_raw_rotor_position(rads_to_rots(self.drive_sim_model.getAngularPosition()) * Constants.Drivetrain.k_drive_gear_ratio)
         drive_sim.set_rotor_velocity(rads_to_rots(self.drive_sim_model.getAngularVelocity()) * Constants.Drivetrain.k_drive_gear_ratio)
-
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Velocity", self.drive_talon.get_velocity().value)
-        SmartDashboard.putNumber(str(self.drive_talon.device_id) + "Setpoint", meters_to_rots(self.desired_state.speed))
         
     def get_angle(self) -> Rotation2d:
         """Returns the current angle of the wheel by converting the steer motor position into degrees."""

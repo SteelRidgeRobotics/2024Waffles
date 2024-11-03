@@ -1,19 +1,13 @@
 from commands2.button import JoystickButton
-
-import math
-
 from pathplannerlib.auto import PathPlannerAuto
 from pathplannerlib.commands import PathfindThenFollowPathHolonomic
 from pathplannerlib.path import PathConstraints, PathPlannerPath
-
 from wpilib import DriverStation, SendableChooser, XboxController
 from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 
 from commands.drive_maintain_heading import DriveMaintainHeadingCommand
 from constants import Constants
 from subsystems.drivetrain import Drivetrain
-
-import math
 
 class RobotContainer:
 
