@@ -13,6 +13,8 @@ class Constants:
 
     class Drivetrain:
 
+        k_canbus_name = "rio" # The name of the CAN bus with all the swerve devices. Use "rio" if not using a CANivore
+
         k_steer_gains = Slot0Configs() \
         .with_k_p(100).with_k_i(0).with_k_d(0.2) \
         .with_k_s(0).with_k_v(1.5).with_k_a(0)
@@ -45,7 +47,7 @@ class Constants:
         k_right_front_offset = 0.398681640625
         k_right_rear_offset = -0.41845703125
 
-        k_is_pigeon_gyro = True or not RobotBase.isReal() # If False, uses NavX.
+        k_is_pigeon_gyro = True or not RobotBase.isReal() # If False, uses NavX. Simultaion uses the Pigeon sim_state for control.
 
     class Auto:
         k_drive_base_radius = 0.83 # Radius from center of robot to swerve modules in meters

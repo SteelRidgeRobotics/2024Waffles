@@ -71,7 +71,7 @@ class Drivetrain(Subsystem):
         self.gyro: Pigeon2 | AHRS = None
         if Constants.Drivetrain.k_is_pigeon_gyro:
             # Pigeon 2 setup
-            self.gyro = Pigeon2(Constants.CanIDs.k_pigeon_gyro)
+            self.gyro = Pigeon2(Constants.CanIDs.k_pigeon_gyro, Constants.Drivetrain.k_canbus_name)
             BaseStatusSignal.set_update_frequency_for_all(
                 100,
                 self.gyro.get_yaw(),

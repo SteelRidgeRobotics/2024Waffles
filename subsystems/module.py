@@ -75,13 +75,13 @@ class SwerveModule(Subsystem):
         
         # Create CAN devices and apply the new configs
         
-        self.drive_talon = TalonFX(drive_id)
+        self.drive_talon = TalonFX(drive_id, Constants.Drivetrain.k_canbus_name)
         self.drive_talon.configurator.apply(self.drive_config)
         
-        self.steer_talon = TalonFX(steer_id)
+        self.steer_talon = TalonFX(steer_id, Constants.Drivetrain.k_canbus_name)
         self.steer_talon.configurator.apply(module_steer_config)
         
-        self.encoder = CANcoder(encoder_id)
+        self.encoder = CANcoder(encoder_id, Constants.Drivetrain.k_canbus_name)
         self.encoder.configurator.apply(module_encoder_config)
         self.encoder.sim_state.orientation = ChassisReference.Clockwise_Positive
         
