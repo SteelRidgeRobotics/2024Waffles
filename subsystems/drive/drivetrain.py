@@ -15,7 +15,7 @@ from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Kinematics, SwerveModu
 
 from constants import Constants
 from conversions import *
-from subsystems.module import SwerveModule
+from subsystems.drive.swerve_module import SwerveModule
 
 
 class Drivetrain(Subsystem):

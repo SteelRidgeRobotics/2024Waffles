@@ -8,7 +8,7 @@ from wpimath.trajectory import TrapezoidProfile
 
 from constants import Constants
 from conversions import *
-from subsystems.drivetrain import Drivetrain
+from subsystems.drive.drivetrain import Drivetrain
 
 class DriveMaintainHeadingCommand(Command):
 

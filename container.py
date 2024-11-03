@@ -7,7 +7,7 @@ from wpilib.shuffleboard import BuiltInWidgets, Shuffleboard
 
 from commands.drive_maintain_heading import DriveMaintainHeadingCommand
 from constants import Constants
-from subsystems.drivetrain import Drivetrain
+from subsystems.drive.drivetrain import Drivetrain
 
 class RobotContainer:
 
