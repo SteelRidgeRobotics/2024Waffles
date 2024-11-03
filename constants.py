@@ -15,11 +15,11 @@ class Constants:
 
         k_steer_gains = Slot0Configs() \
         .with_k_p(10).with_k_i(0).with_k_d(0) \
-        .with_k_s(0).with_k_v(0.12).with_k_a(0)
+        .with_k_s(0).with_k_v(0).with_k_a(0)
 
         k_drive_gains = Slot0Configs() \
-        .with_k_p(10).with_k_i(0).with_k_d(0) \
-        .with_k_s(0).with_k_v(0.12).with_k_a(0)
+        .with_k_p(1).with_k_i(0).with_k_d(0) \
+        .with_k_s(0).with_k_v(0).with_k_a(0)
 
         # Stator current at which the wheels start to slip.
         k_slip_current = 80

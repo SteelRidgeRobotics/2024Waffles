@@ -182,7 +182,7 @@ class Drivetrain(Subsystem):
         estimated_position = self.get_pose()
 
         # Update the field pose
-        self.field.setRobotPose(estimated_position)
+        self.field.setRobotPose(self.odometry.getEstimatedPosition())
 
         # Log everything
         self.skid_ratio_publisher.set(self.get_skidding_ratio())
