@@ -186,10 +186,10 @@ class Drivetrain(Subsystem):
 
         ## Vision Odometry ##
 
-        add_vision_estimate = Constants.LimeLight.k_enable_vision_odometry
-        if not Constants.LimeLight.k_use_mega_tag_2: # Mega Tag 1
+        add_vision_estimate = Constants.Limelight.k_enable_vision_odometry
+        if not Constants.Limelight.k_use_mega_tag_2: # Mega Tag 1
             
-            mega_tag1 = LimelightHelpers.get_botpose_estimate_wpiblue(Constants.LimeLight.k_limelight_name)
+            mega_tag1 = LimelightHelpers.get_botpose_estimate_wpiblue(Constants.Limelight.k_limelight_name)
 
             # Check if we're confident on where we are on the field
             if mega_tag1.tag_count == 1 and len(mega_tag1.raw_fiducials) == 1:
@@ -204,7 +204,7 @@ class Drivetrain(Subsystem):
 
             # Add Vision Measurement
             if add_vision_estimate:
-                self.odometry.setVisionMeasurementStdDevs(Constants.LimeLight.k_standard_deviations)
+                self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
                 self.odometry.addVisionMeasurement(
                     mega_tag1.pose,
                     mega_tag1.timestamp_seconds
@@ -216,7 +216,7 @@ class Drivetrain(Subsystem):
 
             # Set Robot Orientation
             LimelightHelpers.set_robot_orientation(
-                Constants.LimeLight.k_limelight_name,
+                Constants.Limelight.k_limelight_name,
                 self.gyro.getRotation2d().degrees(),
                 0, # Potentially add -self.navx.getRate() here LATER, according to Chief Delphi it's untested
                 0,
@@ -225,7 +225,7 @@ class Drivetrain(Subsystem):
                 0
             )
 
-            mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.LimeLight.k_limelight_name)
+            mega_tag2 = LimelightHelpers.get_botpose_estimate_wpiblue_megatag2(Constants.Limelight.k_limelight_name)
 
             # If we're spinning or we don't see an apriltag, don't add vision measurements
             if abs(self.gyro.getRate()) > 720 or  \
@@ -235,13 +235,13 @@ class Drivetrain(Subsystem):
 
             # Add Vision Measurement
             if add_vision_estimate:
-                self.odometry.setVisionMeasurementStdDevs(Constants.LimeLight.k_standard_deviations)
+                self.odometry.setVisionMeasurementStdDevs(Constants.Limelight.k_standard_deviations)
                 self.odometry.addVisionMeasurement(
                     mega_tag2.pose,
                     mega_tag2.timestamp_seconds
                 )
 
-                #self.vision_pose_publisher.set(mega_tag2.pose, mega_tag2.timestamp_seconds)
+                self.vision_pose_publisher.set(mega_tag2.pose, mega_tag2.timestamp_seconds)
 
         estimated_position = self.odometry.getEstimatedPosition()
 
