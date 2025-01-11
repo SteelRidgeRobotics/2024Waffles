@@ -131,7 +131,7 @@ class LimelightHelpers:
 		raw_fiducial_array = entry.getDoubleArray([])
 		vals_per_entry = 7
 		if len(raw_fiducial_array) % vals_per_entry != 0:
-			return RawFiducial()
+			return [RawFiducial()]
 		
 		num_fiducials = len(raw_fiducial_array) // vals_per_entry
 		raw_fiducials = []
@@ -156,7 +156,7 @@ class LimelightHelpers:
 		raw_detection_array = entry.getDoubleArray([])
 		vals_per_entry = 11
 		if len(raw_detection_array) % vals_per_entry != 0:
-			return RawDetection()
+			return [RawDetection()]
 		
 		num_detections = len(raw_detection_array) // vals_per_entry
 		raw_detections = []
@@ -268,7 +268,7 @@ class LimelightHelpers:
 		return LimelightHelpers.get_limelight_NTDoubleArray(limelight_name, "t2d")
 	
 	@staticmethod
-	def get_target_count(limelight_name: str) -> int:
+	def get_target_count(limelight_name: str) -> float:
 		t2d = LimelightHelpers.get_t2d_array(limelight_name)
 		if len(t2d) == 17:
 			return t2d[1]
@@ -276,7 +276,7 @@ class LimelightHelpers:
 			return 0
 		
 	@staticmethod
-	def get_classifier_class_index(limelight_name: str) -> int:
+	def get_classifier_class_index(limelight_name: str) -> float:
 		t2d = LimelightHelpers.get_t2d_array(limelight_name)
 		if len(t2d) == 17:
 			return t2d[10]
@@ -284,9 +284,9 @@ class LimelightHelpers:
 			return 0
 		
 	@staticmethod
-	def get_detector_class_index(limelight_name: str) -> int:
+	def get_detector_class_index(limelight_name: str) -> float:
 		t2d = LimelightHelpers.get_t2d_array(limelight_name)
-		if t2d.length == 17:
+		if len(t2d) == 17:
 			return t2d[11]
 		else:
 			return 0
