@@ -1,16 +1,12 @@
 [tool.robotpy]
 
-robotpy_version = "2024.3.2.1"
+robotpy_version = "2025.2.1.0"
 
 robotpy_extras = [
     "commands2",
-    "navx",
     "pathplannerlib",
     "phoenix6",
 ]
 
 # Other pip packages to install
-requires = [
-    "robotpy-opencv; platform_machine == 'roborio'",
-    "opencv-python; platform_machine != 'roborio'"
-]
+requires = []

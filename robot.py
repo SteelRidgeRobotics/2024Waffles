@@ -1,21 +1,17 @@
 from commands2 import CommandScheduler, TimedCommandRobot
-from container import RobotContainer
-from elastic import *
-from wpilib import CameraServer, DataLogManager, DriverStation, RobotBase
-from wpimath.geometry import Pose2d, Rotation2d
+from wpilib import DataLogManager, DriverStation, RobotBase
+
+from robot_container import RobotContainer
+
 
 class Waffles(TimedCommandRobot):
 
     def __init__(self, period = 0.02) -> None:
         super().__init__(period)
-        
-    def robotInit(self) -> None:
+
         self.container = RobotContainer()
 
-        self.addPeriodic(self.container.drivetrain.update_odometry, 0.005)
-        #self.addPeriodic(self.container.drivetrain.update_vision_estimates, 0.02, 0.01)
-
-        DriverStation.silenceJoystickConnectionWarning(not DriverStation.isFMSAttached())
+        DriverStation.silenceJoystickConnectionWarning(True)
 
         if RobotBase.isReal():
             DataLogManager.start("/home/lvuser/logs")
@@ -23,10 +19,7 @@ class Waffles(TimedCommandRobot):
             DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())
 
-        if RobotBase.isReal():
-            CameraServer.launch()
-
-        DataLogManager.log("robotInit finished")
+        DataLogManager.log("robot initialized")
 
     # Most of these are all here to suppress warnings
     def robotPeriodic(self) -> None:
@@ -37,36 +30,16 @@ class Waffles(TimedCommandRobot):
 
     def autonomousInit(self) -> None:
         DataLogManager.log("Autonomous period started")
-        
-        # Reset gyro
-        self.container.drivetrain.reset_yaw()
 
-        # If we're on the red alliance, rotate the odometry 180 degrees
-        if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-            self.container.drivetrain.reset_pose(Pose2d(0, 0, Rotation2d.fromDegrees(180)))
-        else:
-            self.container.drivetrain.reset_pose(Pose2d(0, 0, Rotation2d.fromDegrees(0)))
-        
-        # Get the selected auto
         selected_auto = self.container.get_selected_auto()
-        
-        # If it's None, do nothing, otherwise schedule the auto.
-        if selected_auto is None:
-            DataLogManager.log("No Auto Selected, doing nothing :(")
-            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous Start", "Scheduled selected auto: Nothing :("))
-        else:
+        if selected_auto is not None:
             selected_auto.schedule()
-            DataLogManager.log(f"Scheduled selected auto: {selected_auto.getName()}")
-            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous Start", f"Scheduled selected auto: {selected_auto.getName()}"))
             
     def autonomousPeriodic(self) -> None:
         pass
     
     def autonomousExit(self) -> None:
         DataLogManager.log("Autonomous period ended")
-
-        if DriverStation.isFMSAttached():
-            Elastic.send_alert(ElasticNotification(NotificationLevel.INFO, "Autonomous End", "Good luck!"))
             
     def teleopInit(self) -> None:
         DataLogManager.log("Teleoperated period started")
