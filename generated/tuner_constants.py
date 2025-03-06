@@ -81,9 +81,8 @@ class TunerConstants:
     _invert_left_side = False
     _invert_right_side = True
 
-    _canbus = CANBus("", "./logs/example.hoot")
+    _canbus = CANBus("Drivetrain", "./logs/drivetrain.hoot")
     _pigeon_id = 9
-
 
     # These are only used for simulation
     _steer_inertia: units.kilogram_square_meter = 0.00001
@@ -128,7 +127,7 @@ class TunerConstants:
     _front_left_drive_motor_id = 1
     _front_left_steer_motor_id = 5
     _front_left_encoder_id = 5
-    _front_left_encoder_offset: units.rotation = -0.229248046875
+    _front_left_encoder_offset: units.rotation = -0.17333984375
     _front_left_steer_motor_inverted = True
     _front_left_encoder_inverted = False
 
@@ -139,7 +138,7 @@ class TunerConstants:
     _front_right_drive_motor_id = 3
     _front_right_steer_motor_id = 7
     _front_right_encoder_id = 7
-    _front_right_encoder_offset: units.rotation = -0.080078125
+    _front_right_encoder_offset: units.rotation = -0.18505859375
     _front_right_steer_motor_inverted = True
     _front_right_encoder_inverted = False
 
@@ -150,7 +149,7 @@ class TunerConstants:
     _back_left_drive_motor_id = 2
     _back_left_steer_motor_id = 6
     _back_left_encoder_id = 6
-    _back_left_encoder_offset: units.rotation = -0.492919921875
+    _back_left_encoder_offset: units.rotation = 0.15283203125
     _back_left_steer_motor_inverted = True
     _back_left_encoder_inverted = False
 
@@ -161,7 +160,7 @@ class TunerConstants:
     _back_right_drive_motor_id = 4
     _back_right_steer_motor_id = 8
     _back_right_encoder_id = 8
-    _back_right_encoder_offset: units.rotation = -0.089111328125
+    _back_right_encoder_offset: units.rotation = 0.286376953125
     _back_right_steer_motor_inverted = True
     _back_right_encoder_inverted = False
 

@@ -1,12 +1,13 @@
 [tool.robotpy]
 
-robotpy_version = "2025.2.1.0"
+robotpy_version = "2025.3.1.1"
 
 robotpy_extras = [
-    "commands2",
-    "pathplannerlib",
-    "phoenix6",
+    "commands2"
 ]
 
 # Other pip packages to install
-requires = []
+requires = [
+    "robotpy-pathplannerlib==2025.2.5",
+    "phoenix6==25.3.1"
+]

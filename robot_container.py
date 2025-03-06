@@ -68,10 +68,6 @@ class RobotContainer:
         self._face.heading_controller = PhoenixPIDController(18.749, 0.45773, 0)
         self._face.heading_controller.enableContinuousInput(-math.pi, math.pi)
 
-        # Path follower
-        self._auto_chooser = AutoBuilder.buildAutoChooser("Auto Chooser")
-        SmartDashboard.putData("Auto Mode", self._auto_chooser)
-
         # Configure the button bindings
         self.configureButtonBindings()
 
@@ -110,22 +106,6 @@ class RobotContainer:
             )
         )
 
-        # We can't test these until we get a Limelight onto MM and until PathPlanner Beta 5 releases :(
-        self._driver_controller.x().whileTrue(
-            self.drivetrain.apply_request(
-                lambda: self._face.with_velocity_x(
-                    -self._driver_controller.getLeftY() * self._max_speed
-                )
-                .with_velocity_y(
-                    -self._driver_controller.getLeftX() * self._max_speed
-                )
-                .with_target_direction(
-                    # Gets the angle to our alliance's speaker
-                    (Constants.k_apriltag_layout.getTagPose(4 if (DriverStation.getAlliance() or DriverStation.Alliance.kBlue) == DriverStation.Alliance.kRed else 7).toPose2d().translation() - self.drivetrain.get_state().pose.translation()).angle() + Rotation2d.fromDegrees(180)
-                )
-            )
-        )
-
         # Run SysId routines when holding back/start and X/Y.
         # Note that each routine should be run exactly once in a single log.
         (self._driver_controller.back() & self._driver_controller.y()).onTrue(commands2.InstantCommand(lambda: SignalLogger.start())).whileTrue(
@@ -149,10 +129,3 @@ class RobotContainer:
         self.drivetrain.register_telemetry(
             lambda state: self._robot_state.log_swerve_state(state)
         )
-
-    def getAutonomousCommand(self) -> commands2.Command:
-        """Use this to pass the autonomous command to the main {@link Robot} class.
-
-        :returns: the command to run in autonomous
-        """
-        return self._auto_chooser.getSelected()

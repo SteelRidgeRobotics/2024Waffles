@@ -30,10 +30,6 @@ class Waffles(TimedCommandRobot):
 
     def autonomousInit(self) -> None:
         DataLogManager.log("Autonomous period started")
-
-        selected_auto = self.container.get_selected_auto()
-        if selected_auto is not None:
-            selected_auto.schedule()
             
     def autonomousPeriodic(self) -> None:
         pass
